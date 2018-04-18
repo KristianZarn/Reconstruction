@@ -58,8 +58,10 @@ find_package(Theia REQUIRED)
 # Main realtime reconstruction target
 add_executable(realtime_reconstruction
         main.cpp
+        src/MenuPlugin.cpp
         src/webcam.cpp
-        src/realtime_reconstruction_builder.cpp)
+        src/CameraPlugin.cpp
+        src/RealtimeReconstructionBuilder.cpp)
 
 target_include_directories(realtime_reconstruction
         PUBLIC
@@ -79,10 +81,10 @@ target_link_libraries(realtime_reconstruction
         ${CMAKE_DL_LIBS}
         ${X11_LIBRARIES}
         imgui
-        igl::core
-        igl::opengl
-        igl::opengl_glfw
         igl::opengl_glfw_imgui
+        igl::opengl_glfw
+        igl::opengl
+        igl::core
         igl::png
         igl::stb_image
         ${THEIA_LIBRARIES})

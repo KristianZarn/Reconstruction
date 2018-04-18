@@ -8,7 +8,7 @@
 #include <glad/glad.h>
 
 #include "webcam.h"
-#include "realtime_reconstruction_builder.h"
+#include "RealtimeReconstructionBuilder.h"
 
 int main(int argc, char *argv[]) {
 

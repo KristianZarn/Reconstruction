@@ -13,7 +13,7 @@
 #include <glad/glad.h>
 
 #include "webcam.h"
-#include "realtime_reconstruction_builder.h"
+#include "RealtimeReconstructionBuilder.h"
 
 theia::CameraIntrinsicsPrior GetCalibration() {
     theia::CameraIntrinsicsPrior camera_intrinsics_prior;

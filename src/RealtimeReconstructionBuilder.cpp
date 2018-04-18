@@ -1,4 +1,4 @@
-#include "realtime_reconstruction_builder.h"
+#include "RealtimeReconstructionBuilder.h"
 
 #include "theia/util/filesystem.h"
 #include "theia/image/image.h"

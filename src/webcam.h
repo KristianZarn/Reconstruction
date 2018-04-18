@@ -1,8 +1,8 @@
-/** Small C++ wrapper around V4L example code to access the webcam
-**/
+#ifndef REALTIME_RECONSTRUCTION_WEBCAM_H
+#define REALTIME_RECONSTRUCTION_WEBCAM_H
 
 #include <string>
-#include <memory> // unique_ptr
+#include <memory>
 
 struct buffer {
       void   *data;
@@ -66,6 +66,4 @@ private:
     bool force_format = true;
 };
 
-
-
-
+#endif //REALTIME_RECONSTRUCTION_WEBCAM_H

@@ -2,18 +2,19 @@
 #include <iomanip>
 #include <chrono>
 
+// #define IGL_STATIC_LIBRARY
+
 #include <igl/readOFF.h>
-#include <igl/png/readPNG.h>
-#include <igl/png/writePNG.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <imgui/imgui.h>
+#include <imgui_impl_glfw_gl3.h>
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
+#include <MenuPlugin.h>
 
-#include "webcam.h"
-#include "realtime_reconstruction_builder.h"
+#include "CameraPlugin.h"
+#include "RealtimeReconstructionBuilder.h"
 
 theia::CameraIntrinsicsPrior GetCalibration() {
     theia::CameraIntrinsicsPrior camera_intrinsics_prior;
@@ -42,107 +43,64 @@ theia::CameraIntrinsicsPrior GetCalibration() {
 
 int main(int argc, char *argv[]) {
 
-    // Setup camera
-    int image_width = 960;
-    int image_height = 720;
-    Webcam webcam("/dev/video1", image_width, image_height);
-
-    std::string output_path = "../webcam_images/";
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> red(image_width, image_height);
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> green(image_width, image_height);
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> blue(image_width, image_height);
-    Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> alpha =
-            Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Ones(image_width, image_height);
-    alpha = alpha * 255;
-
     // Setup reconstruction builder
     theia::CameraIntrinsicsPrior intrinsics_prior = GetCalibration();
     theia::RealtimeReconstructionBuilderOptions options;
     options.intrinsics_prior = intrinsics_prior;
     theia::RealtimeReconstructionBuilder reconstruction_builder(options);
 
+    // Read the mesh
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
+    igl::readOFF("../assets/bunny.off", vertices, faces);
+
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
 
-    // Create texture for camera view
-    GLuint textureID;
-    viewer.callback_init = [&](igl::opengl::glfw::Viewer viewer1) -> bool {
-        glGenTextures(1, &textureID);
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image_width, image_height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
-        glBindTexture(GL_TEXTURE_2D, 0);
+    // Setup viewer callbacks for ImGui
+    viewer.callback_init = [&](igl::opengl::glfw::Viewer v) -> bool {
+        // Setup ImGui
+        ImGui::CreateContext();
+        ImGui_ImplGlfwGL3_Init(v.window, false);
+        ImGui::GetIO().IniFilename = nullptr;
+        ImGui::StyleColorsDark();
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.FrameRounding = 5.0f;
+        return false;
+    };
+
+    viewer.callback_pre_draw = [&](igl::opengl::glfw::Viewer v) -> bool {
+        glfwPollEvents();
+        ImGui_ImplGlfwGL3_NewFrame();
+        return false;
+    };
+
+    viewer.callback_post_draw = [&](igl::opengl::glfw::Viewer v) -> bool {
+        ImGui::Render();
+        return false;
+    };
+
+    viewer.callback_shutdown = [&](igl::opengl::glfw::Viewer v) -> bool {
+        // ImGui cleanup
+        ImGui_ImplGlfwGL3_Shutdown();
+        ImGui::DestroyContext();
         return false;
     };
 
     // Attach a menu plugin
-    igl::opengl::glfw::imgui::ImGuiMenu menu;
+    MenuPlugin menu;
     viewer.plugins.push_back(&menu);
 
-    // Reconstruction variables
-    int saved_frames_count = 0;
-
-    // Message strings
-    std::string camera_message = "Image saved to: ";
-
-    // Draw additional windows
-    menu.callback_draw_custom_window = [&]() {
-        // Define next window position
-        ImGui::SetNextWindowPos(ImVec2(180.f * menu.menu_scaling(), 10), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(480.0f, 0.0f), ImGuiCond_FirstUseEver);
-        // ImGui::SetNextWindowSizeConstraints(ImVec2(300.0f, -1), ImVec2(FLT_MAX, -1));
-        ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
-
-        // Get frame from webcam
-        auto frame = webcam.frame();
-
-        // Replace texture with new frame
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_BYTE, frame.data);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Add an image
-        float width = ImGui::GetWindowContentRegionWidth();
-        float height = width * ((float) image_height / image_width);
-        ImGui::Image(reinterpret_cast<GLuint*>(textureID), ImVec2(width, height));
-
-        // Add a button
-        if (ImGui::Button("Capture frame", ImVec2(-1,0))) {
-            // Store frame on disk
-            std::stringstream ss;
-            ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count);
-            std::string filename = output_path + "frame" + ss.str() + ".png";
-
-            /*Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    red(frame.data, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-            Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    green(frame.data + 1, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-            Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    blue(frame.data + 2, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-
-            igl::png::writePNG(red, green, blue, alpha, filename);*/
-
-            red = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    (frame.data, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-            green = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    (frame.data + 1, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-            blue = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                    (frame.data + 2, image_width, image_height, Eigen::Stride<Eigen::Dynamic,3>(image_width*3, 3));
-
-            igl::png::writePNG(red.rowwise().reverse(), green.rowwise().reverse(), blue.rowwise().reverse(), alpha, filename);
-            saved_frames_count++;
-
-            camera_message = "Image saved to: " + filename;
-        }
-
-        // Add camera message
-        ImGui::Text("%s", camera_message.c_str());
-
-        ImGui::End();
-    };
+    // Attach camera plugin
+    int image_width = 640;
+    int image_height = 480;
+    std::string device = "/dev/video1";
+    std::string output_path = "../webcam_images/";
+    CameraPlugin cam(device, image_width, image_height, output_path);
+    viewer.plugins.push_back(&cam);
 
     // Start viewer
+    viewer.data().set_mesh(vertices, faces);
     viewer.launch();
 }
