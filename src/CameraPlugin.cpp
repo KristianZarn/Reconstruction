@@ -1,13 +1,19 @@
 #include "CameraPlugin.h"
 #include "webcam.h"
 
+#include <sstream>
+#include <iomanip>
+#include <utility>
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <igl/png/readPNG.h>
 #include <igl/png/writePNG.h>
 #include <Eigen/Core>
 
 CameraPlugin::CameraPlugin(std::string device, int width, int height, std::string output_path)
-        : device_string_(device), image_width_(width), image_height_(height), output_path_(output_path) {
+        : device_string_(std::move(device)), image_width_(width), image_height_(height), output_path_(std::move(output_path)) {
 
     red_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Zero(image_width_, image_height_);
     green_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Zero(image_width_, image_height_);
@@ -33,8 +39,9 @@ void CameraPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
 
 bool CameraPlugin::post_draw() {
     // Setup window
-    ImGui::SetNextWindowPos(ImVec2(180.f, 10), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(480.0f, 0.0f), ImGuiCond_FirstUseEver);
+    float window_width = 480.0f;
+    ImGui::SetNextWindowSize(ImVec2(window_width, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - window_width, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
@@ -75,7 +82,6 @@ bool CameraPlugin::post_draw() {
     ImGui::Text("%s", camera_message_.c_str());
 
     ImGui::End();
-    // ImGui::Render();
     return false;
 }
 

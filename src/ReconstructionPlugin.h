@@ -1,12 +1,16 @@
-#ifndef REALTIME_RECONSTRUCTION_MENUPLUGIN_H
-#define REALTIME_RECONSTRUCTION_MENUPLUGIN_H
+#ifndef REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H
+#define REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/ViewerPlugin.h>
 
-class MenuPlugin : public igl::opengl::glfw::ViewerPlugin {
+#include "RealtimeReconstructionBuilder.h"
+
+class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
+    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options);
+
     void init(igl::opengl::glfw::Viewer *_viewer) override;
 
     bool post_draw() override;
@@ -27,17 +31,9 @@ public:
 
     bool key_up(int key, int modifiers) override;
 
-    void draw_viewer_window();
-
-    void draw_viewer_menu();
-
-    void draw_labels_window();
-
-    void draw_labels(const igl::opengl::ViewerData &data);
-
-    void draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const std::string &text);
+private:
 
 };
 
 
-#endif //REALTIME_RECONSTRUCTION_MENUPLUGIN_H
+#endif //REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H

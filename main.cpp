@@ -1,53 +1,33 @@
-#include <sstream>
-#include <iomanip>
-#include <chrono>
-
-// #define IGL_STATIC_LIBRARY
-
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <imgui/imgui.h>
+#include <imgui_impl_glfw_gl3.h>
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
-#include <imgui/imgui.h>
-#include <imgui_impl_glfw_gl3.h>
-#include <GLFW/glfw3.h>
-#include <MenuPlugin.h>
+// #include <Eigen/Core>
 
+#include "helpers.h"
+#include "MenuPlugin.h"
 #include "CameraPlugin.h"
 #include "RealtimeReconstructionBuilder.h"
-
-theia::CameraIntrinsicsPrior GetCalibration() {
-    theia::CameraIntrinsicsPrior camera_intrinsics_prior;
-    camera_intrinsics_prior.image_width = 960;
-    camera_intrinsics_prior.image_height = 720;
-
-    camera_intrinsics_prior.focal_length.is_set = true;
-    camera_intrinsics_prior.focal_length.value[0] = 928.0;
-
-    camera_intrinsics_prior.principal_point.is_set = true;
-    camera_intrinsics_prior.principal_point.value[0] = 444.0;
-    camera_intrinsics_prior.principal_point.value[1] = 350.0;
-
-    camera_intrinsics_prior.aspect_ratio.is_set = true;
-    camera_intrinsics_prior.aspect_ratio.value[0] = 1.0;
-
-    camera_intrinsics_prior.skew.is_set = true;
-    camera_intrinsics_prior.skew.value[0] = 0.0;
-
-    camera_intrinsics_prior.radial_distortion.is_set = true;
-    camera_intrinsics_prior.radial_distortion.value[0] = 0.10837192;
-    camera_intrinsics_prior.radial_distortion.value[1] = -0.21332444;
-
-    return camera_intrinsics_prior;
-}
+#include "ReconstructionPlugin.h"
 
 int main(int argc, char *argv[]) {
 
-    // Setup reconstruction builder
-    theia::CameraIntrinsicsPrior intrinsics_prior = GetCalibration();
-    theia::RealtimeReconstructionBuilderOptions options;
-    options.intrinsics_prior = intrinsics_prior;
-    theia::RealtimeReconstructionBuilder reconstruction_builder(options);
+#ifdef IGL_STATIC_LIBRARY
+    std::cout << "IGL_STATIC_LIBRARY is defined" << std::endl;
+#endif
+
+#ifndef IGL_STATIC_LIBRARY
+    std::cout << "IGL IGL_STATIC_LIBRARY is not defined" << std::endl;
+#endif
+
+    // Initialization
+    std::string calibration_file = "../webcam_reconstruction/prior_calibration.txt";
+    std::string camera_device = "/dev/video1";
+    std::string camera_output_path = "../webcam_images/";
 
     // Read the mesh
     Eigen::MatrixXd vertices;
@@ -89,18 +69,26 @@ int main(int argc, char *argv[]) {
     };
 
     // Attach a menu plugin
-    MenuPlugin menu;
-    viewer.plugins.push_back(&menu);
+    MenuPlugin menu_plugin;
+    viewer.plugins.push_back(&menu_plugin);
 
     // Attach camera plugin
-    int image_width = 640;
-    int image_height = 480;
-    std::string device = "/dev/video1";
-    std::string output_path = "../webcam_images/";
-    CameraPlugin cam(device, image_width, image_height, output_path);
-    viewer.plugins.push_back(&cam);
+    // int image_width = intrinsics_prior.image_width;
+    // int image_height = intrinsics_prior.image_height;
+    // CameraPlugin camera_plugin(camera_device, image_width, image_height, camera_output_path);
+    // viewer.plugins.push_back(&camera_plugin);
+
+    // Attach reconstruction plugin
+    theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
+    theia::RealtimeReconstructionBuilderOptions options;
+    options.intrinsics_prior = intrinsics_prior;
+    ReconstructionPlugin reconstruction_plugin(options);
+    viewer.plugins.push_back(&reconstruction_plugin);
 
     // Start viewer
+    //Eigen::MatrixXd V = Eigen::MatrixXd::Ones(3, 3);
+    //Eigen::MatrixXi F = Eigen::MatrixXi::Ones(3, 3);
+    //viewer.data().set_mesh(V, F);
     viewer.data().set_mesh(vertices, faces);
     viewer.launch();
 }

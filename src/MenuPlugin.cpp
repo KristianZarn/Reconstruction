@@ -1,6 +1,9 @@
 #include "MenuPlugin.h"
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <igl/project.h>
 
 void MenuPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);

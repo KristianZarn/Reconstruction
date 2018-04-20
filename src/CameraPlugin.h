@@ -1,9 +1,10 @@
 #ifndef REALTIME_RECONSTRUCTION_CAMERAPLUGIN_H
 #define REALTIME_RECONSTRUCTION_CAMERAPLUGIN_H
 
+#include <glad/glad.h>
+#include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/ViewerPlugin.h>
-#include <imgui/imgui.h>
 
 #include "webcam.h"
 
@@ -12,6 +13,7 @@ public:
     CameraPlugin(std::string device, int width, int height, std::string output_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
+
     bool post_draw() override;
 
     // Mouse IO
