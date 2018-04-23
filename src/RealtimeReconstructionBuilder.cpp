@@ -5,6 +5,7 @@
 #include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/image_pair_match.h"
+#include <theia/sfm/track.h>
 
 namespace theia {
 
@@ -23,6 +24,7 @@ namespace theia {
                                                 options_.matcher_options);
 
         // Initialize SfM objects
+        options_.reconstruction_estimator_options.num_threads = options_.num_threads;
         track_builder_ = std::make_unique<TrackBuilder>(options_.min_track_length,
                                                         options_.max_track_length);
         view_graph_ = std::make_unique<ViewGraph>();
@@ -94,6 +96,26 @@ namespace theia {
 
     bool RealtimeReconstructionBuilder::ExtendReconstruction() {
         return false;
+    }
+
+    Eigen::MatrixXd RealtimeReconstructionBuilder::GetReconstructedPoints() {
+        int num_points = reconstruction_->NumTracks();
+        std::vector<TrackId> track_ids = reconstruction_->TrackIds();
+        Eigen::MatrixXd points(num_points, 3);
+
+        for (int i = 0; i < num_points; i++) {
+            const Track* track = reconstruction_->Track(track_ids[i]);
+            Eigen::Vector4d point = track->Point();
+            points(i, 0) = point(0);
+            points(i, 1) = point(1);
+            points(i, 2) = point(2);
+        }
+
+        return points;
+    }
+
+    Eigen::MatrixXd RealtimeReconstructionBuilder::GetCameraPositions() {
+
     }
 
 }

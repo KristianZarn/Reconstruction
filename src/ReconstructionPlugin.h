@@ -1,6 +1,8 @@
 #ifndef REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H
 #define REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H
 
+#include <string>
+
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/ViewerPlugin.h>
@@ -9,7 +11,7 @@
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options);
+    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options, std::string images_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
 
@@ -32,7 +34,15 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
+    std::string images_path_;
+    int image_idx_;
+    std::unique_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
 
+    // Viewer variables
+    int point_size_;
+
+    // Helper functions
+    std::string image_fullpath(int image_idx);
 };
 
 

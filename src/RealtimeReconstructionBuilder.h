@@ -46,6 +46,12 @@ namespace theia {
         // Adds new image to the reconstruction
         bool ExtendReconstruction();
 
+        // Return points (eigen matrix #V x 3)
+        Eigen::MatrixXd GetReconstructedPoints();
+
+        // Return camera positions (eigen matrix #C x 3)
+        Eigen::MatrixXd GetCameraPositions();
+
     private:
         RealtimeReconstructionBuilderOptions options_;
 

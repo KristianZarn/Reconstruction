@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 project(realtime_reconstruction)
 
 set(CMAKE_CXX_STANDARD 17)
-#set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-
-#include(cotire)
 
 # LIBRARIES
 
@@ -53,6 +50,9 @@ set_property(TARGET imgui PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libimgui
 # Theia library
 find_package(Theia REQUIRED)
 
+# Eigen library
+find_package(Eigen3 REQUIRED)
+
 # TARGETS
 
 # Main realtime reconstruction target
@@ -65,7 +65,7 @@ add_executable(realtime_reconstruction
         src/RealtimeReconstructionBuilder.cpp
         src/ReconstructionPlugin.cpp)
 
-#target_compile_definitions(realtime_reconstruction PRIVATE -DIGL_STATIC_LIBRARY)
+target_compile_definitions(realtime_reconstruction PRIVATE -DIGL_STATIC_LIBRARY)
 
 target_include_directories(realtime_reconstruction
         PUBLIC
@@ -76,7 +76,8 @@ target_include_directories(realtime_reconstruction
         $ENV{HOME}/Sources/libigl/external/glad/include
         $ENV{HOME}/Sources/libigl/external/glfw/include
         ${LIBIGL_INCLUDE_DIR}
-        ${THEIA_INCLUDE_DIRS})
+        ${THEIA_INCLUDE_DIRS}
+        ${EIGEN3_INCLUDE_DIR})
 
 target_link_libraries(realtime_reconstruction
         igl::png
@@ -92,5 +93,3 @@ target_link_libraries(realtime_reconstruction
         ${X11_LIBRARIES}
         Threads::Threads
         ${THEIA_LIBRARIES})
-
-#cotire(realtime_reconstruction)

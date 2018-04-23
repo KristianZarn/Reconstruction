@@ -4,9 +4,6 @@
 #include <imgui_impl_glfw_gl3.h>
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
-#include <igl/opengl/glfw/imgui/ImGuiMenu.h>
-#include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
-// #include <Eigen/Core>
 
 #include "helpers.h"
 #include "MenuPlugin.h"
@@ -16,16 +13,8 @@
 
 int main(int argc, char *argv[]) {
 
-#ifdef IGL_STATIC_LIBRARY
-    std::cout << "IGL_STATIC_LIBRARY is defined" << std::endl;
-#endif
-
-#ifndef IGL_STATIC_LIBRARY
-    std::cout << "IGL IGL_STATIC_LIBRARY is not defined" << std::endl;
-#endif
-
     // Initialization
-    std::string calibration_file = "../webcam_reconstruction/prior_calibration.txt";
+    std::string calibration_file = "../castle_reconstruction/prior_calibration.txt";
     std::string camera_device = "/dev/video1";
     std::string camera_output_path = "../webcam_images/";
 
@@ -37,6 +26,7 @@ int main(int argc, char *argv[]) {
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
+    viewer.data().point_size = 3;
 
     // Setup viewer callbacks for ImGui
     viewer.callback_init = [&](igl::opengl::glfw::Viewer v) -> bool {
@@ -79,16 +69,21 @@ int main(int argc, char *argv[]) {
     // viewer.plugins.push_back(&camera_plugin);
 
     // Attach reconstruction plugin
-    theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
     theia::RealtimeReconstructionBuilderOptions options;
+
+    theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
     options.intrinsics_prior = intrinsics_prior;
-    ReconstructionPlugin reconstruction_plugin(options);
+
+    theia::ReconstructionEstimatorOptions estimator_options;
+    estimator_options.reconstruction_estimator_type = theia::ReconstructionEstimatorType::INCREMENTAL;
+    options.reconstruction_estimator_options = estimator_options;
+
+    ReconstructionPlugin reconstruction_plugin(options, "../castle_images/");
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Start viewer
-    //Eigen::MatrixXd V = Eigen::MatrixXd::Ones(3, 3);
-    //Eigen::MatrixXi F = Eigen::MatrixXi::Ones(3, 3);
-    //viewer.data().set_mesh(V, F);
-    viewer.data().set_mesh(vertices, faces);
+    // viewer.data().set_mesh(vertices, faces);
+    viewer.data().set_vertices(vertices);
+    viewer.data().add_points(vertices, Eigen::RowVector3d(1,0,0));
     viewer.launch();
 }
