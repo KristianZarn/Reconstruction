@@ -72,16 +72,15 @@ bool ReconstructionPlugin::post_draw() {
         // Colorize and show in viewer
         if (summary.success) {
             // Colorize reconstruction
-            // theia::ColorizeReconstruction(images_path_, 4, reconstruction);
+            theia::ColorizeReconstruction(images_path_, 4, reconstruction);
 
             // Show result in viewer
             Eigen::MatrixXd points = reconstruction_builder_->GetReconstructedPoints();
-            // Eigen::MatrixXd colors = reconstruction_builder_->GetPointColors();
-            // colors = colors / 255.0;
+            Eigen::MatrixXd colors = reconstruction_builder_->GetPointColors();
+            colors = colors / 255.0;
 
             viewer->data().clear();
-            // viewer->data().set_points(points, colors);
-            viewer->data().set_points(points, Eigen::RowVector3d(1,0,0));
+            viewer->data().set_points(points, colors);
 
             // Center object
             viewer->core.align_camera_center(points);

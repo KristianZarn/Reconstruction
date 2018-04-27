@@ -44,12 +44,6 @@ private:
     GLuint textureID_;
     std::string camera_message_;
     int saved_frames_count_;
-
-    // Matrices for saving images
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> red_;
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> green_;
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> blue_;
-    Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> alpha_;
 };
 
 

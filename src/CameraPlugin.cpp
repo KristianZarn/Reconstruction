@@ -8,18 +8,12 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
-#include <igl/png/readPNG.h>
-#include <igl/png/writePNG.h>
+#include <igl_stb_image.h>
+// #include <igl/png/writePNG.h>
 #include <Eigen/Core>
 
 CameraPlugin::CameraPlugin(std::string device, int width, int height, std::string output_path)
         : device_string_(std::move(device)), image_width_(width), image_height_(height), output_path_(std::move(output_path)) {
-
-    red_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Zero(image_width_, image_height_);
-    green_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Zero(image_width_, image_height_);
-    blue_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Zero(image_width_, image_height_);
-    alpha_ = Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>::Constant(image_width_, image_height_, 255);
-
     webcam_ = std::make_unique<Webcam>(device_string_, image_width_, image_height_);
     camera_message_ = "";
     saved_frames_count_ = 0;
@@ -65,14 +59,8 @@ bool CameraPlugin::post_draw() {
         ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count_);
         std::string filename = output_path_ + "frame" + ss.str() + ".png";
 
-        red_ = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                (frame.data, image_width_, image_height_, Eigen::Stride<Eigen::Dynamic,3>(image_width_*3, 3));
-        green_ = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                (frame.data + 1, image_width_, image_height_, Eigen::Stride<Eigen::Dynamic,3>(image_width_*3, 3));
-        blue_ = Eigen::Map<Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic>, 0, Eigen::Stride<Eigen::Dynamic, 3>>
-                (frame.data + 2, image_width_, image_height_, Eigen::Stride<Eigen::Dynamic,3>(image_width_*3, 3));
-
-        igl::png::writePNG(red_.rowwise().reverse(), green_.rowwise().reverse(), blue_.rowwise().reverse(), alpha_, filename);
+        int channels = 3;
+        igl::stbi_write_png(filename.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
 
         camera_message_ = "Image saved to: " + filename;
         saved_frames_count_++;
