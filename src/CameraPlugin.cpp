@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <igl_stb_image.h>
-// #include <igl/png/writePNG.h>
 #include <Eigen/Core>
 
 CameraPlugin::CameraPlugin(std::string device, int width, int height, std::string output_path)

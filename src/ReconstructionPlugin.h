@@ -2,6 +2,7 @@
 #define REALTIME_RECONSTRUCTION_RECONSTRUCTIONPLUGIN_H
 
 #include <string>
+#include <ostream>
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
@@ -35,10 +36,14 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
-    int image_idx_;
+    // Reconstruction
+    int next_image_id_;
     std::string images_path_;
     std::string reconstruction_path_;
     std::unique_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
+
+    // Log
+    std::ostringstream log_stream_;
 
     // Viewer variables
     int point_size_;

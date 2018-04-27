@@ -64,9 +64,6 @@ namespace theia {
     private:
         RealtimeReconstructionBuilderOptions options_;
 
-        // Initialization flag
-        bool initialized_ = false;
-
         // Images
         std::vector<std::string> image_filepaths_;
 

@@ -36,6 +36,13 @@ namespace theia {
     ReconstructionEstimatorSummary RealtimeReconstructionBuilder::InitializeReconstruction(
             const std::string &image1_filepath,
             const std::string &image2_filepath) {
+
+        if (reconstruction_->NumViews() > 0) {
+            ReconstructionEstimatorSummary summary_failed;
+            summary_failed.message = "Reconstruction already initialized.";
+            return summary_failed;
+        }
+
         // Read images
         std::string image1_filename;
         GetFilenameFromFilepath(image1_filepath, true, &image1_filename);
@@ -63,6 +70,7 @@ namespace theia {
 
         if (matches.empty()) {
             ReconstructionEstimatorSummary summary_failed;
+            summary_failed.message = "No matches found.";
             return summary_failed;
         }
 
@@ -92,13 +100,11 @@ namespace theia {
         // Build reconstruction
         ReconstructionEstimatorSummary summary =
                 reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
-
-        initialized_ = true;
         return summary;
     }
 
     bool RealtimeReconstructionBuilder::ExtendReconstruction() {
-        // TODO
+        // TODO extend reconstruction
         return false;
     }
 
@@ -135,7 +141,7 @@ namespace theia {
     }
 
     Eigen::MatrixXd RealtimeReconstructionBuilder::GetCameraPositions() {
-        // TODO
+        // TODO get camera positions
     }
 
     Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
@@ -143,7 +149,7 @@ namespace theia {
     }
 
     void RealtimeReconstructionBuilder::ResetReconstruction() {
-        // TODO
+        // TODO reset reconstruction
     }
 
 }

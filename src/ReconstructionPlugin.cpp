@@ -17,9 +17,9 @@
 ReconstructionPlugin::ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options,
                                            std::string images_path,
                                            std::string reconstruction_path)
-        : images_path_(std::move(images_path)),
+        : next_image_id_(0),
+          images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
-          image_idx_(0),
           point_size_(3) {
     reconstruction_builder_ = std::make_unique<theia::RealtimeReconstructionBuilder>(options);
 }
@@ -31,7 +31,8 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
 bool ReconstructionPlugin::post_draw() {
     // Setup window
     float window_width = 270.0f;
-    ImGui::SetNextWindowSize(ImVec2(window_width, 0.0f), ImGuiCond_FirstUseEver);
+    float window_height = 400.0f;
+    ImGui::SetNextWindowSize(ImVec2(window_width, window_height), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(180.0f, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
@@ -39,38 +40,36 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::Button("Initialize", ImVec2(-1,0))) {
 
         // Read two images and initialize reconstruction
-        std::cout << "Starting initialization" << std::endl;
+        log_stream_ << "Starting initialization" << std::endl;
         auto time_begin = std::chrono::steady_clock::now();
 
-        std::string image0 = image_fullpath(image_idx_);
-        image_idx_++;
-        std::string image1 = image_fullpath(image_idx_);
-        image_idx_++;
+        // TODO: Check if images exist
+        std::string image0 = image_fullpath(next_image_id_);
+        next_image_id_++;
+        std::string image1 = image_fullpath(next_image_id_);
+        next_image_id_++;
         theia::ReconstructionEstimatorSummary summary =
                 reconstruction_builder_->InitializeReconstruction(image0, image1);
 
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
-        std::cout << "Initialization time: " << time_elapsed.count() << " s" << std::endl;
+        log_stream_ << "Initialization time: " << time_elapsed.count() << " s" << std::endl;
 
         // Reconstruction summary
-        theia::Reconstruction* reconstruction = reconstruction_builder_->GetReconstruction();
         if (summary.success) {
-            std::cout << "Initialization successful" << std::endl;
-            std::cout << "\n\tNum estimated views = " << summary.estimated_views.size()
-                      << "\n\tNum input views = " << reconstruction->NumViews()
-                      << "\n\tNum estimated tracks = " << summary.estimated_tracks.size()
-                      << "\n\tNum input tracks = " << reconstruction->NumTracks()
-                      << "\n\tPose estimation time = " << summary.pose_estimation_time
-                      << "\n\tTriangulation time = " << summary.triangulation_time
-                      << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
-                      << "\n\tTotal time = " << summary.total_time << "\n\n";
-        } else {
-            std::cout << "Initialization failed" << std::endl;
-        }
+            theia::Reconstruction* reconstruction = reconstruction_builder_->GetReconstruction();
 
-        // Colorize and show in viewer
-        if (summary.success) {
+            log_stream_ << "Initialization successful: " << std::endl;
+            log_stream_ << "\n\tNum estimated views = " << summary.estimated_views.size()
+                        << "\n\tNum input views = " << reconstruction->NumViews()
+                        << "\n\tNum estimated tracks = " << summary.estimated_tracks.size()
+                        << "\n\tNum input tracks = " << reconstruction->NumTracks()
+                        << "\n\tPose estimation time = " << summary.pose_estimation_time
+                        << "\n\tTriangulation time = " << summary.triangulation_time
+                        << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
+                        << "\n\tTotal time = " << summary.total_time
+                        << "\n\tMessage = " << summary.message << "\n\n";
+
             // Colorize reconstruction
             theia::ColorizeReconstruction(images_path_, 4, reconstruction);
 
@@ -84,17 +83,24 @@ bool ReconstructionPlugin::post_draw() {
 
             // Center object
             viewer->core.align_camera_center(points);
+        } else {
+            log_stream_ << "Initialization failed: \n";
+            log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
+
+            // Reset reconstruction
+            next_image_id_ = 0;
+            // TODO: Reset builder if initialization fails
         }
     }
 
     if (ImGui::Button("Extend", ImVec2(-1, 0))) {
-        // TODO
+        // TODO plugin extend
     }
 
     ImGui::Spacing();
 
     if (ImGui::Button("Mesh from points", ImVec2(-1, 0))) {
-        // TODO
+        // TODO mesh from points (openMVS)
     }
 
     ImGui::Spacing();
@@ -112,8 +118,17 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
-        // TODO
+        // TODO plugin reset reconstruction
     }
+
+    ImGui::Spacing();
+
+    ImGui::BeginGroup();
+    ImGui::Text("Log:");
+    ImGui::BeginChild("log", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::Text("%s", log_stream_.str().c_str());
+    ImGui::EndChild();
+    ImGui::EndGroup();
 
     ImGui::End();
     return false;
