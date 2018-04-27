@@ -11,7 +11,8 @@
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options, std::string images_path);
+    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options,
+                         std::string images_path, std::string reconstruction_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
 
@@ -34,8 +35,9 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
-    std::string images_path_;
     int image_idx_;
+    std::string images_path_;
+    std::string reconstruction_path_;
     std::unique_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
 
     // Viewer variables

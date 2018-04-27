@@ -40,8 +40,8 @@ namespace theia {
         explicit RealtimeReconstructionBuilder(const RealtimeReconstructionBuilderOptions& options);
 
         // Builds initial reconstruction from two images
-        bool InitializeReconstruction(const std::string& image1_filepath,
-                                      const std::string& image2_filepath);
+        ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_filepath,
+                                                                const std::string& image2_filepath);
 
         // Adds new image to the reconstruction
         bool ExtendReconstruction();
@@ -49,8 +49,17 @@ namespace theia {
         // Return points (eigen matrix #V x 3)
         Eigen::MatrixXd GetReconstructedPoints();
 
+        // Return point colors (eigen matrix #V x 3)
+        Eigen::MatrixXd GetPointColors();
+
         // Return camera positions (eigen matrix #C x 3)
         Eigen::MatrixXd GetCameraPositions();
+
+        // Get pointer to reconstruction object
+        Reconstruction* GetReconstruction();
+
+        // Reset reconstruction
+        void ResetReconstruction();
 
     private:
         RealtimeReconstructionBuilderOptions options_;

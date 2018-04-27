@@ -33,15 +33,16 @@ namespace theia {
                 ReconstructionEstimator::Create(options_.reconstruction_estimator_options));
     }
 
-    bool RealtimeReconstructionBuilder::InitializeReconstruction(const std::string &image1_filepath,
-                                                                 const std::string &image2_filepath) {
+    ReconstructionEstimatorSummary RealtimeReconstructionBuilder::InitializeReconstruction(
+            const std::string &image1_filepath,
+            const std::string &image2_filepath) {
         // Read images
         std::string image1_filename;
-        GetFilenameFromFilepath(image1_filepath, false, &image1_filename);
+        GetFilenameFromFilepath(image1_filepath, true, &image1_filename);
         FloatImage image1(image1_filepath);
 
         std::string image2_filename;
-        GetFilenameFromFilepath(image2_filepath, false, &image2_filename);
+        GetFilenameFromFilepath(image2_filepath, true, &image2_filename);
         FloatImage image2(image2_filepath);
 
         // Feature extraction
@@ -61,7 +62,8 @@ namespace theia {
         feature_matcher_->MatchImages(&matches);
 
         if (matches.empty()) {
-            return false;
+            ReconstructionEstimatorSummary summary_failed;
+            return summary_failed;
         }
 
         // Add to reconstruction
@@ -91,10 +93,12 @@ namespace theia {
         ReconstructionEstimatorSummary summary =
                 reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
-        return summary.success;
+        initialized_ = true;
+        return summary;
     }
 
     bool RealtimeReconstructionBuilder::ExtendReconstruction() {
+        // TODO
         return false;
     }
 
@@ -105,7 +109,7 @@ namespace theia {
 
         for (int i = 0; i < num_points; i++) {
             const Track* track = reconstruction_->Track(track_ids[i]);
-            Eigen::Vector4d point = track->Point();
+            Eigen::Vector3d point = track->Point().hnormalized();
             points(i, 0) = point(0);
             points(i, 1) = point(1);
             points(i, 2) = point(2);
@@ -114,8 +118,32 @@ namespace theia {
         return points;
     }
 
-    Eigen::MatrixXd RealtimeReconstructionBuilder::GetCameraPositions() {
+    Eigen::MatrixXd RealtimeReconstructionBuilder::GetPointColors() {
+        int num_points = reconstruction_->NumTracks();
+        std::vector<TrackId> track_ids = reconstruction_->TrackIds();
+        Eigen::MatrixXd colors(num_points, 3);
 
+        for (int i = 0; i < num_points; i++) {
+            const Track* track = reconstruction_->Track(track_ids[i]);
+            Eigen::Matrix<uint8_t, 3, 1> color = track->Color();
+            colors(i, 0) = color(0);
+            colors(i, 1) = color(1);
+            colors(i, 2) = color(2);
+        }
+
+        return colors;
+    }
+
+    Eigen::MatrixXd RealtimeReconstructionBuilder::GetCameraPositions() {
+        // TODO
+    }
+
+    Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
+        return reconstruction_.get();
+    }
+
+    void RealtimeReconstructionBuilder::ResetReconstruction() {
+        // TODO
     }
 
 }

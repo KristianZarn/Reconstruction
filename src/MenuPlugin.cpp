@@ -70,19 +70,6 @@ void MenuPlugin::draw_viewer_window() {
 }
 
 void MenuPlugin::draw_viewer_menu() {
-    // Workspace
-    if (ImGui::CollapsingHeader("Workspace", ImGuiTreeNodeFlags_DefaultOpen)) {
-        float w = ImGui::GetContentRegionAvailWidth();
-        float p = ImGui::GetStyle().FramePadding.x;
-        if (ImGui::Button("Load##Workspace", ImVec2((w - p) / 2.f, 0))) {
-            viewer->load_scene();
-        }
-        ImGui::SameLine(0, p);
-        if (ImGui::Button("Save##Workspace", ImVec2((w - p) / 2.f, 0))) {
-            viewer->save_scene();
-        }
-    }
-
     // Mesh
     if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
@@ -96,6 +83,8 @@ void MenuPlugin::draw_viewer_menu() {
         }
     }
 
+    ImGui::PushItemWidth(80);
+
     // Viewing options
     if (ImGui::CollapsingHeader("Viewing Options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Center object", ImVec2(-1, 0))) {
@@ -104,10 +93,6 @@ void MenuPlugin::draw_viewer_menu() {
         if (ImGui::Button("Snap canonical view", ImVec2(-1, 0))) {
             viewer->snap_to_canonical_quaternion();
         }
-
-        // Zoom
-        ImGui::PushItemWidth(80);
-        ImGui::DragFloat("Zoom", &(viewer->core.camera_zoom), 0.05f, 0.1f, 20.0f);
 
         // Select rotation type
         static int rotation_type = static_cast<int>(viewer->core.rotation_type);
