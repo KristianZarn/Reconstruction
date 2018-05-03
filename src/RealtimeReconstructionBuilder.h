@@ -1,50 +1,38 @@
 #ifndef REALTIME_RECONSTRUCTION_REALTIMERECONSTRUCTIONBUILDER_H
 #define REALTIME_RECONSTRUCTION_REALTIMERECONSTRUCTIONBUILDER_H
 
-#include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/descriptor/create_descriptor_extractor.h"
-#include "theia/matching/feature_matcher.h"
-#include "theia/matching/create_feature_matcher.h"
-#include "theia/matching/feature_matcher_options.h"
-#include "theia/sfm/types.h"
-#include "theia/sfm/track_builder.h"
-#include "theia/sfm/reconstruction.h"
-#include "theia/sfm/view_graph/view_graph.h"
+#include <ostream>
+
+#include <theia/image/descriptor/descriptor_extractor.h>
+#include <theia/image/descriptor/create_descriptor_extractor.h>
+#include <theia/matching/feature_matcher.h>
+#include <theia/matching/create_feature_matcher.h>
+#include <theia/matching/feature_matcher_options.h>
+#include <theia/sfm/types.h>
+#include <theia/sfm/track.h>
+#include <theia/sfm/track_builder.h>
+#include <theia/sfm/reconstruction.h>
+#include <theia/sfm/view_graph/view_graph.h>
 #include <theia/sfm/reconstruction_estimator.h>
 #include <theia/sfm/reconstruction_estimator_options.h>
+#include <theia/sfm/reconstruction_builder.h>
 
 namespace theia {
 
-    struct RealtimeReconstructionBuilderOptions {
-        int num_threads = 4;
-
-        // Calibration
-        CameraIntrinsicsPrior intrinsics_prior;
-
-        // Feature extraction options
-        DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
-        FeatureDensity feature_density = FeatureDensity::NORMAL;
-
-        // Matching options
-        MatchingStrategy matching_strategy = MatchingStrategy::CASCADE_HASHING;
-        FeatureMatcherOptions matcher_options;
-
-        // SfM options
-        int min_track_length = 2;
-        int max_track_length = 50;
-        ReconstructionEstimatorOptions reconstruction_estimator_options;
-    };
-
     class RealtimeReconstructionBuilder {
     public:
-        explicit RealtimeReconstructionBuilder(const RealtimeReconstructionBuilderOptions& options);
+        explicit RealtimeReconstructionBuilder(const ReconstructionBuilderOptions& options,
+                                               const CameraIntrinsicsPrior& intrinsics_prior);
 
         // Builds initial reconstruction from two images
-        ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_filepath,
-                                                                const std::string& image2_filepath);
+        ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_fullpath,
+                                                                const std::string& image2_fullpath);
 
         // Adds new image to the reconstruction
-        bool ExtendReconstruction();
+        ReconstructionEstimatorSummary ExtendReconstruction(const std::string& image_fullpath);
+
+        // Check if reconstruction is initialized
+        bool IsInitialized();
 
         // Return points (eigen matrix #V x 3)
         Eigen::MatrixXd GetReconstructedPoints();
@@ -55,24 +43,34 @@ namespace theia {
         // Return camera positions (eigen matrix #C x 3)
         Eigen::MatrixXd GetCameraPositions();
 
-        // Get pointer to reconstruction object
         Reconstruction* GetReconstruction();
 
-        // Reset reconstruction
+        void ColorizeReconstruction(const std::string& images_path);
+
+        void WritePly(const std::string& output_fullpath);
+
+        void RemoveView(ViewId view_id);
+
         void ResetReconstruction();
 
+        // Print statistics
+        void PrintStatistics(std::ostream& stream, bool print_images = true, bool print_reconstruction = true,
+                             bool print_view_graph = true, bool print_feature_track_map = true);
+
     private:
-        RealtimeReconstructionBuilderOptions options_;
+        ReconstructionBuilderOptions options_;
+        CameraIntrinsicsPrior intrinsics_prior_;
 
         // Images
-        std::vector<std::string> image_filepaths_;
+        std::vector<std::string> image_filenames_;
 
         // Feature extraction and matching
         std::unique_ptr<DescriptorExtractor> descriptor_extractor_;
         std::unique_ptr<FeatureMatcher> feature_matcher_;
 
+        std::unordered_map<std::pair<ViewId, Feature>, TrackId> image_feature_to_track_id_;
+
         // SfM objects
-        std::unique_ptr<TrackBuilder> track_builder_;
         std::unique_ptr<ViewGraph> view_graph_;
         std::unique_ptr<Reconstruction> reconstruction_;
         std::unique_ptr<ReconstructionEstimator> reconstruction_estimator_;

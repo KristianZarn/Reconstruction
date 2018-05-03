@@ -24,9 +24,9 @@ int main(int argc, char *argv[]) {
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
 
     // Read the mesh
-    Eigen::MatrixXd vertices;
-    Eigen::MatrixXi faces;
-    igl::readOFF("../assets/bunny.off", vertices, faces);
+    // Eigen::MatrixXd vertices;
+    // Eigen::MatrixXi faces;
+    // igl::readOFF("../assets/bunny.off", vertices, faces);
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
@@ -69,14 +69,10 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&menu_plugin);
 
     // Attach reconstruction plugin
-    theia::RealtimeReconstructionBuilderOptions options;
-
     theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
-    options.intrinsics_prior = intrinsics_prior;
-    options.reconstruction_estimator_options.reconstruction_estimator_type =
-            theia::ReconstructionEstimatorType::INCREMENTAL;
+    theia::ReconstructionBuilderOptions options = SetReconstructionBuilderOptions();
 
-    ReconstructionPlugin reconstruction_plugin(options, images_path, reconstruction_path);
+    ReconstructionPlugin reconstruction_plugin(options, intrinsics_prior, images_path, reconstruction_path);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach camera plugin
@@ -87,7 +83,7 @@ int main(int argc, char *argv[]) {
 
     // Start viewer
     // viewer.data().set_mesh(vertices, faces);
-    viewer.data().set_vertices(vertices);
-    viewer.data().add_points(vertices, Eigen::RowVector3d(1,0,0));
+    // viewer.data().set_vertices(vertices);
+    // viewer.data().add_points(vertices, Eigen::RowVector3d(1,0,0));
     viewer.launch();
 }

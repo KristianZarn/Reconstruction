@@ -12,27 +12,21 @@
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    ReconstructionPlugin(theia::RealtimeReconstructionBuilderOptions options,
+    ReconstructionPlugin(theia::ReconstructionBuilderOptions options, theia::CameraIntrinsicsPrior intrinsics_prior,
                          std::string images_path, std::string reconstruction_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
-
     bool post_draw() override;
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
-
     bool mouse_up(int button, int modifier) override;
-
     bool mouse_move(int mouse_x, int mouse_y) override;
-
     bool mouse_scroll(float delta_y) override;
 
     // Keyboard IO
     bool key_pressed(unsigned int key, int modifiers) override;
-
     bool key_down(int key, int modifiers) override;
-
     bool key_up(int key, int modifiers) override;
 
 private:
@@ -47,8 +41,11 @@ private:
 
     // Viewer variables
     int point_size_;
+    int view_to_delete_;
 
     // Helper functions
+    void refresh_reconstruction();
+    void reset_reconstruction();
     std::string image_fullpath(int image_idx);
 };
 
