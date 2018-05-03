@@ -61,9 +61,6 @@ namespace theia {
         ReconstructionBuilderOptions options_;
         CameraIntrinsicsPrior intrinsics_prior_;
 
-        // Images
-        std::vector<std::string> image_filenames_;
-
         // Feature extraction and matching
         std::unique_ptr<DescriptorExtractor> descriptor_extractor_;
         std::unique_ptr<FeatureMatcher> feature_matcher_;

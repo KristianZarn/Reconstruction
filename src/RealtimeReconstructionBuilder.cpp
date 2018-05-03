@@ -36,22 +36,14 @@ namespace theia {
 
         ReconstructionEstimatorSummary summary;
 
-        // Check if already initialized
-        if (reconstruction_->NumViews() > 0) {
-            summary.message = "Reconstruction already initialized.";
-            return summary;
-        }
-
         // Read the images
         std::string image1_filename;
         GetFilenameFromFilepath(image1_fullpath, true, &image1_filename);
         FloatImage image1(image1_fullpath);
-        image_filenames_.push_back(image1_filename);
 
         std::string image2_filename;
         GetFilenameFromFilepath(image2_fullpath, true, &image2_filename);
         FloatImage image2(image2_fullpath);
-        image_filenames_.push_back(image2_filename);
 
         // Feature extraction
         std::vector<Keypoint> image1_keypoints;
@@ -69,11 +61,6 @@ namespace theia {
         std::vector<ImagePairMatch> matches;
         feature_matcher_->MatchImages(&matches);
 
-        if (matches.empty()) {
-            summary.message = "No matches found.";
-            return summary;
-        }
-
         // Add to reconstruction
         ViewId view1_id = reconstruction_->AddView(image1_filename, 0);
         ViewId view2_id = reconstruction_->AddView(image2_filename, 0);
@@ -86,22 +73,26 @@ namespace theia {
         *(view2->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
 
         // Add matches to view graph
-        ImagePairMatch match = matches.front();
-        view_graph_->AddEdge(view1_id, view2_id, match.twoview_info);
+        if (!matches.empty()) {
+            ImagePairMatch match = matches.front();
+            view_graph_->AddEdge(view1_id, view2_id, match.twoview_info);
 
-        // Add tracks to reconstruction
-        for (const auto& correspondence : match.correspondences) {
-            const auto image1_feature = std::make_pair(view1_id, correspondence.feature1);
-            const auto image2_feature = std::make_pair(view2_id, correspondence.feature2);
+            // Add tracks to reconstruction
+            for (const auto& correspondence : match.correspondences) {
+                const auto image1_feature = std::make_pair(view1_id, correspondence.feature1);
+                const auto image2_feature = std::make_pair(view2_id, correspondence.feature2);
 
-            // Build track
-            std::vector<std::pair<ViewId, Feature>> track;
-            track.emplace_back(image1_feature);
-            track.emplace_back(image2_feature);
+                // Build track
+                std::vector<std::pair<ViewId, Feature>> track;
+                track.emplace_back(image1_feature);
+                track.emplace_back(image2_feature);
 
-            TrackId track_id = reconstruction_->AddTrack(track);
-            image_feature_to_track_id_.insert( {image1_feature, track_id} );
-            image_feature_to_track_id_.insert( {image2_feature, track_id} );
+                TrackId track_id = reconstruction_->AddTrack(track);
+                image_feature_to_track_id_.insert( {image1_feature, track_id} );
+                image_feature_to_track_id_.insert( {image2_feature, track_id} );
+            }
+        } else {
+            summary.message = "No matches found.";
         }
 
         // Build reconstruction
@@ -114,17 +105,10 @@ namespace theia {
 
         ReconstructionEstimatorSummary summary;
 
-        // Check if initialized
-        if (reconstruction_->NumViews() == 0) {
-            summary.message = "Reconstruction not initialized yet.";
-            return summary;
-        }
-
         // Read the image
         std::string image_filename;
         GetFilenameFromFilepath(image_fullpath, true, &image_filename);
         FloatImage image(image_fullpath);
-        image_filenames_.push_back(image_filename);
 
         // Feature extraction
         std::vector<Keypoint> image_keypoints;
@@ -135,20 +119,15 @@ namespace theia {
         feature_matcher_->AddImage(image_filename, image_keypoints, image_descriptors, intrinsics_prior_);
 
         std::vector<std::pair<std::string, std::string>> pairs_to_match;
-        for (int i = 0; i < (image_filenames_.size() - 1); i++) {
-            std::pair<std::string, std::string> pair = {image_filenames_[i], image_filename};
+        for (const auto& view_id : reconstruction_->ViewIds()) {
+            std::string other_filename = reconstruction_->View(view_id)->Name();
+            std::pair<std::string, std::string> pair = {other_filename, image_filename};
             pairs_to_match.push_back(pair);
         }
         feature_matcher_->SetImagePairsToMatch(pairs_to_match);
 
         std::vector<ImagePairMatch> matches;
         feature_matcher_->MatchImages(&matches);
-
-        if (matches.empty()) {
-            image_filenames_.pop_back();
-            summary.message = "No matches found.";
-            return summary;
-        }
 
         // Add to reconstruction
         ViewId view_id = reconstruction_->AddView(image_filename, 0);
@@ -158,44 +137,48 @@ namespace theia {
         *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
 
         // Add matches to view graph
-        for (const auto& match : matches) {
-            ViewId view1_id = reconstruction_->ViewIdFromName(match.image1);
-            ViewId view2_id = reconstruction_->ViewIdFromName(match.image2);
-            view_graph_->AddEdge(view1_id, view2_id, match.twoview_info);
+        if (!matches.empty()) {
+            for (const auto& match : matches) {
+                ViewId view1_id = reconstruction_->ViewIdFromName(match.image1);
+                ViewId view2_id = reconstruction_->ViewIdFromName(match.image2);
+                view_graph_->AddEdge(view1_id, view2_id, match.twoview_info);
 
-            // Add tracks and observations to reconstruction
-            for (const auto& correspondence : match.correspondences) {
-                const auto image1_feature = std::make_pair(view1_id, correspondence.feature1);
-                const auto image2_feature = std::make_pair(view2_id, correspondence.feature2);
+                // Add tracks and observations to reconstruction
+                for (const auto& correspondence : match.correspondences) {
+                    const auto image1_feature = std::make_pair(view1_id, correspondence.feature1);
+                    const auto image2_feature = std::make_pair(view2_id, correspondence.feature2);
 
-                // Check if feature from the second view is not yet added
-                if (!image_feature_to_track_id_.count(image2_feature)) {
+                    // Check if feature from the second view is not yet added
+                    if (!image_feature_to_track_id_.count(image2_feature)) {
 
-                    // Check if feature from the first view is already added
-                    if (image_feature_to_track_id_.count(image1_feature)) {
+                        // Check if feature from the first view is already added
+                        if (image_feature_to_track_id_.count(image1_feature)) {
 
-                        // Insert feature from second view
-                        TrackId track_id = image_feature_to_track_id_[image1_feature];
+                            // Insert feature from second view
+                            TrackId track_id = image_feature_to_track_id_[image1_feature];
 
-                        // Because of outliers track may already contain the view_id we want to add,
-                        // so before adding, we check if view is already in track (or view has feature in track)
-                        if (view->GetFeature(track_id) == nullptr) {
-                            reconstruction_->AddObservation(view2_id, track_id, correspondence.feature2);
+                            // Because of outliers track may already contain the view_id we want to add,
+                            // so before adding, we check if view is already in track (or view has feature in track)
+                            if (view->GetFeature(track_id) == nullptr) {
+                                reconstruction_->AddObservation(view2_id, track_id, correspondence.feature2);
+                                image_feature_to_track_id_.insert( {image2_feature, track_id} );
+                            }
+                        } else {
+
+                            // Build track
+                            std::vector<std::pair<ViewId, Feature>> track;
+                            track.emplace_back(image1_feature);
+                            track.emplace_back(image2_feature);
+
+                            TrackId track_id = reconstruction_->AddTrack(track);
+                            image_feature_to_track_id_.insert( {image1_feature, track_id} );
                             image_feature_to_track_id_.insert( {image2_feature, track_id} );
                         }
-                    } else {
-
-                        // Build track
-                        std::vector<std::pair<ViewId, Feature>> track;
-                        track.emplace_back(image1_feature);
-                        track.emplace_back(image2_feature);
-
-                        TrackId track_id = reconstruction_->AddTrack(track);
-                        image_feature_to_track_id_.insert( {image1_feature, track_id} );
-                        image_feature_to_track_id_.insert( {image2_feature, track_id} );
                     }
                 }
             }
+        } else {
+            summary.message = "No matches found.";
         }
 
         // Build reconstruction
@@ -210,8 +193,7 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::IsInitialized() {
-        // TODO is initialized
-        return false;
+        return (reconstruction_->NumViews() > 0);
     }
 
     Eigen::MatrixXd RealtimeReconstructionBuilder::GetReconstructedPoints() {
@@ -274,33 +256,31 @@ namespace theia {
     }
 
     void RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
-        // TODO check if view_id exists
-        // Remove from image filenames
-        std::string image_filename = reconstruction_->View(view_id)->Name();
-        image_filenames_.erase(std::remove(image_filenames_.begin(), image_filenames_.end(), image_filename),
-                               image_filenames_.end());
+        const View* view = reconstruction_->View(view_id);
+        if (view != nullptr) {
 
-        // Remove from reconstruction
-        reconstruction_->RemoveView(view_id);
+            // Remove from reconstruction
+            reconstruction_->RemoveView(view_id);
 
-        // Remove tracks smaller than min_track_length
-        for (const auto& track_id : reconstruction_->TrackIds()) {
-            const Track* track = reconstruction_->Track(track_id);
-            if (track->NumViews() < options_.min_track_length) {
-                reconstruction_->RemoveTrack(track_id);
+            // Remove tracks smaller than min_track_length
+            for (const auto& track_id : reconstruction_->TrackIds()) {
+                const Track* track = reconstruction_->Track(track_id);
+                if (track->NumViews() < options_.min_track_length) {
+                    reconstruction_->RemoveTrack(track_id);
+                }
             }
-        }
 
-        // Remove view from view_graph
-        view_graph_->RemoveView(view_id);
+            // Remove view from view_graph
+            view_graph_->RemoveView(view_id);
 
-        // Remove from image_feature_to_track_id map
-        for(auto it = image_feature_to_track_id_.begin(); it != image_feature_to_track_id_.end(); ) {
-            std::pair<ViewId, Feature> key = it->first;
-            if(key.first == view_id) {
-                it = image_feature_to_track_id_.erase(it);
-            } else {
-                it++;
+            // Remove from image_feature_to_track_id map
+            for(auto it = image_feature_to_track_id_.begin(); it != image_feature_to_track_id_.end(); ) {
+                std::pair<ViewId, Feature> key = it->first;
+                if(key.first == view_id) {
+                    it = image_feature_to_track_id_.erase(it);
+                } else {
+                    it++;
+                }
             }
         }
     }
@@ -315,10 +295,9 @@ namespace theia {
                                                         bool print_images, bool print_reconstruction,
                                                         bool print_view_graph, bool print_feature_track_map) {
         if (print_images) {
-            stream << "Image filenames: ";
-            for (const auto &image_filename : image_filenames_) {
-                stream << "\n\t" << image_filename
-                       << " (id: " << reconstruction_->ViewIdFromName(image_filename) << ")";
+            stream << "Images: ";
+            for (const auto& view_id : reconstruction_->ViewIds()) {
+                stream << "\n\tid: " << view_id << ", name: " << reconstruction_->View(view_id)->Name();
             }
             stream << "\n\n";
         }
