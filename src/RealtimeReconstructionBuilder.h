@@ -17,11 +17,45 @@
 #include <theia/sfm/reconstruction_estimator_options.h>
 #include <theia/sfm/reconstruction_builder.h>
 
+#include "RealtimeFeatureMatcher.h"
+
 namespace theia {
 
     class RealtimeReconstructionBuilder {
     public:
-        explicit RealtimeReconstructionBuilder(const ReconstructionBuilderOptions& options,
+        struct Options {
+            // The random number generator used to generate random numbers through the
+            // reconstruction building process. If this is a nullptr then the random
+            // generator will be initialized based on the current time.
+            std::shared_ptr<RandomNumberGenerator> rng;
+
+            // Number of threads used.
+            int num_threads = 1;
+
+            // Minimum allowable track length. Tracks that are too short are often not
+            // well-constrained for triangulation and bundle adjustment.
+            int min_track_length = 2;
+
+            // Maximum allowable track length. Tracks that are too long are exceedingly
+            // likely to contain outliers.
+            int max_track_length = 50;
+
+            // Descriptor type for extracting features.
+            DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
+
+            // The density of features to extract. DENSE means more features are
+            // extracted per image and SPARSE means fewer features per image are
+            // extracted.
+            FeatureDensity feature_density = FeatureDensity::NORMAL;
+
+            // Options for computing matches between images.
+            RealtimeFeatureMatcher::Options matching_options;
+
+            // Options for estimating the reconstruction.
+            ReconstructionEstimatorOptions reconstruction_estimator_options;
+        };
+
+        explicit RealtimeReconstructionBuilder(const Options& options,
                                                const CameraIntrinsicsPrior& intrinsics_prior);
 
         // Builds initial reconstruction from two images
@@ -31,17 +65,7 @@ namespace theia {
         // Adds new image to the reconstruction
         ReconstructionEstimatorSummary ExtendReconstruction(const std::string& image_fullpath);
 
-        // Check if reconstruction is initialized
         bool IsInitialized();
-
-        // Return points (eigen matrix #V x 3)
-        Eigen::MatrixXd GetReconstructedPoints();
-
-        // Return point colors (eigen matrix #V x 3)
-        Eigen::MatrixXd GetPointColors();
-
-        // Return camera positions (eigen matrix #C x 3)
-        Eigen::MatrixXd GetCameraPositions();
 
         Reconstruction* GetReconstruction();
 
@@ -53,17 +77,16 @@ namespace theia {
 
         void ResetReconstruction();
 
-        // Print statistics
         void PrintStatistics(std::ostream& stream, bool print_images = true, bool print_reconstruction = true,
                              bool print_view_graph = true, bool print_feature_track_map = true);
 
     private:
-        ReconstructionBuilderOptions options_;
+        Options options_;
         CameraIntrinsicsPrior intrinsics_prior_;
 
         // Feature extraction and matching
         std::unique_ptr<DescriptorExtractor> descriptor_extractor_;
-        std::unique_ptr<FeatureMatcher> feature_matcher_;
+        std::unique_ptr<RealtimeFeatureMatcher> feature_matcher_;
 
         std::unordered_map<std::pair<ViewId, Feature>, TrackId> image_feature_to_track_id_;
 

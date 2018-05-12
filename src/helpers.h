@@ -6,7 +6,9 @@
 #include <theia/sfm/reconstruction_builder.h>
 #include <theia/sfm/reconstruction_estimator.h>
 
-theia::ReconstructionBuilderOptions SetReconstructionBuilderOptions();
+#include "RealtimeReconstructionBuilder.h"
+
+theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions();
 
 theia::CameraIntrinsicsPrior read_calibration(const std::string &filename);
 

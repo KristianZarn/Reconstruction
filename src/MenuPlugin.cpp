@@ -144,8 +144,6 @@ void MenuPlugin::draw_viewer_menu() {
     if (ImGui::CollapsingHeader("Overlays", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Wireframe", &(viewer->data().show_lines));
         ImGui::Checkbox("Fill", &(viewer->data().show_faces));
-        ImGui::Checkbox("Show vertex labels", &(viewer->data().show_vertid));
-        ImGui::Checkbox("Show faces labels", &(viewer->data().show_faceid));
     }
 }
 
@@ -208,8 +206,8 @@ void MenuPlugin::draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const st
 
     // Draw text labels slightly bigger than normal text
     ImDrawList *drawList = ImGui::GetWindowDrawList();
-    drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 1.2f,
+    drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 1.5f,
                       ImVec2(coord[0], (viewer->core.viewport[3] - coord[1])),
-                      ImGui::GetColorU32(ImVec4(0, 0, 10, 255)),
+                      ImGui::GetColorU32(ImVec4(0, 255, 0, 255)),
                       &text[0], &text[0] + text.size());
 }

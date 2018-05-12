@@ -12,7 +12,8 @@
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    ReconstructionPlugin(theia::ReconstructionBuilderOptions options, theia::CameraIntrinsicsPrior intrinsics_prior,
+    ReconstructionPlugin(theia::RealtimeReconstructionBuilder::Options options,
+                         theia::CameraIntrinsicsPrior intrinsics_prior,
                          std::string images_path, std::string reconstruction_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
@@ -30,10 +31,14 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
-    // Reconstruction
+    // Used for generating full path of images
     int next_image_id_;
+
+    // Input and output paths
     std::string images_path_;
     std::string reconstruction_path_;
+
+    // Reconstruction builder
     std::unique_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
 
     // Log
@@ -44,7 +49,7 @@ private:
     int view_to_delete_;
 
     // Helper functions
-    void refresh_reconstruction();
+    void refresh_viewer_data();
     void reset_reconstruction();
     std::string image_fullpath(int image_idx);
 };

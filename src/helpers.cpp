@@ -2,10 +2,13 @@
 
 #include <fstream>
 
-theia::ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
-    theia::ReconstructionBuilderOptions options;
+#include <theia/util/random.h>
+
+theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions() {
+    theia::RealtimeReconstructionBuilder::Options options;
+
+    options.rng = std::make_shared<theia::RandomNumberGenerator>(0);
     options.num_threads = 4;
-    options.output_matches_file = "";
 
     // Feature detection options
     options.descriptor_type = theia::DescriptorExtractorType::SIFT;
@@ -14,15 +17,13 @@ theia::ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
     // Matching options
     options.min_track_length = 2;
     options.max_track_length = 50;
-    options.matching_strategy = theia::MatchingStrategy::CASCADE_HASHING;
 
     options.matching_options.num_threads = 4;
     options.matching_options.min_num_feature_matches = 30;
-    options.matching_options.match_out_of_core = false;
-    options.matching_options.keypoints_and_descriptors_output_dir = "";
     options.matching_options.lowes_ratio = 0.8;
-    options.matching_options.keep_only_symmetric_matches = true;
     options.matching_options.perform_geometric_verification = true;
+
+    options.matching_options.geometric_verification_options.estimate_twoview_info_options.rng = options.rng;
     options.matching_options.geometric_verification_options.estimate_twoview_info_options.max_sampson_error_pixels = 4.0;
     options.matching_options.geometric_verification_options.bundle_adjustment = true;
     options.matching_options.geometric_verification_options.triangulation_max_reprojection_error = 15.0;
@@ -31,6 +32,8 @@ theia::ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
     // Reconstruction Estimator Options.
     theia::ReconstructionEstimatorOptions& reconstruction_estimator_options = options.reconstruction_estimator_options;
+
+    reconstruction_estimator_options.rng = options.rng;
     reconstruction_estimator_options.num_threads = 4;
     reconstruction_estimator_options.min_num_two_view_inliers = 30;
     reconstruction_estimator_options.intrinsics_to_optimize = theia::OptimizeIntrinsicsType::FOCAL_LENGTH;
@@ -59,6 +62,7 @@ theia::ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
     reconstruction_estimator_options.track_subset_selection_long_track_length_threshold = 10;
     reconstruction_estimator_options.track_selection_image_grid_cell_size_pixels = 100;
     reconstruction_estimator_options.min_num_optimized_tracks_per_view = 100;
+
     return options;
 }
 

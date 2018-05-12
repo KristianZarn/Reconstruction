@@ -1,5 +1,4 @@
 #include "RealtimeReconstructionBuilder.h"
-
 #include <algorithm>
 
 #include <theia/util/filesystem.h>
@@ -13,7 +12,7 @@
 
 namespace theia {
 
-    RealtimeReconstructionBuilder::RealtimeReconstructionBuilder(const theia::ReconstructionBuilderOptions& options,
+    RealtimeReconstructionBuilder::RealtimeReconstructionBuilder(const Options& options,
                                                                  const CameraIntrinsicsPrior& intrinsics_prior)
             : options_(options), intrinsics_prior_(intrinsics_prior) {
 
@@ -22,7 +21,7 @@ namespace theia {
         descriptor_extractor_->Initialize();
 
         // Initialize matcher
-        feature_matcher_ = CreateFeatureMatcher(options_.matching_strategy, options_.matching_options);
+        feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, intrinsics_prior_);
 
         // Initialize SfM objects
         view_graph_ = std::make_unique<ViewGraph>();
@@ -55,11 +54,13 @@ namespace theia {
         descriptor_extractor_->DetectAndExtractDescriptors(image2, &image2_keypoints, &image2_descriptors);
 
         // Feature matching
-        feature_matcher_->AddImage(image1_filename, image1_keypoints, image1_descriptors, intrinsics_prior_);
-        feature_matcher_->AddImage(image2_filename, image2_keypoints, image2_descriptors, intrinsics_prior_);
+        feature_matcher_->AddImage(image1_filename, image1_keypoints, image1_descriptors);
+        feature_matcher_->AddImage(image2_filename, image2_keypoints, image2_descriptors);
 
         std::vector<ImagePairMatch> matches;
-        feature_matcher_->MatchImages(&matches);
+        std::vector<std::pair<std::string, std::string>> pairs_to_match;
+        pairs_to_match.emplace_back(std::make_pair(image1_filename, image2_filename));
+        feature_matcher_->MatchImages(&matches, pairs_to_match);
 
         // Add to reconstruction
         ViewId view1_id = reconstruction_->AddView(image1_filename, 0);
@@ -116,18 +117,16 @@ namespace theia {
         descriptor_extractor_->DetectAndExtractDescriptors(image, &image_keypoints, &image_descriptors);
 
         // Feature matching
-        feature_matcher_->AddImage(image_filename, image_keypoints, image_descriptors, intrinsics_prior_);
+        feature_matcher_->AddImage(image_filename, image_keypoints, image_descriptors);
 
         std::vector<std::pair<std::string, std::string>> pairs_to_match;
         for (const auto& view_id : reconstruction_->ViewIds()) {
             std::string other_filename = reconstruction_->View(view_id)->Name();
-            std::pair<std::string, std::string> pair = {other_filename, image_filename};
-            pairs_to_match.push_back(pair);
+            pairs_to_match.emplace_back(std::make_pair(other_filename, image_filename));
         }
-        feature_matcher_->SetImagePairsToMatch(pairs_to_match);
 
         std::vector<ImagePairMatch> matches;
-        feature_matcher_->MatchImages(&matches);
+        feature_matcher_->MatchImages(&matches, pairs_to_match);
 
         // Add to reconstruction
         ViewId view_id = reconstruction_->AddView(image_filename, 0);
@@ -184,9 +183,10 @@ namespace theia {
         // Build reconstruction
         summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
-        // TODO: remove after debugging
+        // Check if view was added successfully
         if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
-            std::cout << "debug" << std::endl;
+            summary.success = false;
+            summary.message = "View could not be added.";
         }
 
         return summary;
@@ -194,53 +194,6 @@ namespace theia {
 
     bool RealtimeReconstructionBuilder::IsInitialized() {
         return (reconstruction_->NumViews() > 0);
-    }
-
-    Eigen::MatrixXd RealtimeReconstructionBuilder::GetReconstructedPoints() {
-        int num_points = reconstruction_->NumTracks();
-        std::vector<TrackId> track_ids = reconstruction_->TrackIds();
-        Eigen::MatrixXd points(num_points, 3);
-
-        for (int i = 0; i < num_points; i++) {
-            const Track* track = reconstruction_->Track(track_ids[i]);
-            Eigen::Vector3d point = track->Point().hnormalized();
-            points(i, 0) = point(0);
-            points(i, 1) = point(1);
-            points(i, 2) = point(2);
-        }
-
-        return points;
-    }
-
-    Eigen::MatrixXd RealtimeReconstructionBuilder::GetPointColors() {
-        int num_points = reconstruction_->NumTracks();
-        std::vector<TrackId> track_ids = reconstruction_->TrackIds();
-        Eigen::MatrixXd colors(num_points, 3);
-
-        for (int i = 0; i < num_points; i++) {
-            const Track* track = reconstruction_->Track(track_ids[i]);
-            Eigen::Matrix<uint8_t, 3, 1> color = track->Color();
-            colors(i, 0) = color(0);
-            colors(i, 1) = color(1);
-            colors(i, 2) = color(2);
-        }
-
-        return colors;
-    }
-
-    Eigen::MatrixXd RealtimeReconstructionBuilder::GetCameraPositions() {
-        int num_views = reconstruction_->NumViews();
-        std::vector<ViewId> view_ids = reconstruction_->ViewIds();
-        Eigen::MatrixXd cameras(num_views, 3);
-
-        for (int i = 0; i < num_views; i++) {
-            Eigen::Vector3d position = reconstruction_->View(view_ids[i])->Camera().GetPosition();
-            cameras(i, 0) = position(0);
-            cameras(i, 1) = position(1);
-            cameras(i, 2) = position(2);
-        }
-
-        return cameras;
     }
 
     Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
@@ -258,6 +211,9 @@ namespace theia {
     void RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
+
+            // Remove from matcher
+            feature_matcher_->RemoveImage(reconstruction_->View(view_id)->Name());
 
             // Remove from reconstruction
             reconstruction_->RemoveView(view_id);
@@ -328,5 +284,5 @@ namespace theia {
             stream << "\n\tNum elements = " << image_feature_to_track_id_.size() << "\n\n";
         }
     }
-}
 
+} // namespace theia

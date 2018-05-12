@@ -11,15 +11,16 @@
 #include <imgui_impl_glfw_gl3.h>
 #include "theia/sfm/reconstruction.h"
 #include <theia/sfm/reconstruction_estimator.h>
+#include <theia/sfm/reconstruction_estimator_utils.h>
 
-ReconstructionPlugin::ReconstructionPlugin(theia::ReconstructionBuilderOptions options,
+ReconstructionPlugin::ReconstructionPlugin(theia::RealtimeReconstructionBuilder::Options options,
                                            theia::CameraIntrinsicsPrior intrinsics_prior,
-                                           std::string images_path,
-                                           std::string reconstruction_path)
+                                           std::string images_path, std::string reconstruction_path)
         : next_image_id_(0),
           images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
-          point_size_(3) {
+          point_size_(3),
+          view_to_delete_(0) {
     reconstruction_builder_ = std::make_unique<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior);
 }
 
@@ -60,7 +61,7 @@ bool ReconstructionPlugin::post_draw() {
         // Reconstruction summary
         if (summary.success) {
             reconstruction_builder_->PrintStatistics(log_stream_);
-            refresh_reconstruction();
+            refresh_viewer_data();
         } else {
             log_stream_ << "Initialization failed: \n";
             log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
@@ -75,6 +76,7 @@ bool ReconstructionPlugin::post_draw() {
         // TODO: Check if image exist (+print used image name)
         // Image for extend
         std::string image = image_fullpath(next_image_id_);
+        next_image_id_++;
 
         // Extend reconstruction
         log_stream_ << "Extending reconstruction" << std::endl;
@@ -82,7 +84,6 @@ bool ReconstructionPlugin::post_draw() {
 
         theia::ReconstructionEstimatorSummary summary =
                 reconstruction_builder_->ExtendReconstruction(image);
-        reconstruction_builder_->PrintStatistics(log_stream_);
 
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -91,7 +92,7 @@ bool ReconstructionPlugin::post_draw() {
         // Reconstruction summary
         if (summary.success) {
             reconstruction_builder_->PrintStatistics(log_stream_);
-            refresh_reconstruction();
+            refresh_viewer_data();
         } else {
             log_stream_ << "Extend failed: \n";
             log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
@@ -110,7 +111,7 @@ bool ReconstructionPlugin::post_draw() {
         log_stream_ << "View with id = " << view_to_delete_ << " removed." << std::endl;
         reconstruction_builder_->RemoveView(static_cast<theia::ViewId>(view_to_delete_));
         reconstruction_builder_->PrintStatistics(log_stream_);
-        refresh_reconstruction();
+        refresh_viewer_data();
     }
     if (ImGui::Button("Remove last view", ImVec2(-1, 0))) {
         // TODO remove last view
@@ -131,6 +132,9 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::SliderInt("Point size", &point_size_, 1, 10);
     if (viewer->data().point_size != point_size_) {
         viewer->data().point_size = point_size_;
+    }
+    if (ImGui::Button("Refresh reconstruction")) {
+        refresh_viewer_data();
     }
     ImGui::Spacing();
 
@@ -153,18 +157,57 @@ bool ReconstructionPlugin::post_draw() {
     return false;
 }
 
-void ReconstructionPlugin::refresh_reconstruction() {
+void ReconstructionPlugin::refresh_viewer_data() {
     reconstruction_builder_->ColorizeReconstruction(images_path_);
+    theia::Reconstruction* reconstruction = reconstruction_builder_->GetReconstruction();
 
-    Eigen::MatrixXd points = reconstruction_builder_->GetReconstructedPoints();
-    Eigen::MatrixXd colors = reconstruction_builder_->GetPointColors();
+    // Add points and colors
+    std::unordered_set<theia::TrackId> track_ids;
+    theia::GetEstimatedTracksFromReconstruction(*reconstruction, &track_ids);
+
+    auto num_points = static_cast<int>(track_ids.size());
+    Eigen::MatrixXd points(num_points, 3);
+    Eigen::MatrixXd colors(num_points, 3);
+
+    int i = 0;
+    for (const auto& track_id : track_ids) {
+        const theia::Track* track = reconstruction->Track(track_id);
+
+        Eigen::Vector3d point = track->Point().hnormalized();
+        points(i, 0) = point(0);
+        points(i, 1) = point(1);
+        points(i, 2) = point(2);
+
+        Eigen::Matrix<uint8_t, 3, 1> color = track->Color();
+        colors(i, 0) = color(0);
+        colors(i, 1) = color(1);
+        colors(i, 2) = color(2);
+
+        i++;
+    }
     colors = colors / 255.0;
 
     viewer->data().clear();
     viewer->data().set_points(points, colors);
 
-    // Show cameras
-    Eigen::MatrixXd cameras = reconstruction_builder_->GetCameraPositions();
+    // Add cameras
+    std::unordered_set<theia::ViewId> view_ids;
+    theia::GetEstimatedViewsFromReconstruction(*reconstruction, &view_ids);
+
+    auto num_views = static_cast<int>(view_ids.size());
+    Eigen::MatrixXd cameras(num_views, 3);
+
+    i = 0;
+    for (const auto& view_id : view_ids) {
+        Eigen::Vector3d position = reconstruction->View(view_id)->Camera().GetPosition();
+        cameras(i, 0) = position(0);
+        cameras(i, 1) = position(1);
+        cameras(i, 2) = position(2);
+
+        // Add camera label
+        viewer->data().add_label(position, std::to_string(view_id));
+        i++;
+    }
     viewer->data().add_points(cameras, Eigen::RowVector3d(0, 1, 0));
 
     // Center object

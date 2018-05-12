@@ -63,6 +63,7 @@ add_executable(realtime_reconstruction
         src/MenuPlugin.cpp
         src/CameraPlugin.cpp
         src/RealtimeReconstructionBuilder.cpp
+        src/RealtimeFeatureMatcher.cpp
         src/ReconstructionPlugin.cpp)
 
 target_compile_definitions(realtime_reconstruction PRIVATE -DIGL_STATIC_LIBRARY)

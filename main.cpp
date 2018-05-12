@@ -14,19 +14,17 @@
 int main(int argc, char *argv[]) {
 
     // Initialization
-    std::string camera_device = "/dev/video0";
-    // std::string images_path = "../webcam_images/";
-    // std::string reconstruction_path = "../webcam_reconstruction/";
+    std::string camera_device = "/dev/video1";
+    std::string images_path = "../dataset/webcam_images/";
+    std::string reconstruction_path = "../dataset/webcam_reconstruction/";
 
-    std::string images_path = "../castle_images/";
-    std::string reconstruction_path = "../castle_reconstruction/";
+    // std::string images_path = "../dataset/castle_images/";
+    // std::string reconstruction_path = "../dataset/castle_reconstruction/";
+
+    // std::string images_path = "../dataset/vrc_images/";
+    // std::string reconstruction_path = "../dataset/vrc_reconstruction/";
 
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
-
-    // Read the mesh
-    // Eigen::MatrixXd vertices;
-    // Eigen::MatrixXi faces;
-    // igl::readOFF("../assets/bunny.off", vertices, faces);
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
@@ -70,20 +68,17 @@ int main(int argc, char *argv[]) {
 
     // Attach reconstruction plugin
     theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
-    theia::ReconstructionBuilderOptions options = SetReconstructionBuilderOptions();
+    theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
     ReconstructionPlugin reconstruction_plugin(options, intrinsics_prior, images_path, reconstruction_path);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach camera plugin
-    // int image_width = intrinsics_prior.image_width;
-    // int image_height = intrinsics_prior.image_height;
-    // CameraPlugin camera_plugin(camera_device, image_width, image_height, images_path);
-    // viewer.plugins.push_back(&camera_plugin);
+    int image_width = intrinsics_prior.image_width;
+    int image_height = intrinsics_prior.image_height;
+    CameraPlugin camera_plugin(camera_device, image_width, image_height, images_path);
+    viewer.plugins.push_back(&camera_plugin);
 
     // Start viewer
-    // viewer.data().set_mesh(vertices, faces);
-    // viewer.data().set_vertices(vertices);
-    // viewer.data().add_points(vertices, Eigen::RowVector3d(1,0,0));
     viewer.launch();
 }
