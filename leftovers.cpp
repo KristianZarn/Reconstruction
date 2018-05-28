@@ -72,3 +72,21 @@ igl::readOFF("../assets/bunny.off", vertices, faces);
 viewer.data().set_mesh(vertices, faces);
 viewer.data().set_vertices(vertices);
 viewer.data().add_points(vertices, Eigen::RowVector3d(1,0,0));
+
+
+
+std::string ReconstructionPlugin::image_fullpath(int image_idx) {
+    std::stringstream ss;
+    ss << std::setw(3) << std::setfill('0') << std::to_string(image_idx);
+    std::string fullpath = images_path_ + "frame" + ss.str() + ".png";
+    return fullpath;
+}
+
+// Save the final mesh
+mvs_scene_.Save(mvs_scene_mesh_file);
+mvs_scene_.mesh.Save(ply_file);
+
+// Extra cleaning trying to close more holes
+// mvs_scene.mesh.Clean(1.f, 0.f, remove_spikes, close_holes, 0, false);
+// Extra cleaning to remove non-manifold problems created by closing holes
+// mvs_scene.mesh.Clean(1.f, 0.f, false, 0, 0, true);

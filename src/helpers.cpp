@@ -66,7 +66,7 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
     return options;
 }
 
-theia::CameraIntrinsicsPrior read_calibration(const std::string &filename) {
+theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename) {
     // Read calibration from file into vector
     std::vector<double> calib;
     std::ifstream infile(filename);
@@ -134,4 +134,93 @@ void PrintReconstructionSummary(const theia::ReconstructionEstimatorSummary& sum
         std::cout << "Summary: reconstruction failed: \n";
         std::cout << "\n\tMessage = " << summary.message << "\n\n";
     }
+}
+
+bool theia_to_mvs(const theia::Reconstruction& reconstruction,
+                  const std::string& images_path,
+                  MVS::Scene& mvs_scene) {
+
+    // Map from Theia view_id to MVS vector index
+    std::unordered_map<theia::ViewId, int> viewid_to_imageidx;
+
+    // Define platform and camera
+    for (const auto& group_id : reconstruction.CameraIntrinsicsGroupIds()) {
+        MVS::Platform& platform = mvs_scene.platforms.AddEmpty();
+        MVS::Platform::Camera& camera = platform.cameras.AddEmpty();
+
+        // Get camera intrinsics from Theia view
+        std::unordered_set<theia::ViewId> view_ids = reconstruction.GetViewsInCameraIntrinsicGroup(group_id);
+        const theia::View* tmp_view = reconstruction.View(*(view_ids.begin()));
+        Eigen::Matrix3d K;
+        tmp_view->Camera().GetCalibrationMatrix(&K);
+
+        // Normalize camera intrinsics
+        double scale = 1.0 / std::max(tmp_view->Camera().ImageWidth(), tmp_view->Camera().ImageHeight());
+        camera.K = K;
+        camera.K(0, 0) *= scale;
+        camera.K(1, 1) *= scale;
+        camera.K(0, 2) *= scale;
+        camera.K(1, 2) *= scale;
+        Matrix3x3 tmp_mat;
+        tmp_mat = Eigen::Matrix3d::Identity();
+        camera.R = tmp_mat;
+        camera.C = Eigen::Vector3d::Zero();
+
+        // Define images and poses
+        for (const auto& view_id : view_ids) {
+            const theia::View* view = reconstruction.View(view_id);
+
+            if (view->IsEstimated()) {
+                const std::string image_fullpath = images_path + view->Name();
+                auto idx = static_cast<int>(mvs_scene.images.size());
+                viewid_to_imageidx[view_id] = idx;
+
+                MVS::Image& image = mvs_scene.images.AddEmpty();
+                image.name = image_fullpath;
+                image.platformID = group_id;
+                image.cameraID = 0;
+                image.poseID = static_cast<uint32_t>(platform.poses.size());
+                image.width = static_cast<uint32_t>(view->Camera().ImageWidth());
+                image.height = static_cast<uint32_t>(view->Camera().ImageHeight());
+                image.scale = 1;
+
+                MVS::Platform::Pose& pose = platform.poses.AddEmpty();
+                Matrix3x3 tmp_mat;
+                tmp_mat = view->Camera().GetOrientationAsRotationMatrix();
+                pose.R = tmp_mat;
+                pose.C = view->Camera().GetPosition();
+
+                image.UpdateCamera(mvs_scene.platforms);
+            }
+        }
+    }
+
+    // Define structure
+    for (const auto& track_id : reconstruction.TrackIds()) {
+        const theia::Track* track = reconstruction.Track(track_id);
+
+        if (track->IsEstimated()) {
+
+            // Set position
+            MVS::PointCloud::Point& point = mvs_scene.pointcloud.points.AddEmpty();
+            point = track->Point().hnormalized().cast<float>();
+
+            // Set views that see the point
+            MVS::PointCloud::ViewArr& views = mvs_scene.pointcloud.pointViews.AddEmpty();
+
+            std::vector<uint32_t> tmp;
+            for (const auto& view_id : track->ViewIds()) {
+                auto image_id = static_cast<uint32_t>(viewid_to_imageidx[view_id]);
+                tmp.push_back(image_id);
+            }
+            std::sort(tmp.begin(), tmp.end());
+
+            for (const auto& view_id : tmp) {
+                MVS::PointCloud::View& view = views.AddEmpty();
+                view = view_id;
+            }
+            // TODO: Set point color
+        }
+    }
+    return true;
 }

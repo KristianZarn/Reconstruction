@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 3.10)
-project(realtime_reconstruction)
+project(realtime_reconstruction_theia)
 
 set(CMAKE_CXX_STANDARD 17)
 
 # LIBRARIES
 
-# X11 library
+# Basic libraries needed by others
 find_package(X11 REQUIRED)
-
-# pThreads library
 find_package(Threads REQUIRED)
+find_package(OpenMP REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-# Libigl library
+# Find libigl includes and library on disk
 find_path(LIBIGL_INCLUDE_DIR igl/readOBJ.h
         PATHS $ENV{HOME}/Sources/libigl
         PATH_SUFFIXES include)
@@ -47,15 +47,15 @@ set_property(TARGET glfw3 PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libglfw3
 add_library(imgui STATIC IMPORTED)
 set_property(TARGET imgui PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libimgui.a)
 
-# Theia library
+# Theia
 find_package(Theia REQUIRED)
 
-# Eigen library
-find_package(Eigen3 REQUIRED)
+# OpenMVS and dependencies
+find_package(CUDA REQUIRED)
+find_package(CGAL REQUIRED)
+find_package(OpenMVS REQUIRED)
 
 # TARGETS
-
-# Main realtime reconstruction target
 add_executable(realtime_reconstruction
         main.cpp
         src/helpers.cpp
@@ -78,7 +78,8 @@ target_include_directories(realtime_reconstruction
         $ENV{HOME}/Sources/libigl/external/glfw/include
         ${LIBIGL_INCLUDE_DIR}
         ${THEIA_INCLUDE_DIRS}
-        ${EIGEN3_INCLUDE_DIR})
+        ${OpenMVS_INCLUDE_DIRS}
+        ${CUDA_INCLUDE_DIRS})
 
 target_link_libraries(realtime_reconstruction
         igl::png
@@ -93,4 +94,6 @@ target_link_libraries(realtime_reconstruction
         ${CMAKE_DL_LIBS}
         ${X11_LIBRARIES}
         Threads::Threads
-        ${THEIA_LIBRARIES})
+        ${THEIA_LIBRARIES}
+        ${OpenMVS_LIBRARIES}
+        ${CUDA_LIBRARIES})

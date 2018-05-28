@@ -14,15 +14,19 @@
 int main(int argc, char *argv[]) {
 
     // Initialization
-    std::string camera_device = "/dev/video1";
-    std::string images_path = "../dataset/webcam_images/";
-    std::string reconstruction_path = "../dataset/webcam_reconstruction/";
+    std::string camera_device = "/dev/video0";
+    // std::string images_path = "../dataset/webcam_images/";
+    // std::string reconstruction_path = "../dataset/webcam_reconstruction/";
 
-    // std::string images_path = "../dataset/castle_images/";
-    // std::string reconstruction_path = "../dataset/castle_reconstruction/";
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/castle_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/castle_reconstruction/";
 
-    // std::string images_path = "../dataset/vrc_images/";
-    // std::string reconstruction_path = "../dataset/vrc_reconstruction/";
+    std::string images_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_images/";
+    std::string reconstruction_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_reconstruction/";
 
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
 
@@ -67,17 +71,26 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&menu_plugin);
 
     // Attach reconstruction plugin
-    theia::CameraIntrinsicsPrior intrinsics_prior = read_calibration(calibration_file);
+    ReconstructionPlugin::Parameters parameters;
+    theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
-    ReconstructionPlugin reconstruction_plugin(options, intrinsics_prior, images_path, reconstruction_path);
+    std::vector<std::string> image_names;
+    for (int i = 0; i < 20; i++) {
+        std::stringstream ss;
+        ss << std::setw(3) << std::setfill('0') << std::to_string(i);
+        image_names.emplace_back("frame" + ss.str() + ".png");
+    }
+
+    ReconstructionPlugin reconstruction_plugin(
+            parameters, images_path, image_names, reconstruction_path, options, intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach camera plugin
-    int image_width = intrinsics_prior.image_width;
-    int image_height = intrinsics_prior.image_height;
-    CameraPlugin camera_plugin(camera_device, image_width, image_height, images_path);
-    viewer.plugins.push_back(&camera_plugin);
+    // int image_width = intrinsics_prior.image_width;
+    // int image_height = intrinsics_prior.image_height;
+    // CameraPlugin camera_plugin(camera_device, image_width, image_height, images_path);
+    // viewer.plugins.push_back(&camera_plugin);
 
     // Start viewer
     viewer.launch();
