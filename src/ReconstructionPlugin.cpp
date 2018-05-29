@@ -19,13 +19,13 @@
 
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
-                                           std::vector<std::string> image_names,
+                                           const std::vector<std::string>& image_names,
                                            std::string reconstruction_path,
                                            theia::RealtimeReconstructionBuilder::Options options,
                                            theia::CameraIntrinsicsPrior intrinsics_prior)
         : parameters_(parameters),
           images_path_(std::move(images_path)),
-          image_names_(std::move(image_names)),
+          image_names_(image_names),
           reconstruction_path_(std::move(reconstruction_path)),
           reconstruction_builder_(options, intrinsics_prior),
           mvs_scene_(static_cast<unsigned int>(options.num_threads)) {}

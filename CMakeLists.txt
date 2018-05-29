@@ -56,44 +56,50 @@ find_package(CGAL REQUIRED)
 find_package(OpenMVS REQUIRED)
 
 # TARGETS
-add_executable(realtime_reconstruction
-        main.cpp
-        src/helpers.cpp
-        src/webcam.cpp
-        src/MenuPlugin.cpp
-        src/CameraPlugin.cpp
-        src/RealtimeReconstructionBuilder.cpp
-        src/RealtimeFeatureMatcher.cpp
-        src/ReconstructionPlugin.cpp)
+set(SOURCE_FILES
+    src/helpers.cpp
+    src/webcam.cpp
+    src/MenuPlugin.cpp
+    src/CameraPlugin.cpp
+    src/RealtimeReconstructionBuilder.cpp
+    src/RealtimeFeatureMatcher.cpp
+    src/ReconstructionPlugin.cpp)
 
-target_compile_definitions(realtime_reconstruction PRIVATE -DIGL_STATIC_LIBRARY)
+set(INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/src
+    $ENV{HOME}/Sources/libigl/external/imgui
+    $ENV{HOME}/Sources/libigl/external/stb_image
+    $ENV{HOME}/Sources/libigl/optional/build/stb_image
+    $ENV{HOME}/Sources/libigl/external/glad/include
+    $ENV{HOME}/Sources/libigl/external/glfw/include
+    ${LIBIGL_INCLUDE_DIR}
+    ${THEIA_INCLUDE_DIRS}
+    ${OpenMVS_INCLUDE_DIRS}
+    ${CUDA_INCLUDE_DIRS})
 
-target_include_directories(realtime_reconstruction
-        PUBLIC
-        ${CMAKE_SOURCE_DIR}/src
-        $ENV{HOME}/Sources/libigl/external/imgui
-        $ENV{HOME}/Sources/libigl/external/stb_image
-        $ENV{HOME}/Sources/libigl/optional/build/stb_image
-        $ENV{HOME}/Sources/libigl/external/glad/include
-        $ENV{HOME}/Sources/libigl/external/glfw/include
-        ${LIBIGL_INCLUDE_DIR}
-        ${THEIA_INCLUDE_DIRS}
-        ${OpenMVS_INCLUDE_DIRS}
-        ${CUDA_INCLUDE_DIRS})
+set(LIBRARIES
+    igl::png
+    igl::stb_image
+    igl::opengl_glfw_imgui
+    igl::opengl_glfw
+    igl::opengl
+    igl::core
+    imgui
+    glfw3
+    glad
+    ${CMAKE_DL_LIBS}
+    ${X11_LIBRARIES}
+    Threads::Threads
+    ${THEIA_LIBRARIES}
+    ${OpenMVS_LIBRARIES}
+    ${CUDA_LIBRARIES})
 
-target_link_libraries(realtime_reconstruction
-        igl::png
-        igl::stb_image
-        igl::opengl_glfw_imgui
-        igl::opengl_glfw
-        igl::opengl
-        igl::core
-        imgui
-        glfw3
-        glad
-        ${CMAKE_DL_LIBS}
-        ${X11_LIBRARIES}
-        Threads::Threads
-        ${THEIA_LIBRARIES}
-        ${OpenMVS_LIBRARIES}
-        ${CUDA_LIBRARIES})
+add_executable(realtime_reconstruction_disk main_disk.cpp ${SOURCE_FILES})
+target_compile_definitions(realtime_reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY)
+target_include_directories(realtime_reconstruction_disk PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(realtime_reconstruction_disk ${LIBRARIES})
+
+add_executable(realtime_reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
+target_compile_definitions(realtime_reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY)
+target_include_directories(realtime_reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(realtime_reconstruction_webcam ${LIBRARIES})

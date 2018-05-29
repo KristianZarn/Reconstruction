@@ -69,7 +69,7 @@ public:
 
     ReconstructionPlugin(Parameters parameters,
                          std::string images_path,
-                         std::vector<std::string> image_names,
+                         const std::vector<std::string>& image_names,
                          std::string reconstruction_path,
                          theia::RealtimeReconstructionBuilder::Options options,
                          theia::CameraIntrinsicsPrior intrinsics_prior);
@@ -94,7 +94,7 @@ private:
 
     // Input and output paths
     std::string images_path_;
-    std::vector<std::string> image_names_;
+    const std::vector<std::string>& image_names_;
     std::string reconstruction_path_;
 
     // Reconstruction

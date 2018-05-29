@@ -11,12 +11,13 @@
 #include <igl_stb_image.h>
 #include <Eigen/Core>
 
-CameraPlugin::CameraPlugin(std::string device, int width, int height, std::string output_path)
-        : device_string_(std::move(device)), image_width_(width), image_height_(height), output_path_(std::move(output_path)) {
-    webcam_ = std::make_unique<Webcam>(device_string_, image_width_, image_height_);
-    camera_message_ = "";
-    saved_frames_count_ = 0;
-}
+CameraPlugin::CameraPlugin(std::string device, int width, int height, std::string images_path)
+        : device_string_(std::move(device)),
+          image_width_(width),
+          image_height_(height),
+          images_path_(std::move(images_path)),
+          webcam_(device_string_, image_width_, image_height_),
+          saved_frames_count_(0) {}
 
 void CameraPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -39,7 +40,7 @@ bool CameraPlugin::post_draw() {
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Get frame from webcam
-    auto frame = webcam_->frame();
+    auto frame = webcam_.frame();
 
     // Replace texture with new frame
     glBindTexture(GL_TEXTURE_2D, textureID_);
@@ -56,12 +57,14 @@ bool CameraPlugin::post_draw() {
         // Store frame on disk
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count_);
-        std::string filename = output_path_ + "frame" + ss.str() + ".png";
+        std::string filename = "frame" + ss.str() + ".png";
+        std::string fullname = images_path_ + filename;
 
         int channels = 3;
-        igl::stbi_write_png(filename.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
+        igl::stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
 
-        camera_message_ = "Image saved to: " + filename;
+        image_names_.push_back(filename);
+        camera_message_ = "Image saved to: " + fullname;
         saved_frames_count_++;
     }
 
@@ -71,6 +74,11 @@ bool CameraPlugin::post_draw() {
     ImGui::End();
     return false;
 }
+
+const std::vector<std::string>& CameraPlugin::get_captured_image_names() {
+    return image_names_;
+}
+
 
 // Mouse IO
 bool CameraPlugin::mouse_down(int button, int modifier)
