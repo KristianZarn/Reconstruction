@@ -17,11 +17,6 @@
 
 #include "helpers.h"
 
-// TODO: remove after fixing texture
-#include <igl/readOBJ.h>
-#include <igl/png/readPNG.h>
-#include <theia/image/image.h>
-
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
                                            std::vector<std::string> image_names,
@@ -114,10 +109,6 @@ bool ReconstructionPlugin::post_draw() {
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
     }
     ImGui::Spacing();
-
-    if (ImGui::Button("Testing", ImVec2(-1, 0))) {
-        testing_callback();
-    }
 
     ImGui::End();
     return false;
@@ -238,7 +229,6 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     // Clean the mesh
     mvs_scene_.mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
                           parameters_.close_holes, parameters_.smooth_mesh, false);
-
     show_mesh();
 }
 
@@ -257,47 +247,10 @@ void ReconstructionPlugin::texture_mesh_callback() {
                                parameters_.texture_size_multiple,
                                parameters_.patch_packing_heuristic,
                                Pixel8U(parameters_.empty_color));
+        show_mesh();
     } else {
         log_stream_ << "Texturing failed: Mesh is empty." << std::endl;
     }
-}
-
-void ReconstructionPlugin::testing_callback() {
-    std::string filename = "mesh.obj";
-    mvs_scene_.mesh.Save(reconstruction_path_ + filename);
-
-    Eigen::MatrixXd V;
-    Eigen::MatrixXd TC;
-    Eigen::MatrixXd N;
-    Eigen::MatrixXi F;
-    Eigen::MatrixXi FTC;
-    Eigen::MatrixXi FN;
-    igl::readOBJ(reconstruction_path_ + filename, V, TC, N, F, FTC, FN);
-
-    viewer->data().show_texture = true;
-    viewer->data().clear();
-    viewer->data().set_mesh(V, F);
-    viewer->data().set_uv(TC, FTC);
-
-    std::string tex_filename = reconstruction_path_ + "mesh_material_0_map_Kd.jpg";
-    theia::FloatImage img(tex_filename);
-
-    int width = img.Width();
-    int height = img.Height();
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> R(width, height);
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> G(width, height);
-    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> B(width, height);
-
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            R(i, (height - 1) - j) = static_cast<unsigned char>(img.GetXY(i, j, 0) * 255);
-            G(i, (height - 1) - j) = static_cast<unsigned char>(img.GetXY(i, j, 1) * 255);
-            B(i, (height - 1) - j) = static_cast<unsigned char>(img.GetXY(i, j, 2) * 255);
-        }
-    }
-
-    viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
-    viewer->data().set_texture(R, G, B);
 }
 
 void ReconstructionPlugin::show_point_cloud() {
@@ -379,6 +332,49 @@ void ReconstructionPlugin::show_mesh() {
     }
     viewer->data().set_mesh(V, F);
 
+    // Add texture if available
+    if (!mvs_scene_.mesh.faceTexcoords.IsEmpty()) {
+
+        // Set UVs
+        int num_texcoords = mvs_scene_.mesh.faceTexcoords.size();
+        Eigen::MatrixXd TC(num_texcoords, 2);
+        for (int i = 0; i < num_texcoords; i++) {
+            MVS::Mesh::TexCoord texcoord = mvs_scene_.mesh.faceTexcoords[i];
+            TC(i, 0) = texcoord[0];
+            TC(i, 1) = texcoord[1];
+        }
+        Eigen::MatrixXi FTC(num_faces, 3);
+        for (int i = 0; i < num_faces; i++) {
+            FTC(i, 0) = i*3 + 0;
+            FTC(i, 1) = i*3 + 1;
+            FTC(i, 2) = i*3 + 2;
+        }
+        viewer->data().set_uv(TC, FTC);
+
+        // Set texture
+        SEACAVE::Image8U3 img = mvs_scene_.mesh.textureDiffuse;
+        int width = img.width();
+        int height = img.height();
+        Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> R(width, height);
+        Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> G(width, height);
+        Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> B(width, height);
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                Pixel8U pixel = img.getPixel(j, i);
+                R(i, (height - 1) - j) = pixel.r;
+                G(i, (height - 1) - j) = pixel.g;
+                B(i, (height - 1) - j) = pixel.b;
+            }
+        }
+
+        viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
+        viewer->data().set_texture(R, G, B);
+        viewer->data().show_texture = true;
+    } else {
+        viewer->data().show_texture = false;
+    }
+
     // Add cameras
     auto num_views = static_cast<int>(mvs_scene_.platforms.front().poses.size());
     Eigen::MatrixXd cameras(num_views, 3);
@@ -391,13 +387,10 @@ void ReconstructionPlugin::show_mesh() {
         cameras(i, 2) = position(2);
 
         // Add camera label
-        viewer->data().add_label(position, std::to_string(i)); // TODO: fix labels?
+        viewer->data().add_label(position, std::to_string(i)); // TODO: fix labels
         i++;
     }
     viewer->data().add_points(cameras, Eigen::RowVector3d(0, 1, 0));
-
-    // TODO: Show texture
-    viewer->data().show_texture = true;
 
     // Center object
     viewer->core.align_camera_center(V);

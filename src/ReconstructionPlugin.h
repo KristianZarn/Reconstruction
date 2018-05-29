@@ -116,8 +116,6 @@ private:
     void reconstruct_mesh_callback();
     void dense_reconstruct_mesh_callback();
     void texture_mesh_callback();
-
-    void testing_callback();
 };
 
 

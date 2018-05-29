@@ -1,8 +1,0 @@
-newmtl material_0
-Ka 1.000000 1.000000 1.000000
-Kd 1 1 1
-Ks 0.000000 0.000000 0.000000
-Tr 1.000000
-illum 1
-Ns 1.000000
-map_Kd mesh_material_0_map_Kd.jpg
