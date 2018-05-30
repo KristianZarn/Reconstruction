@@ -44,10 +44,10 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     ImGui::Text("Sparse reconstruction:");
-    if (ImGui::Button("Initialize", ImVec2(-1,0))) {
+    if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
         initialize_callback();
     }
-    if (ImGui::Button("Extend", ImVec2(-1, 0))) {
+    if (ImGui::Button("Extend [e]", ImVec2(-1, 0))) {
         extend_callback();
     }
     ImGui::Spacing();
@@ -73,10 +73,10 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Spacing();
 
     ImGui::Text("Dense reconstruction:");
-    if (ImGui::Button("Reconstruct mesh", ImVec2(-1, 0))) {
+    if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
         reconstruct_mesh_callback();
     }
-    if (ImGui::Button("Texture mesh", ImVec2(-1, 0))) {
+    if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
         texture_mesh_callback();
     }
     ImGui::Spacing();
@@ -84,11 +84,11 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Text("Display options:");
     float w = ImGui::GetContentRegionAvailWidth();
     float p = ImGui::GetStyle().FramePadding.x;
-    if (ImGui::Button("Point cloud", ImVec2((w - p) / 2.f, 0))) {
+    if (ImGui::Button("Point cloud [1]", ImVec2((w - p) / 2.f, 0))) {
         show_point_cloud();
     }
     ImGui::SameLine(0, p);
-    if (ImGui::Button("Mesh", ImVec2((w - p) / 2.f, 0))) {
+    if (ImGui::Button("Mesh [2]", ImVec2((w - p) / 2.f, 0))) {
         show_mesh();
     }
     ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
@@ -429,6 +429,30 @@ bool ReconstructionPlugin::mouse_scroll(float delta_y)
 bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
 {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
+    if (key == 'i') {
+        initialize_callback();
+        return true;
+    }
+    if (key == 'e') {
+        extend_callback();
+        return true;
+    }
+    if (key == 'm') {
+        reconstruct_mesh_callback();
+        return true;
+    }
+    if (key == 't') {
+        texture_mesh_callback();
+        return true;
+    }
+    if (key == '1') {
+        show_point_cloud();
+        return true;
+    }
+    if (key == '2') {
+        show_mesh();
+        return true;
+    }
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 

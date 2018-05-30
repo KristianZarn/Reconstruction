@@ -39,6 +39,9 @@ private:
     std::string camera_message_;
     int saved_frames_count_;
     std::vector<std::string> image_names_;
+
+    // Callback functions
+    void capture_frame_callback();
 };
 
 

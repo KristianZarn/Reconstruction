@@ -34,7 +34,8 @@ void CameraPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
 bool CameraPlugin::post_draw() {
     // Setup window
     float window_width = 480.0f;
-    ImGui::SetNextWindowSize(ImVec2(window_width, 0.0f), ImGuiCond_FirstUseEver);
+    float window_height = 450.0f;
+    ImGui::SetNextWindowSize(ImVec2(window_width, window_height), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - window_width, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
@@ -53,26 +54,33 @@ bool CameraPlugin::post_draw() {
     ImGui::Image(reinterpret_cast<GLuint*>(textureID_), ImVec2(width, height));
 
     // Add a button
-    if (ImGui::Button("Capture frame", ImVec2(-1,0))) {
-        // Store frame on disk
-        std::stringstream ss;
-        ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count_);
-        std::string filename = "frame" + ss.str() + ".png";
-        std::string fullname = images_path_ + filename;
-
-        int channels = 3;
-        igl::stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
-
-        image_names_.push_back(filename);
-        camera_message_ = "Image saved to: " + fullname;
-        saved_frames_count_++;
+    if (ImGui::Button("Capture frame [space]", ImVec2(-1, 0))) {
+        capture_frame_callback();
     }
 
     // Add camera message
-    ImGui::Text("%s", camera_message_.c_str());
+    ImGui::TextWrapped("%s", camera_message_.c_str());
 
     ImGui::End();
     return false;
+}
+
+void CameraPlugin::capture_frame_callback() {
+    // Get frame from webcam
+    auto frame = webcam_.frame();
+
+    // Store frame on disk
+    std::stringstream ss;
+    ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count_);
+    std::string filename = "frame" + ss.str() + ".png";
+    std::string fullname = images_path_ + filename;
+
+    int channels = 3;
+    igl::stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
+
+    image_names_.push_back(filename);
+    camera_message_ = "Image saved to: \n" + fullname;
+    saved_frames_count_++;
 }
 
 const std::vector<std::string>& CameraPlugin::get_captured_image_names() {
@@ -107,6 +115,10 @@ bool CameraPlugin::mouse_scroll(float delta_y)
 bool CameraPlugin::key_pressed(unsigned int key, int modifiers)
 {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
+    if (key == ' ') {
+        capture_frame_callback();
+        return true;
+    }
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
