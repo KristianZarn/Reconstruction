@@ -5,6 +5,7 @@
 #include <chrono>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -62,22 +63,13 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::PopItemWidth();
     ImGui::SameLine();
     if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
-        // TODO move to function
-        /*log_stream_ << "View with id = " << parameters_.view_to_delete << " removed." << std::endl;
-        reconstruction_builder_.RemoveView(static_cast<theia::ViewId>(parameters_.view_to_delete));
-        reconstruction_builder_.PrintStatistics(log_stream_);
-
-        set_point_cloud();
-        show_point_cloud();
-        set_cameras();
-        show_cameras();*/
+        remove_view_callback(parameters_.view_to_delete);
     }
-    if (ImGui::Button("Remove last view", ImVec2(-1, 0))) {
-        // TODO remove last view
+    if (ImGui::Button("Remove last view [b]", ImVec2(-1, 0))) {
+        remove_last_view_callback();
     }
     if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
-        log_stream_ << "Reconstruction is reset" << std::endl;
-        reset_reconstruction();
+        reset_reconstruction_callback();
     }
     ImGui::Spacing();
 
@@ -127,23 +119,15 @@ bool ReconstructionPlugin::post_draw() {
 
 void ReconstructionPlugin::initialize_callback() {
     // Images for initial reconstruction
-    std::string image0, image1;
-    if (parameters_.next_image_idx < image_names_.size()) {
-        image0 = images_path_ + image_names_[parameters_.next_image_idx];
-        parameters_.next_image_idx++;
+    std::string image1, image2;
+    if (image_names_.size() >= 2) {
         image1 = images_path_ + image_names_[parameters_.next_image_idx];
         parameters_.next_image_idx++;
+        image2 = images_path_ + image_names_[parameters_.next_image_idx];
+        parameters_.next_image_idx++;
     } else {
-        log_stream_ << "Next image not available." << std::endl;
-        return;
-    }
-
-    if (!theia::FileExists(image0)) {
-        log_stream_ << "Image: " << image0 << " does not exist." << std::endl;
-        return;
-    }
-    if (!theia::FileExists(image1)) {
-        log_stream_ << "Image: " << image1 << " does not exist." << std::endl;
+        log_stream_ << "Initialization failed:\n"
+                    << "\tImages not available (two images needed)." << std::endl;
         return;
     }
 
@@ -152,7 +136,7 @@ void ReconstructionPlugin::initialize_callback() {
     auto time_begin = std::chrono::steady_clock::now();
 
     theia::ReconstructionEstimatorSummary summary =
-            reconstruction_builder_.InitializeReconstruction(image0, image1);
+            reconstruction_builder_.InitializeReconstruction(image1, image2);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -169,11 +153,9 @@ void ReconstructionPlugin::initialize_callback() {
         set_mesh_visible(false);
     } else {
         log_stream_ << "Initialization failed: \n";
-        log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
+        log_stream_ << "\tMessage = " << summary.message << "\n\n";
 
-        reset_reconstruction();
-
-        log_stream_ << "Reconstruction is reset" << std::endl;
+        reset_reconstruction_callback();
     }
 }
 
@@ -184,12 +166,8 @@ void ReconstructionPlugin::extend_callback() {
         image = images_path_ + image_names_[parameters_.next_image_idx];
         parameters_.next_image_idx++;
     } else {
-        log_stream_ << "Next image not available." << std::endl;
-        return;
-    }
-
-    if (!theia::FileExists(image)) {
-        log_stream_ << "Image: " << image << " does not exist." << std::endl;
+        log_stream_ << "Extend failed:\n"
+                    << "\tNext image not available." << std::endl;
         return;
     }
 
@@ -214,9 +192,37 @@ void ReconstructionPlugin::extend_callback() {
         set_mesh_visible(false);
     } else {
         log_stream_ << "Extend failed: \n";
-        log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
-        // TODO: remove last view
+        log_stream_ << "\tMessage = " << summary.message << "\n\n";
     }
+}
+
+void ReconstructionPlugin::remove_view_callback(int view_id) {
+    reconstruction_builder_.RemoveView(static_cast<theia::ViewId>(view_id));
+    reconstruction_builder_.PrintStatistics(log_stream_);
+
+    set_point_cloud();
+    set_point_cloud_visible(true);
+    set_cameras();
+    set_cameras_visible(true);
+
+    log_stream_ << "Removed view with id = " << parameters_.view_to_delete << std::endl;
+}
+
+void ReconstructionPlugin::remove_last_view_callback() {
+    std::vector<theia::ViewId> view_ids = reconstruction_builder_.GetReconstruction()->ViewIds();
+    if (!view_ids.empty()) {
+        theia::ViewId view_to_delete = *std::max_element(view_ids.begin(), view_ids.end());
+        remove_view_callback(view_to_delete);
+    }
+}
+
+void ReconstructionPlugin::reset_reconstruction_callback() {
+    parameters_.next_image_idx = 0;
+    reconstruction_builder_.ResetReconstruction();
+    for (auto& viewer_data : viewer->data_list) {
+        viewer_data.clear();
+    }
+    log_stream_ << "Reconstruction is reset" << std::endl;
 }
 
 void ReconstructionPlugin::reconstruct_mesh_callback() {
@@ -433,12 +439,6 @@ void ReconstructionPlugin::set_mesh_visible(bool visible) {
     viewer->data().show_lines = visible;
 }
 
-void ReconstructionPlugin::reset_reconstruction() {
-    parameters_.next_image_idx = 0;
-    reconstruction_builder_.ResetReconstruction();
-    viewer->data().clear();
-}
-
 // Mouse IO
 bool ReconstructionPlugin::mouse_down(int button, int modifier)
 {
@@ -475,6 +475,11 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
         case 'e':
         {
             extend_callback();
+            return true;
+        }
+        case 'b':
+        {
+            remove_last_view_callback();
             return true;
         }
         case 'm':

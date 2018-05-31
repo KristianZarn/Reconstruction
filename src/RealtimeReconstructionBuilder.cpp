@@ -36,10 +36,20 @@ namespace theia {
         ReconstructionEstimatorSummary summary;
 
         // Read the images
+        if (!theia::FileExists(image1_fullpath)) {
+            summary.success = false;
+            summary.message = "Image: " + image1_fullpath + " does not exist\n";
+            return summary;
+        }
         std::string image1_filename;
         GetFilenameFromFilepath(image1_fullpath, true, &image1_filename);
         FloatImage image1(image1_fullpath);
 
+        if (!theia::FileExists(image2_fullpath)) {
+            summary.success = false;
+            summary.message = "Image: " + image2_fullpath + " does not exist\n";
+            return summary;
+        }
         std::string image2_filename;
         GetFilenameFromFilepath(image2_fullpath, true, &image2_filename);
         FloatImage image2(image2_fullpath);
@@ -93,11 +103,15 @@ namespace theia {
                 image_feature_to_track_id_.insert( {image2_feature, track_id} );
             }
         } else {
+            summary.success = false;
             summary.message = "No matches found.";
         }
 
         // Build reconstruction
         summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
+
+        // TODO: cleanup in case of fail
+
         return summary;
     }
 
@@ -106,7 +120,19 @@ namespace theia {
 
         ReconstructionEstimatorSummary summary;
 
+        // Check if initialized
+        if (!IsInitialized()) {
+            summary.success = false;
+            summary.message = "Reconstruction is not initialized.";
+            return summary;
+        }
+
         // Read the image
+        if (!theia::FileExists(image_fullpath)) {
+            summary.success = false;
+            summary.message = "Image: " + image_fullpath + " does not exist\n";
+            return summary;
+        }
         std::string image_filename;
         GetFilenameFromFilepath(image_fullpath, true, &image_filename);
         FloatImage image(image_fullpath);
@@ -177,6 +203,7 @@ namespace theia {
                 }
             }
         } else {
+            summary.success = false;
             summary.message = "No matches found.";
         }
 
@@ -188,6 +215,8 @@ namespace theia {
             summary.success = false;
             summary.message = "View could not be added.";
         }
+
+        // TODO: cleanup in case of fail (as option?)
 
         return summary;
     }

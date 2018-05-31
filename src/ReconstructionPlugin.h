@@ -61,7 +61,6 @@ public:
         // Color used for faces not covered by any image
         uint32_t empty_color = 0x00FF7F27;
 
-
         // Viewer
         int point_size = 3;
         int view_to_delete = 0;
@@ -124,11 +123,13 @@ private:
     void set_mesh();
     void set_mesh_visible(bool visible);
 
-    void reset_reconstruction();
-
     // Callback functions
     void initialize_callback();
     void extend_callback();
+    void remove_view_callback(int view_id);
+    void remove_last_view_callback();
+    void reset_reconstruction_callback();
+
     void reconstruct_mesh_callback();
     void dense_reconstruct_mesh_callback();
     void texture_mesh_callback();
