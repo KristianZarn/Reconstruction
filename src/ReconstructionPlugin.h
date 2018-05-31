@@ -64,9 +64,11 @@ public:
         // Viewer
         int point_size = 3;
         int view_to_delete = 0;
-        bool visible_cameras = false;
-        bool visible_point_cloud = false;
-        bool visible_mesh = false;
+        bool show_cameras = false;
+        bool show_point_cloud = false;
+        bool show_mesh = false;
+        bool show_texture = true;
+        bool show_wireframe = true;
     };
 
     ReconstructionPlugin(Parameters parameters,
@@ -115,13 +117,13 @@ private:
 
     // Helper functions
     void set_cameras();
-    void set_cameras_visible(bool visible);
+    void show_cameras(bool visible);
 
     void set_point_cloud();
-    void set_point_cloud_visible(bool visible);
+    void show_point_cloud(bool visible);
 
     void set_mesh();
-    void set_mesh_visible(bool visible);
+    void show_mesh(bool visible);
 
     // Callback functions
     void initialize_callback();

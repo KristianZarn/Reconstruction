@@ -83,14 +83,32 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Spacing();
 
     ImGui::Text("Display options:");
-    if (ImGui::Checkbox("Show cameras [1]", &parameters_.visible_cameras)) {
-        set_cameras_visible(parameters_.visible_cameras);
+    if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+        if (viewer->data().V.rows() > 0) {
+            viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+            viewer->core.align_camera_center(viewer->data().V);
+        } else {
+            viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
+            Eigen::MatrixXd points = viewer->data().points.leftCols(3);
+            viewer->core.align_camera_center(points);
+        }
     }
-    if (ImGui::Checkbox("Show point cloud [2]", &parameters_.visible_point_cloud)) {
-        set_point_cloud_visible(parameters_.visible_point_cloud);
+    if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
+        show_cameras(parameters_.show_cameras);
     }
-    if (ImGui::Checkbox("Show mesh [3]", &parameters_.visible_mesh)) {
-        set_mesh_visible(parameters_.visible_mesh);
+    if (ImGui::Checkbox("Show point cloud [2]", &parameters_.show_point_cloud)) {
+        show_point_cloud(parameters_.show_point_cloud);
+    }
+    if (ImGui::Checkbox("Show mesh [3]", &parameters_.show_mesh)) {
+        show_mesh(parameters_.show_mesh);
+    }
+    if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+        viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+        viewer->data().show_texture = parameters_.show_texture;
+    }
+    if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+        viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+        viewer->data().show_lines = parameters_.show_wireframe;
     }
     ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
     for (auto& viewer_data : viewer->data_list) {
@@ -152,10 +170,10 @@ void ReconstructionPlugin::initialize_callback() {
     }
     reconstruction_builder_.PrintStatistics(log_stream_);
     set_cameras();
-    set_cameras_visible(true);
+    show_cameras(true);
     set_point_cloud();
-    set_point_cloud_visible(true);
-    set_mesh_visible(false);
+    show_point_cloud(true);
+    show_mesh(false);
 }
 
 void ReconstructionPlugin::extend_callback() {
@@ -190,10 +208,10 @@ void ReconstructionPlugin::extend_callback() {
     }
     reconstruction_builder_.PrintStatistics(log_stream_);
     set_cameras();
-    set_cameras_visible(true);
+    show_cameras(true);
     set_point_cloud();
-    set_point_cloud_visible(true);
-    set_mesh_visible(false);
+    show_point_cloud(true);
+    show_mesh(false);
 }
 
 void ReconstructionPlugin::remove_view_callback(int view_id) {
@@ -201,9 +219,9 @@ void ReconstructionPlugin::remove_view_callback(int view_id) {
     reconstruction_builder_.PrintStatistics(log_stream_);
 
     set_point_cloud();
-    set_point_cloud_visible(true);
+    show_point_cloud(true);
     set_cameras();
-    set_cameras_visible(true);
+    show_cameras(true);
 
     log_stream_ << "Removed view with id = " << parameters_.view_to_delete << std::endl;
 }
@@ -256,8 +274,8 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     mvs_scene_.mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
                           parameters_.close_holes, parameters_.smooth_mesh, false);
     set_mesh();
-    set_mesh_visible(true);
-    set_point_cloud_visible(false);
+    show_mesh(true);
+    show_point_cloud(false);
 }
 
 void ReconstructionPlugin::dense_reconstruct_mesh_callback() {
@@ -276,8 +294,8 @@ void ReconstructionPlugin::texture_mesh_callback() {
                                parameters_.patch_packing_heuristic,
                                Pixel8U(parameters_.empty_color));
         set_mesh();
-        set_mesh_visible(true);
-        set_point_cloud_visible(false);
+        show_mesh(true);
+        show_point_cloud(false);
     } else {
         log_stream_ << "Texturing failed: Mesh is empty." << std::endl;
     }
@@ -310,8 +328,8 @@ void ReconstructionPlugin::set_cameras() {
     viewer->data().set_points(cameras, Eigen::RowVector3d(0, 1, 0));
 }
 
-void ReconstructionPlugin::set_cameras_visible(bool visible) {
-    parameters_.visible_cameras = visible;
+void ReconstructionPlugin::show_cameras(bool visible) {
+    parameters_.show_cameras = visible;
     viewer->selected_data_index = static_cast<int>(DataIdx::CAMERAS);
     viewer->data().show_overlay = visible;
 }
@@ -353,8 +371,8 @@ void ReconstructionPlugin::set_point_cloud() {
     viewer->core.align_camera_center(points);
 }
 
-void ReconstructionPlugin::set_point_cloud_visible(bool visible) {
-    parameters_.visible_point_cloud = visible;
+void ReconstructionPlugin::show_point_cloud(bool visible) {
+    parameters_.show_point_cloud = visible;
     viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
     viewer->data().show_overlay = visible;
 }
@@ -431,11 +449,10 @@ void ReconstructionPlugin::set_mesh() {
     viewer->core.align_camera_center(V);
 }
 
-void ReconstructionPlugin::set_mesh_visible(bool visible) {
-    parameters_.visible_mesh = visible;
+void ReconstructionPlugin::show_mesh(bool visible) {
+    parameters_.show_mesh = visible;
     viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
     viewer->data().show_faces = visible;
-    viewer->data().show_lines = visible;
 }
 
 // Mouse IO
@@ -493,17 +510,17 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
         }
         case '1':
         {
-            set_cameras_visible(!parameters_.visible_cameras);
+            show_cameras(!parameters_.show_cameras);
             return true;
         }
         case '2':
         {
-            set_point_cloud_visible(!parameters_.visible_point_cloud);
+            show_point_cloud(!parameters_.show_point_cloud);
             return true;
         }
         case '3':
         {
-            set_mesh_visible(!parameters_.visible_mesh);
+            show_mesh(!parameters_.show_mesh);
             return true;
         }
         default: break;
