@@ -65,6 +65,9 @@ public:
         // Viewer
         int point_size = 3;
         int view_to_delete = 0;
+        bool visible_cameras = false;
+        bool visible_point_cloud = false;
+        bool visible_mesh = false;
     };
 
     ReconstructionPlugin(Parameters parameters,
@@ -89,6 +92,12 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
+    enum class DataIdx {
+        CAMERAS,
+        POINT_CLOUD,
+        MESH
+    };
+
     // Parameters
     Parameters parameters_;
 
@@ -106,8 +115,15 @@ private:
     std::ostream& log_stream_ = std::cout;
 
     // Helper functions
-    void show_point_cloud();
-    void show_mesh();
+    void set_cameras();
+    void set_cameras_visible(bool visible);
+
+    void set_point_cloud();
+    void set_point_cloud_visible(bool visible);
+
+    void set_mesh();
+    void set_mesh_visible(bool visible);
+
     void reset_reconstruction();
 
     // Callback functions

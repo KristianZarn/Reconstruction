@@ -32,12 +32,16 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
 
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
+
+    // Add two additional meshes to viewer. First is for cameras,
+    // second for point cloud and the third for mesh
+    viewer->append_mesh();
+    viewer->append_mesh();
 }
 
 bool ReconstructionPlugin::post_draw() {
     // Setup window
     float window_width = 270.0f;
-    // float window_height = 600.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(180.0f, 0.0f), ImGuiCond_FirstUseEver);
 
@@ -58,10 +62,15 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::PopItemWidth();
     ImGui::SameLine();
     if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
-        log_stream_ << "View with id = " << parameters_.view_to_delete << " removed." << std::endl;
+        // TODO move to function
+        /*log_stream_ << "View with id = " << parameters_.view_to_delete << " removed." << std::endl;
         reconstruction_builder_.RemoveView(static_cast<theia::ViewId>(parameters_.view_to_delete));
         reconstruction_builder_.PrintStatistics(log_stream_);
+
+        set_point_cloud();
         show_point_cloud();
+        set_cameras();
+        show_cameras();*/
     }
     if (ImGui::Button("Remove last view", ImVec2(-1, 0))) {
         // TODO remove last view
@@ -82,18 +91,20 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Spacing();
 
     ImGui::Text("Display options:");
-    float w = ImGui::GetContentRegionAvailWidth();
-    float p = ImGui::GetStyle().FramePadding.x;
-    if (ImGui::Button("Point cloud [1]", ImVec2((w - p) / 2.f, 0))) {
-        show_point_cloud();
+    if (ImGui::Checkbox("Show cameras [1]", &parameters_.visible_cameras)) {
+        set_cameras_visible(parameters_.visible_cameras);
     }
-    ImGui::SameLine(0, p);
-    if (ImGui::Button("Mesh [2]", ImVec2((w - p) / 2.f, 0))) {
-        show_mesh();
+    if (ImGui::Checkbox("Show point cloud [2]", &parameters_.visible_point_cloud)) {
+        set_point_cloud_visible(parameters_.visible_point_cloud);
+    }
+    if (ImGui::Checkbox("Show mesh [3]", &parameters_.visible_mesh)) {
+        set_mesh_visible(parameters_.visible_mesh);
     }
     ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
-    if (viewer->data().point_size != parameters_.point_size) {
-        viewer->data().point_size = parameters_.point_size;
+    for (auto& viewer_data : viewer->data_list) {
+        if (viewer_data.point_size != parameters_.point_size) {
+            viewer_data.point_size = parameters_.point_size;
+        }
     }
     ImGui::Spacing();
 
@@ -149,8 +160,13 @@ void ReconstructionPlugin::initialize_callback() {
 
     // Reconstruction summary
     if (summary.success) {
+        reconstruction_builder_.ColorizeReconstruction(images_path_);
         reconstruction_builder_.PrintStatistics(log_stream_);
-        show_point_cloud();
+        set_cameras();
+        set_cameras_visible(true);
+        set_point_cloud();
+        set_point_cloud_visible(true);
+        set_mesh_visible(false);
     } else {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
@@ -189,8 +205,13 @@ void ReconstructionPlugin::extend_callback() {
 
     // Reconstruction summary
     if (summary.success) {
+        reconstruction_builder_.ColorizeReconstruction(images_path_);
         reconstruction_builder_.PrintStatistics(log_stream_);
-        show_point_cloud();
+        set_cameras();
+        set_cameras_visible(true);
+        set_point_cloud();
+        set_point_cloud_visible(true);
+        set_mesh_visible(false);
     } else {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\n\tMessage = " << summary.message << "\n\n";
@@ -229,7 +250,9 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     // Clean the mesh
     mvs_scene_.mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
                           parameters_.close_holes, parameters_.smooth_mesh, false);
-    show_mesh();
+    set_mesh();
+    set_mesh_visible(true);
+    set_point_cloud_visible(false);
 }
 
 void ReconstructionPlugin::dense_reconstruct_mesh_callback() {
@@ -247,15 +270,51 @@ void ReconstructionPlugin::texture_mesh_callback() {
                                parameters_.texture_size_multiple,
                                parameters_.patch_packing_heuristic,
                                Pixel8U(parameters_.empty_color));
-        show_mesh();
+        set_mesh();
+        set_mesh_visible(true);
+        set_point_cloud_visible(false);
     } else {
         log_stream_ << "Texturing failed: Mesh is empty." << std::endl;
     }
 }
 
-void ReconstructionPlugin::show_point_cloud() {
+void ReconstructionPlugin::set_cameras() {
+    viewer->selected_data_index = static_cast<int>(DataIdx::CAMERAS);
     viewer->data().clear();
-    reconstruction_builder_.ColorizeReconstruction(images_path_);
+
+    theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
+
+    // Add cameras
+    std::unordered_set<theia::ViewId> view_ids;
+    theia::GetEstimatedViewsFromReconstruction(*reconstruction, &view_ids);
+
+    auto num_views = static_cast<int>(view_ids.size());
+    Eigen::MatrixXd cameras(num_views, 3);
+
+    int i = 0;
+    for (const auto& view_id : view_ids) {
+        Eigen::Vector3d position = reconstruction->View(view_id)->Camera().GetPosition();
+        cameras(i, 0) = position(0);
+        cameras(i, 1) = position(1);
+        cameras(i, 2) = position(2);
+
+        // Add camera label
+        viewer->data().add_label(position, std::to_string(view_id));
+        i++;
+    }
+    viewer->data().set_points(cameras, Eigen::RowVector3d(0, 1, 0));
+}
+
+void ReconstructionPlugin::set_cameras_visible(bool visible) {
+    parameters_.visible_cameras = visible;
+    viewer->selected_data_index = static_cast<int>(DataIdx::CAMERAS);
+    viewer->data().show_overlay = visible;
+}
+
+void ReconstructionPlugin::set_point_cloud() {
+    viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
+    viewer->data().clear();
+
     theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
 
     // Add points and colors
@@ -285,31 +344,18 @@ void ReconstructionPlugin::show_point_cloud() {
     colors = colors / 255.0;
     viewer->data().set_points(points, colors);
 
-    // Add cameras
-    std::unordered_set<theia::ViewId> view_ids;
-    theia::GetEstimatedViewsFromReconstruction(*reconstruction, &view_ids);
-
-    auto num_views = static_cast<int>(view_ids.size());
-    Eigen::MatrixXd cameras(num_views, 3);
-
-    i = 0;
-    for (const auto& view_id : view_ids) {
-        Eigen::Vector3d position = reconstruction->View(view_id)->Camera().GetPosition();
-        cameras(i, 0) = position(0);
-        cameras(i, 1) = position(1);
-        cameras(i, 2) = position(2);
-
-        // Add camera label
-        viewer->data().add_label(position, std::to_string(view_id));
-        i++;
-    }
-    viewer->data().add_points(cameras, Eigen::RowVector3d(0, 1, 0));
-
     // Center object
     viewer->core.align_camera_center(points);
 }
 
-void ReconstructionPlugin::show_mesh() {
+void ReconstructionPlugin::set_point_cloud_visible(bool visible) {
+    parameters_.visible_point_cloud = visible;
+    viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
+    viewer->data().show_overlay = visible;
+}
+
+void ReconstructionPlugin::set_mesh() {
+    viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
     viewer->data().clear();
 
     // Add vertices
@@ -355,6 +401,7 @@ void ReconstructionPlugin::show_mesh() {
         SEACAVE::Image8U3 img = mvs_scene_.mesh.textureDiffuse;
         int width = img.width();
         int height = img.height();
+
         Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> R(width, height);
         Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> G(width, height);
         Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> B(width, height);
@@ -362,38 +409,28 @@ void ReconstructionPlugin::show_mesh() {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 Pixel8U pixel = img.getPixel(j, i);
-                R(i, (height - 1) - j) = pixel.r;
-                G(i, (height - 1) - j) = pixel.g;
-                B(i, (height - 1) - j) = pixel.b;
+                R(i, j) = pixel.r;
+                G(i, j) = pixel.g;
+                B(i, j) = pixel.b;
             }
         }
 
         viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
-        viewer->data().set_texture(R, G, B);
+        viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
         viewer->data().show_texture = true;
     } else {
         viewer->data().show_texture = false;
     }
 
-    // Add cameras
-    auto num_views = static_cast<int>(mvs_scene_.platforms.front().poses.size());
-    Eigen::MatrixXd cameras(num_views, 3);
-
-    int i = 0;
-    for (const auto& pose : mvs_scene_.platforms.front().poses) {
-        Eigen::Vector3d position = pose.C;
-        cameras(i, 0) = position(0);
-        cameras(i, 1) = position(1);
-        cameras(i, 2) = position(2);
-
-        // Add camera label
-        viewer->data().add_label(position, std::to_string(i)); // TODO: fix labels
-        i++;
-    }
-    viewer->data().add_points(cameras, Eigen::RowVector3d(0, 1, 0));
-
     // Center object
     viewer->core.align_camera_center(V);
+}
+
+void ReconstructionPlugin::set_mesh_visible(bool visible) {
+    parameters_.visible_mesh = visible;
+    viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+    viewer->data().show_faces = visible;
+    viewer->data().show_lines = visible;
 }
 
 void ReconstructionPlugin::reset_reconstruction() {
@@ -429,29 +466,43 @@ bool ReconstructionPlugin::mouse_scroll(float delta_y)
 bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
 {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
-    if (key == 'i') {
-        initialize_callback();
-        return true;
-    }
-    if (key == 'e') {
-        extend_callback();
-        return true;
-    }
-    if (key == 'm') {
-        reconstruct_mesh_callback();
-        return true;
-    }
-    if (key == 't') {
-        texture_mesh_callback();
-        return true;
-    }
-    if (key == '1') {
-        show_point_cloud();
-        return true;
-    }
-    if (key == '2') {
-        show_mesh();
-        return true;
+    switch (key) {
+        case 'i':
+        {
+            initialize_callback();
+            return true;
+        }
+        case 'e':
+        {
+            extend_callback();
+            return true;
+        }
+        case 'm':
+        {
+            reconstruct_mesh_callback();
+            return true;
+        }
+        case 't':
+        {
+            texture_mesh_callback();
+            return true;
+        }
+        case '1':
+        {
+            set_cameras_visible(!parameters_.visible_cameras);
+            return true;
+        }
+        case '2':
+        {
+            set_point_cloud_visible(!parameters_.visible_point_cloud);
+            return true;
+        }
+        case '3':
+        {
+            set_mesh_visible(!parameters_.visible_mesh);
+            return true;
+        }
+        default: break;
     }
     return ImGui::GetIO().WantCaptureKeyboard;
 }

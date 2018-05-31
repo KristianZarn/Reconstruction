@@ -140,3 +140,34 @@ void ReconstructionPlugin::testing_callback() {
     viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
     viewer->data().set_texture(R, G, B);
 }
+
+
+// Add cameras
+auto num_views = static_cast<int>(mvs_scene_.platforms.front().poses.size());
+Eigen::MatrixXd cameras(num_views, 3);
+
+int i = 0;
+for (const auto& pose : mvs_scene_.platforms.front().poses) {
+Eigen::Vector3d position = pose.C;
+cameras(i, 0) = position(0);
+cameras(i, 1) = position(1);
+cameras(i, 2) = position(2);
+
+// Add camera label
+viewer->data().add_label(position, std::to_string(i));
+i++;
+}
+viewer->data().add_points(cameras, Eigen::RowVector3d(0, 1, 0));
+
+// UI
+float w = ImGui::GetContentRegionAvailWidth();
+float p = ImGui::GetStyle().FramePadding.x;
+if (ImGui::Button("Point cloud [1]", ImVec2((w - p) / 2.f, 0))) {
+show_point_cloud();
+hide_mesh();
+}
+ImGui::SameLine(0, p);
+if (ImGui::Button("Mesh [2]", ImVec2((w - p) / 2.f, 0))) {
+show_mesh();
+hide_point_cloud();
+}
