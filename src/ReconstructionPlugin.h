@@ -64,6 +64,7 @@ public:
         // Viewer
         int point_size = 3;
         int view_to_delete = 0;
+        bool show_labels = true;
         bool show_cameras = false;
         bool show_point_cloud = false;
         bool show_mesh = false;
@@ -91,6 +92,11 @@ public:
     bool key_pressed(unsigned int key, int modifiers) override;
     bool key_down(int key, int modifiers) override;
     bool key_up(int key, int modifiers) override;
+
+    // Labels
+    void draw_labels_window();
+    void draw_labels(const igl::opengl::ViewerData &data);
+    void draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const std::string &text);
 
 private:
     enum class DataIdx {

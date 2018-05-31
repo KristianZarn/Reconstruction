@@ -10,6 +10,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <igl/project.h>
 #include "theia/sfm/reconstruction.h"
 #include <theia/sfm/reconstruction_estimator.h>
 #include <theia/sfm/reconstruction_estimator_utils.h>
@@ -41,10 +42,15 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
 }
 
 bool ReconstructionPlugin::post_draw() {
+    // Text labels
+    if (parameters_.show_labels) {
+        draw_labels_window();
+    }
+
     // Setup window
     float window_width = 270.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(180.0f, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
@@ -93,6 +99,7 @@ bool ReconstructionPlugin::post_draw() {
             viewer->core.align_camera_center(points);
         }
     }
+    ImGui::Checkbox("Show labels", &parameters_.show_labels);
     if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
         show_cameras(parameters_.show_cameras);
     }
@@ -538,4 +545,69 @@ bool ReconstructionPlugin::key_up(int key, int modifiers)
 {
     ImGui_ImplGlfwGL3_KeyCallback(viewer->window, key, 0, GLFW_RELEASE, modifiers);
     return ImGui::GetIO().WantCaptureKeyboard;
+}
+
+void ReconstructionPlugin::draw_labels_window() {
+    // Text labels
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiSetCond_Always);
+    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize, ImGuiSetCond_Always);
+    bool visible = true;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::Begin("ViewerLabels", &visible,
+                 ImGuiWindowFlags_NoTitleBar
+                 | ImGuiWindowFlags_NoResize
+                 | ImGuiWindowFlags_NoMove
+                 | ImGuiWindowFlags_NoScrollbar
+                 | ImGuiWindowFlags_NoScrollWithMouse
+                 | ImGuiWindowFlags_NoCollapse
+                 | ImGuiWindowFlags_NoSavedSettings
+                 | ImGuiWindowFlags_NoInputs);
+    for (const auto &data : viewer->data_list) {
+        draw_labels(data);
+    }
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+}
+
+void ReconstructionPlugin::draw_labels(const igl::opengl::ViewerData &data) {
+    if (data.show_vertid) {
+        for (int i = 0; i < data.V.rows(); ++i) {
+            draw_text(data.V.row(i), data.V_normals.row(i), std::to_string(i));
+        }
+    }
+
+    if (data.show_faceid) {
+        for (int i = 0; i < data.F.rows(); ++i) {
+            Eigen::RowVector3d p = Eigen::RowVector3d::Zero();
+            for (int j = 0; j < data.F.cols(); ++j) {
+                p += data.V.row(data.F(i, j));
+            }
+            p /= (double) data.F.cols();
+
+            draw_text(p, data.F_normals.row(i), std::to_string(i));
+        }
+    }
+
+    if (data.labels_positions.rows() > 0) {
+        for (int i = 0; i < data.labels_positions.rows(); ++i) {
+            draw_text(data.labels_positions.row(i), Eigen::Vector3d(0.0, 0.0, 0.0),
+                      data.labels_strings[i]);
+        }
+    }
+}
+
+void ReconstructionPlugin::draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const std::string &text) {
+    Eigen::Matrix4f view_matrix = viewer->core.view * viewer->core.model;
+    pos += normal * 0.005f * viewer->core.object_scale;
+    Eigen::Vector3f coord = igl::project(Eigen::Vector3f(pos.cast<float>()),
+                                         view_matrix, viewer->core.proj, viewer->core.viewport);
+
+    // Draw text labels slightly bigger than normal text
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 1.5f,
+                      ImVec2(coord[0], (viewer->core.viewport[3] - coord[1])),
+                      ImGui::GetColorU32(ImVec4(0, 255, 0, 255)),
+                      &text[0], &text[0] + text.size());
 }

@@ -6,7 +6,6 @@
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "helpers.h"
-#include "MenuPlugin.h"
 #include "CameraPlugin.h"
 #include "RealtimeReconstructionBuilder.h"
 #include "ReconstructionPlugin.h"
@@ -58,10 +57,6 @@ int main(int argc, char *argv[]) {
         ImGui::DestroyContext();
         return false;
     };
-
-    // Attach a menu plugin
-    MenuPlugin menu_plugin;
-    viewer.plugins.push_back(&menu_plugin);
 
     // Attach camera plugin
     int image_width = intrinsics_prior.image_width;

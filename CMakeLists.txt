@@ -59,7 +59,6 @@ find_package(OpenMVS REQUIRED)
 set(SOURCE_FILES
     src/helpers.cpp
     src/webcam.cpp
-    src/MenuPlugin.cpp
     src/CameraPlugin.cpp
     src/RealtimeReconstructionBuilder.cpp
     src/RealtimeFeatureMatcher.cpp
