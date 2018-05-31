@@ -35,6 +35,13 @@ namespace theia {
 
         ReconstructionEstimatorSummary summary;
 
+        // Check if initialized
+        if (IsInitialized()) {
+            summary.success = false;
+            summary.message = "Reconstruction is already initialized.";
+            return summary;
+        }
+
         // Read the images
         if (!theia::FileExists(image1_fullpath)) {
             summary.success = false;
@@ -105,13 +112,19 @@ namespace theia {
         } else {
             summary.success = false;
             summary.message = "No matches found.";
+            ResetReconstruction();
+            return summary;
         }
 
         // Build reconstruction
         summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
-        // TODO: cleanup in case of fail
-
+        // Check if both views were estimated successfully
+        if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
+            summary.success = false;
+            summary.message = "Views were not estimated.";
+            ResetReconstruction();
+        }
         return summary;
     }
 
@@ -183,7 +196,7 @@ namespace theia {
                             TrackId track_id = image_feature_to_track_id_[image1_feature];
 
                             // Because of outliers track may already contain the view_id we want to add,
-                            // so before adding, we check if view is already in track (or view has feature in track)
+                            // so before adding, check if view is already in track (or view has feature in track)
                             if (view->GetFeature(track_id) == nullptr) {
                                 reconstruction_->AddObservation(view2_id, track_id, correspondence.feature2);
                                 image_feature_to_track_id_.insert( {image2_feature, track_id} );
@@ -205,20 +218,20 @@ namespace theia {
         } else {
             summary.success = false;
             summary.message = "No matches found.";
+            return summary;
         }
 
         // Build reconstruction
         summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
+        UpdateImageFeatureToTrackId();
 
         // Check if view was added successfully
         if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
             summary.success = false;
             summary.message = "View could not be added.";
         }
-
-        // TODO: cleanup in case of fail (as option?)
-
         return summary;
+        // TODO: cleanup if fail (as option?)
     }
 
     bool RealtimeReconstructionBuilder::IsInitialized() {
@@ -240,7 +253,6 @@ namespace theia {
     void RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
-
             // Remove from matcher
             feature_matcher_->RemoveImage(reconstruction_->View(view_id)->Name());
 
@@ -267,6 +279,9 @@ namespace theia {
                     it++;
                 }
             }
+
+            // Update image_feature_to_track_id because tracks were removed
+            UpdateImageFeatureToTrackId();
         }
     }
 
@@ -277,8 +292,10 @@ namespace theia {
     }
 
     void RealtimeReconstructionBuilder::PrintStatistics(std::ostream &stream,
-                                                        bool print_images, bool print_reconstruction,
-                                                        bool print_view_graph, bool print_feature_track_map) {
+                                                        bool print_images,
+                                                        bool print_reconstruction,
+                                                        bool print_view_graph,
+                                                        bool print_feature_track_map) {
         if (print_images) {
             stream << "Images: ";
             for (const auto& view_id : reconstruction_->ViewIds()) {
@@ -286,7 +303,6 @@ namespace theia {
             }
             stream << "\n\n";
         }
-
         if (print_reconstruction) {
             stream << "Reconstruction: ";
             stream << "\n\tNum views = " << reconstruction_->NumViews()
@@ -295,7 +311,6 @@ namespace theia {
                    << "\n\tNum estimated tracks = " << NumEstimatedTracks(*reconstruction_)
                    << "\n\n";
         }
-
         if (print_view_graph) {
             stream << "View Graph: ";
             stream << "\n\tNum views = " << view_graph_->NumViews()
@@ -307,10 +322,22 @@ namespace theia {
             }
             stream << "\n\n";
         }
-
         if (print_feature_track_map) {
             stream << "Feature to track id map: ";
             stream << "\n\tNum elements = " << image_feature_to_track_id_.size() << "\n\n";
+        }
+    }
+
+    void RealtimeReconstructionBuilder::UpdateImageFeatureToTrackId() {
+        // Remove from image_feature_to_track_id if track_id is not in reconstruction
+        for(auto it = image_feature_to_track_id_.begin(); it != image_feature_to_track_id_.end(); ) {
+            TrackId value = it->second;
+            const Track* track = reconstruction_->Track(value);
+            if(track == nullptr) {
+                it = image_feature_to_track_id_.erase(it);
+            } else {
+                it++;
+            }
         }
     }
 

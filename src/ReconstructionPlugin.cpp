@@ -120,7 +120,7 @@ bool ReconstructionPlugin::post_draw() {
 void ReconstructionPlugin::initialize_callback() {
     // Images for initial reconstruction
     std::string image1, image2;
-    if (image_names_.size() >= 2) {
+    if ((parameters_.next_image_idx + 1) < image_names_.size()) {
         image1 = images_path_ + image_names_[parameters_.next_image_idx];
         parameters_.next_image_idx++;
         image2 = images_path_ + image_names_[parameters_.next_image_idx];
@@ -144,19 +144,18 @@ void ReconstructionPlugin::initialize_callback() {
 
     // Reconstruction summary
     if (summary.success) {
+        log_stream_ << "Initialization successful: \n";
         reconstruction_builder_.ColorizeReconstruction(images_path_);
-        reconstruction_builder_.PrintStatistics(log_stream_);
-        set_cameras();
-        set_cameras_visible(true);
-        set_point_cloud();
-        set_point_cloud_visible(true);
-        set_mesh_visible(false);
     } else {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\tMessage = " << summary.message << "\n\n";
-
-        reset_reconstruction_callback();
     }
+    reconstruction_builder_.PrintStatistics(log_stream_);
+    set_cameras();
+    set_cameras_visible(true);
+    set_point_cloud();
+    set_point_cloud_visible(true);
+    set_mesh_visible(false);
 }
 
 void ReconstructionPlugin::extend_callback() {
@@ -183,17 +182,18 @@ void ReconstructionPlugin::extend_callback() {
 
     // Reconstruction summary
     if (summary.success) {
+        log_stream_ << "Extend successful: \n";
         reconstruction_builder_.ColorizeReconstruction(images_path_);
-        reconstruction_builder_.PrintStatistics(log_stream_);
-        set_cameras();
-        set_cameras_visible(true);
-        set_point_cloud();
-        set_point_cloud_visible(true);
-        set_mesh_visible(false);
     } else {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\tMessage = " << summary.message << "\n\n";
     }
+    reconstruction_builder_.PrintStatistics(log_stream_);
+    set_cameras();
+    set_cameras_visible(true);
+    set_point_cloud();
+    set_point_cloud_visible(true);
+    set_mesh_visible(false);
 }
 
 void ReconstructionPlugin::remove_view_callback(int view_id) {
@@ -217,7 +217,6 @@ void ReconstructionPlugin::remove_last_view_callback() {
 }
 
 void ReconstructionPlugin::reset_reconstruction_callback() {
-    parameters_.next_image_idx = 0;
     reconstruction_builder_.ResetReconstruction();
     for (auto& viewer_data : viewer->data_list) {
         viewer_data.clear();

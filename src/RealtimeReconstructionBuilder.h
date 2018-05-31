@@ -30,7 +30,7 @@ namespace theia {
             std::shared_ptr<RandomNumberGenerator> rng;
 
             // Number of threads used.
-            int num_threads = 1;
+            int num_threads = 4;
 
             // Minimum allowable track length. Tracks that are too short are often not
             // well-constrained for triangulation and bundle adjustment.
@@ -77,8 +77,11 @@ namespace theia {
 
         void ResetReconstruction();
 
-        void PrintStatistics(std::ostream& stream, bool print_images = true, bool print_reconstruction = true,
-                             bool print_view_graph = true, bool print_feature_track_map = true);
+        void PrintStatistics(std::ostream& stream,
+                             bool print_images = true,
+                             bool print_reconstruction = true,
+                             bool print_view_graph = true,
+                             bool print_feature_track_map = true);
 
     private:
         Options options_;
@@ -94,6 +97,9 @@ namespace theia {
         std::unique_ptr<ViewGraph> view_graph_;
         std::unique_ptr<Reconstruction> reconstruction_;
         std::unique_ptr<ReconstructionEstimator> reconstruction_estimator_;
+
+        // Helper functions
+        void UpdateImageFeatureToTrackId();
     };
 
 } // namespace theia
