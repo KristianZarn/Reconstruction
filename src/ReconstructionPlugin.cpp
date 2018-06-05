@@ -35,10 +35,19 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
 
-    // Add two additional meshes to viewer. First is for cameras,
-    // second for point cloud and the third for mesh
+    // First mesh is for cameras
+    VIEWER_DATA_CAMERAS = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Append mesh for point cloud
     viewer->append_mesh();
+    VIEWER_DATA_POINT_CLOUD = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Append mesh for mesh
     viewer->append_mesh();
+    VIEWER_DATA_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    viewer->data().show_texture = parameters_.show_texture;
+    viewer->data().show_lines = parameters_.show_wireframe;
 }
 
 bool ReconstructionPlugin::post_draw() {
@@ -83,6 +92,9 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
         reconstruct_mesh_callback();
     }
+    if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
+        refine_mesh_callback();
+    }
     if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
         texture_mesh_callback();
     }
@@ -90,14 +102,7 @@ bool ReconstructionPlugin::post_draw() {
 
     ImGui::Text("Display options:");
     if (ImGui::Button("Center object", ImVec2(-1, 0))) {
-        if (viewer->data().V.rows() > 0) {
-            viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
-            viewer->core.align_camera_center(viewer->data().V);
-        } else {
-            viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
-            Eigen::MatrixXd points = viewer->data().points.leftCols(3);
-            viewer->core.align_camera_center(points);
-        }
+        center_object_callback();
     }
     ImGui::Checkbox("Show labels", &parameters_.show_labels);
     if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
@@ -110,11 +115,11 @@ bool ReconstructionPlugin::post_draw() {
         show_mesh(parameters_.show_mesh);
     }
     if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
-        viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+        viewer->selected_data_index = VIEWER_DATA_MESH;
         viewer->data().show_texture = parameters_.show_texture;
     }
     if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
-        viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+        viewer->selected_data_index = VIEWER_DATA_MESH;
         viewer->data().show_lines = parameters_.show_wireframe;
     }
     ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
@@ -127,22 +132,42 @@ bool ReconstructionPlugin::post_draw() {
 
     ImGui::Text("Output");
     if (ImGui::Button("Save point cloud", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
         std::string filename = "sparse_point_cloud.ply";
         reconstruction_builder_.WritePly(reconstruction_path_ + filename);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
     }
     if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
-        std::string filename = "mesh.ply";
-        mvs_scene_.mesh.Save(reconstruction_path_ + filename);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = "mesh.mvs";
+        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+        std::string filename_ply = "mesh.ply";
+        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
     }
     ImGui::Spacing();
+
+    // Debug info
+    std::ostringstream os;
+    // os << "View: \n" << viewer->core.view << std::endl;
+    // os << "Norm: \n" << viewer->core.norm << std::endl;
+    // os << "Proj: \n" << viewer->core.proj << std::endl;
+
+    // Eigen::Quaternionf quat = viewer->core.trackball_angle;
+    // os << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
+    ImGui::TextUnformatted(os.str().c_str());
 
     ImGui::End();
     return false;
 }
 
 void ReconstructionPlugin::initialize_callback() {
+    log_stream_ << std::endl;
+
     // Images for initial reconstruction
     std::string image1, image2;
     if ((parameters_.next_image_idx + 1) < image_names_.size()) {
@@ -157,7 +182,7 @@ void ReconstructionPlugin::initialize_callback() {
     }
 
     // Initialize reconstruction
-    log_stream_ << "Starting initialization" << std::endl;
+    log_stream_ << "Initializing reconstruction ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
     theia::ReconstructionEstimatorSummary summary =
@@ -184,6 +209,8 @@ void ReconstructionPlugin::initialize_callback() {
 }
 
 void ReconstructionPlugin::extend_callback() {
+    log_stream_ << std::endl;
+
     // Image for extend
     std::string image;
     if (parameters_.next_image_idx < image_names_.size()) {
@@ -196,7 +223,7 @@ void ReconstructionPlugin::extend_callback() {
     }
 
     // Extend reconstruction
-    log_stream_ << "Extending reconstruction" << std::endl;
+    log_stream_ << "Extending reconstruction ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
     theia::ReconstructionEstimatorSummary summary = reconstruction_builder_.ExtendReconstruction(image);
@@ -222,15 +249,16 @@ void ReconstructionPlugin::extend_callback() {
 }
 
 void ReconstructionPlugin::remove_view_callback(int view_id) {
+    log_stream_ << std::endl;
+
     reconstruction_builder_.RemoveView(static_cast<theia::ViewId>(view_id));
+    log_stream_ << "Removed view with id = " << view_id << std::endl;
     reconstruction_builder_.PrintStatistics(log_stream_);
 
     set_point_cloud();
     show_point_cloud(true);
     set_cameras();
     show_cameras(true);
-
-    log_stream_ << "Removed view with id = " << parameters_.view_to_delete << std::endl;
 }
 
 void ReconstructionPlugin::remove_last_view_callback() {
@@ -242,21 +270,24 @@ void ReconstructionPlugin::remove_last_view_callback() {
 }
 
 void ReconstructionPlugin::reset_reconstruction_callback() {
+    log_stream_ << std::endl;
+
     reconstruction_builder_.ResetReconstruction();
     for (auto& viewer_data : viewer->data_list) {
         viewer_data.clear();
     }
-    log_stream_ << "Reconstruction is reset" << std::endl;
+    log_stream_ << "Reconstruction reset" << std::endl;
 }
 
 void ReconstructionPlugin::reconstruct_mesh_callback() {
+    log_stream_ << std::endl;
+
     // Set paths
     std::string undistoreted_images_folder = images_path_;
 
     // Convert reconstruction to mvs scene
     mvs_scene_.Release();
-    bool convert_success = theia_to_mvs(
-            *(reconstruction_builder_.GetReconstruction()), undistoreted_images_folder, mvs_scene_);
+    theia_to_mvs(*(reconstruction_builder_.GetReconstruction()), undistoreted_images_folder, mvs_scene_);
 
     // Select neighbor views
     int i = 0;
@@ -271,9 +302,19 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     }
 
     // Reconstruct mesh
-    mvs_scene_.ReconstructMesh(parameters_.dist_insert, parameters_.use_free_space_support, 4,
-                               parameters_.thickness_factor, parameters_.quality_factor);
-    log_stream_ << "Mesh reconstruction completed: "
+    log_stream_ << "Reconstructing mesh ..." << std::endl;
+    auto time_begin = std::chrono::steady_clock::now();
+
+    mvs_scene_.ReconstructMesh(parameters_.dist_insert,
+                               parameters_.use_free_space_support,
+                               parameters_.fix_non_manifold,
+                               parameters_.thickness_factor,
+                               parameters_.quality_factor);
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Reconstruct mesh time: " << time_elapsed.count() << " s" << std::endl;
+    log_stream_ << "Reconstruct mesh result: \n\t"
                 << mvs_scene_.mesh.vertices.GetSize() << " vertices, "
                 << mvs_scene_.mesh.faces.GetSize() << " faces." << std::endl;
 
@@ -285,13 +326,64 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     show_point_cloud(false);
 }
 
-void ReconstructionPlugin::dense_reconstruct_mesh_callback() {
-    // TODO: densify point cloud
+void ReconstructionPlugin::refine_mesh_callback() {
+    log_stream_ << std::endl;
+    if (!mvs_scene_.mesh.IsEmpty()) {
+        log_stream_ << "Refining mesh ..." << std::endl;
+        auto time_begin = std::chrono::steady_clock::now();
+
+        // mvs_scene_.RefineMeshCUDA(parameters_.refine_resolution_level,
+        //                           parameters_.refine_min_resolution,
+        //                           parameters_.refine_max_views,
+        //                           parameters_.refine_decimate,
+        //                           parameters_.refine_close_holes,
+        //                           parameters_.ensure_edge_size,
+        //                           parameters_.max_face_area,
+        //                           parameters_.scales,
+        //                           parameters_.scale_step,
+        //                           parameters_.alternative_pair,
+        //                           parameters_.regularity_weight,
+        //                           parameters_.rigidity_elasticity_ratio,
+        //                           parameters_.gradient_step);
+
+        mvs_scene_.RefineMesh(parameters_.refine_resolution_level,
+                              parameters_.refine_min_resolution,
+                              parameters_.refine_max_views,
+                              parameters_.refine_decimate,
+                              parameters_.refine_close_holes,
+                              parameters_.ensure_edge_size,
+                              parameters_.max_face_area,
+                              parameters_.scales,
+                              parameters_.scale_step,
+                              parameters_.reduce_memory,
+                              parameters_.alternative_pair,
+                              parameters_.regularity_weight,
+                              parameters_.rigidity_elasticity_ratio,
+                              parameters_.planar_vertex_ratio,
+                              parameters_.gradient_step);
+
+        auto time_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> time_elapsed = time_end - time_begin;
+        log_stream_ << "Refine mesh time: " << time_elapsed.count() << " s" << std::endl;
+        log_stream_ << "Refine mesh result: \n\t"
+                    << mvs_scene_.mesh.vertices.GetSize() << " vertices, "
+                    << mvs_scene_.mesh.faces.GetSize() << " faces." << std::endl;
+
+        set_mesh();
+        show_mesh(true);
+        show_point_cloud(false);
+    } else {
+        log_stream_ << "Refine mesh failed: Mesh is empty." << std::endl;
+    }
 }
 
 void ReconstructionPlugin::texture_mesh_callback() {
+    log_stream_ << std::endl;
     if (!mvs_scene_.mesh.IsEmpty()) {
-        mvs_scene_.TextureMesh(parameters_.resolution_level,
+        log_stream_ << "Texturing mesh ..." << std::endl;
+        auto time_begin = std::chrono::steady_clock::now();
+
+        mvs_scene_.TextureMesh(parameters_.texture_resolution_level,
                                parameters_.min_resolution,
                                parameters_.texture_outlier_treshold,
                                parameters_.cost_smoothness_ratio,
@@ -300,16 +392,39 @@ void ReconstructionPlugin::texture_mesh_callback() {
                                parameters_.texture_size_multiple,
                                parameters_.patch_packing_heuristic,
                                Pixel8U(parameters_.empty_color));
+
+        auto time_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> time_elapsed = time_end - time_begin;
+        log_stream_ << "Texture mesh time: " << time_elapsed.count() << " s" << std::endl;
+
         set_mesh();
         show_mesh(true);
         show_point_cloud(false);
     } else {
-        log_stream_ << "Texturing failed: Mesh is empty." << std::endl;
+        log_stream_ << "Texture mesh failed: Mesh is empty." << std::endl;
+    }
+}
+
+void ReconstructionPlugin::center_object_callback() {
+    // First try to center mesh then point cloud
+    viewer->selected_data_index = VIEWER_DATA_MESH;
+    if (viewer->data().V.rows() > 0) {
+        viewer->core.get_scale_and_shift_to_fit_mesh(
+                viewer->data().V,
+                viewer->core.camera_zoom,
+                viewer->core.camera_translation);
+    } else {
+        viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
+        Eigen::MatrixXd points = viewer->data().points.leftCols(3);
+        viewer->core.get_scale_and_shift_to_fit_mesh(
+                points,
+                viewer->core.camera_zoom,
+                viewer->core.camera_translation);
     }
 }
 
 void ReconstructionPlugin::set_cameras() {
-    viewer->selected_data_index = static_cast<int>(DataIdx::CAMERAS);
+    viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().clear();
 
     theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
@@ -337,12 +452,12 @@ void ReconstructionPlugin::set_cameras() {
 
 void ReconstructionPlugin::show_cameras(bool visible) {
     parameters_.show_cameras = visible;
-    viewer->selected_data_index = static_cast<int>(DataIdx::CAMERAS);
+    viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().show_overlay = visible;
 }
 
 void ReconstructionPlugin::set_point_cloud() {
-    viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
+    viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
     viewer->data().clear();
 
     theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
@@ -373,19 +488,16 @@ void ReconstructionPlugin::set_point_cloud() {
     }
     colors = colors / 255.0;
     viewer->data().set_points(points, colors);
-
-    // Center object
-    viewer->core.align_camera_center(points);
 }
 
 void ReconstructionPlugin::show_point_cloud(bool visible) {
     parameters_.show_point_cloud = visible;
-    viewer->selected_data_index = static_cast<int>(DataIdx::POINT_CLOUD);
+    viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
     viewer->data().show_overlay = visible;
 }
 
 void ReconstructionPlugin::set_mesh() {
-    viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+    viewer->selected_data_index = VIEWER_DATA_MESH;
     viewer->data().clear();
 
     // Add vertices
@@ -451,14 +563,11 @@ void ReconstructionPlugin::set_mesh() {
     } else {
         viewer->data().show_texture = false;
     }
-
-    // Center object
-    viewer->core.align_camera_center(V);
 }
 
 void ReconstructionPlugin::show_mesh(bool visible) {
     parameters_.show_mesh = visible;
-    viewer->selected_data_index = static_cast<int>(DataIdx::MESH);
+    viewer->selected_data_index = VIEWER_DATA_MESH;
     viewer->data().show_faces = visible;
 }
 
@@ -599,13 +708,12 @@ void ReconstructionPlugin::draw_labels(const igl::opengl::ViewerData &data) {
 }
 
 void ReconstructionPlugin::draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const std::string &text) {
-    Eigen::Matrix4f view_matrix = viewer->core.view * viewer->core.model;
     pos += normal * 0.005f * viewer->core.object_scale;
     Eigen::Vector3f coord = igl::project(Eigen::Vector3f(pos.cast<float>()),
-                                         view_matrix, viewer->core.proj, viewer->core.viewport);
+                                         viewer->core.view, viewer->core.proj, viewer->core.viewport);
 
     // Draw text labels slightly bigger than normal text
-    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 1.5f,
                       ImVec2(coord[0], (viewer->core.viewport[3] - coord[1])),
                       ImGui::GetColorU32(ImVec4(0, 255, 0, 255)),

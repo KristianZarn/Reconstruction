@@ -171,3 +171,20 @@ if (ImGui::Button("Mesh [2]", ImVec2((w - p) / 2.f, 0))) {
 show_mesh();
 hide_point_cloud();
 }
+
+// Debug info
+std::ostringstream os;
+// os << "View: \n" << viewer->core.view << std::endl;
+// os << "Norm: \n" << viewer->core.norm << std::endl;
+// os << "Proj: \n" << viewer->core.proj << std::endl;
+
+os << "camera_base_translation: \n" << viewer->core.camera_base_translation << std::endl;
+os << "camera_translation: \n" << viewer->core.camera_translation << std::endl;
+os << "camera_center: \n" << viewer->core.camera_center << std::endl;
+
+os << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
+os << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
+
+// Eigen::Quaternionf quat = viewer->core.trackball_angle;
+// os << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
+ImGui::TextUnformatted(os.str().c_str());

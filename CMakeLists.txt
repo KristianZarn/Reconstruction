@@ -59,10 +59,11 @@ find_package(OpenMVS REQUIRED)
 set(SOURCE_FILES
     src/helpers.cpp
     src/webcam.cpp
-    src/CameraPlugin.cpp
     src/RealtimeReconstructionBuilder.cpp
     src/RealtimeFeatureMatcher.cpp
-    src/ReconstructionPlugin.cpp)
+    src/CameraPlugin.cpp
+    src/ReconstructionPlugin.cpp
+    src/EditMeshPlugin.cpp)
 
 set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src

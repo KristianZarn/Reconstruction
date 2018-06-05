@@ -13,7 +13,7 @@
 int main(int argc, char *argv[]) {
 
     // Initialization
-    std::string camera_device = "/dev/video0";
+    std::string camera_device = "/dev/video1";
     std::string images_path =
             "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/webcam_images/";
     std::string reconstruction_path =

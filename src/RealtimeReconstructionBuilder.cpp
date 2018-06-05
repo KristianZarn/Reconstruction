@@ -301,7 +301,7 @@ namespace theia {
             for (const auto& view_id : reconstruction_->ViewIds()) {
                 stream << "\n\tid: " << view_id << ", name: " << reconstruction_->View(view_id)->Name();
             }
-            stream << "\n\n";
+            stream << "\n";
         }
         if (print_reconstruction) {
             stream << "Reconstruction: ";
@@ -309,7 +309,7 @@ namespace theia {
                    << "\n\tNum estimated views = " << NumEstimatedViews(*reconstruction_)
                    << "\n\tNum tracks = " << reconstruction_->NumTracks()
                    << "\n\tNum estimated tracks = " << NumEstimatedTracks(*reconstruction_)
-                   << "\n\n";
+                   << "\n";
         }
         if (print_view_graph) {
             stream << "View Graph: ";
@@ -320,11 +320,11 @@ namespace theia {
                 ViewIdPair view_pair = edge.first;
                 stream << "\t(" << view_pair.first << ", " << view_pair.second << ")";
             }
-            stream << "\n\n";
+            stream << "\n";
         }
         if (print_feature_track_map) {
             stream << "Feature to track id map: ";
-            stream << "\n\tNum elements = " << image_feature_to_track_id_.size() << "\n\n";
+            stream << "\n\tNum elements = " << image_feature_to_track_id_.size() << "\n";
         }
     }
 

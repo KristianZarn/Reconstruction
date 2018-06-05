@@ -8,6 +8,7 @@
 #include "helpers.h"
 #include "RealtimeReconstructionBuilder.h"
 #include "ReconstructionPlugin.h"
+#include "EditMeshPlugin.h"
 
 int main(int argc, char *argv[]) {
 
@@ -21,12 +22,18 @@ int main(int argc, char *argv[]) {
     std::string reconstruction_path =
             "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_reconstruction/";
 
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/flasa_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/flasa_reconstruction/";
+
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+    viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
 
     // Setup viewer callbacks for ImGui
@@ -65,7 +72,7 @@ int main(int argc, char *argv[]) {
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
     std::vector<std::string> image_names;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 25; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names.emplace_back("frame" + ss.str() + ".png");
@@ -74,6 +81,9 @@ int main(int argc, char *argv[]) {
     ReconstructionPlugin reconstruction_plugin(
             parameters, images_path, image_names, reconstruction_path, options, intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
+
+    // Attach edit mesh plugin
+
 
     // Start viewer
     viewer.launch();

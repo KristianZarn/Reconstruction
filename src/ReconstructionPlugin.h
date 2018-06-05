@@ -22,6 +22,7 @@ public:
         float dist_insert = 0.5f;
         // Exploits the free-space support in order to reconstruct weakly-represented surfaces
         bool use_free_space_support = false;
+        unsigned int fix_non_manifold = 4;
         // Multiplier adjusting the minimum thickness considered during visibility weighting
         float thickness_factor = 1.0f;
         // Multiplier adjusting the quality weight considered during graph-cut
@@ -41,7 +42,7 @@ public:
 
         // Texture mesh
         // How many times to scale down the images before mesh refinement
-        unsigned int resolution_level = 0;
+        unsigned int texture_resolution_level = 0;
         // Do not scale images lower than this resolution
         unsigned int min_resolution = 640;
         // Threshold used to find and remove outlier face textures (0 - disabled)
@@ -61,6 +62,38 @@ public:
         // Color used for faces not covered by any image
         uint32_t empty_color = 0x00FF7F27;
 
+        // Refine mesh
+        // How many times to scale down the images before mesh refinement
+        unsigned int refine_resolution_level = 0;
+        // Do not scale images lower than this resolution
+        unsigned int refine_min_resolution = 640;
+        // Maximum number of neighbor images used to refine the mesh
+        unsigned int refine_max_views = 8;
+        // Decimation factor in range [0..1] to be applied to the input surface before refinement (0 - auto, 1 - disabled)
+        float refine_decimate = 0.0f;
+        // Try to close small holes in the input surface (0 - disabled)
+        unsigned int refine_close_holes = 10;
+        // Ensure edge size and improve vertex valence of the input surface (0 - disabled, 1 - auto, 2 - force)
+        unsigned int ensure_edge_size = 1;
+        // Maximum face area projected in any pair of images that is not subdivided (0 - disabled)
+        unsigned int max_face_area = 64;
+        // How many iterations to run mesh optimization on multi-scale images
+        unsigned int scales = 3;
+        // Image scale factor used at each mesh optimization step
+        float scale_step = 0.5f;
+        // Recompute some data in order to reduce memory requirements
+        unsigned int reduce_memory = 1;
+        // Refine mesh using an image pair alternatively as reference (0 - both, 1 - alternate, 2 - only left, 3 - only right)
+        unsigned int alternative_pair = 0;
+        // Scalar regularity weight to balance between photo-consistency and regularization terms during mesh optimization
+        float regularity_weight = 0.2f;
+        // Scalar ratio used to compute the regularity gradient as a combination of rigidity and elasticity
+        float rigidity_elasticity_ratio = 0.9f;
+        // Threshold used to remove vertices on planar patches (0 - disabled)
+        float planar_vertex_ratio = 0.0f;
+        // Gradient step to be used instead (0 - auto)
+        float gradient_step = 45.05f;
+
         // Viewer
         int point_size = 3;
         int view_to_delete = 0;
@@ -69,7 +102,7 @@ public:
         bool show_point_cloud = false;
         bool show_mesh = false;
         bool show_texture = true;
-        bool show_wireframe = true;
+        bool show_wireframe = false;
     };
 
     ReconstructionPlugin(Parameters parameters,
@@ -99,11 +132,10 @@ public:
     void draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal, const std::string &text);
 
 private:
-    enum class DataIdx {
-        CAMERAS,
-        POINT_CLOUD,
-        MESH
-    };
+    // Viewer data indices
+    unsigned int VIEWER_DATA_CAMERAS;
+    unsigned int VIEWER_DATA_POINT_CLOUD;
+    unsigned int VIEWER_DATA_MESH;
 
     // Parameters
     Parameters parameters_;
@@ -139,8 +171,10 @@ private:
     void reset_reconstruction_callback();
 
     void reconstruct_mesh_callback();
-    void dense_reconstruct_mesh_callback();
+    void refine_mesh_callback();
     void texture_mesh_callback();
+
+    void center_object_callback();
 };
 
 
