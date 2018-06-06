@@ -1,0 +1,15 @@
+# image width and height
+2048 1536
+
+# focal lenght
+2457.0
+
+# principal point
+1024 768
+
+# aspect ratio
+1.0
+
+# skew
+0.0
+
