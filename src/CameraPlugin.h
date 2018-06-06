@@ -6,7 +6,7 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/ViewerPlugin.h>
 
-#include "webcam.h"
+#include "webcam/webcam.h"
 
 class CameraPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:

@@ -50,6 +50,10 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     viewer->data().show_lines = parameters_.show_wireframe;
 }
 
+const MVS::Scene& ReconstructionPlugin::get_mvs_scene() {
+    return mvs_scene_;
+}
+
 bool ReconstructionPlugin::post_draw() {
     // Text labels
     if (parameters_.show_labels) {

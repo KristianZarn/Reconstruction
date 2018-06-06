@@ -57,8 +57,9 @@ find_package(OpenMVS REQUIRED)
 
 # TARGETS
 set(SOURCE_FILES
+    external/webcam/webcam.cpp
+    external/imguizmo/ImGuizmo.cpp
     src/helpers.cpp
-    src/webcam.cpp
     src/RealtimeReconstructionBuilder.cpp
     src/RealtimeFeatureMatcher.cpp
     src/CameraPlugin.cpp
@@ -66,6 +67,7 @@ set(SOURCE_FILES
     src/EditMeshPlugin.cpp)
 
 set(INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/external
     ${CMAKE_SOURCE_DIR}/src
     $ENV{HOME}/Sources/libigl/external/imgui
     $ENV{HOME}/Sources/libigl/external/stb_image

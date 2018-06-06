@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     };
 
     // Attach reconstruction plugin
-    ReconstructionPlugin::Parameters parameters;
+    ReconstructionPlugin::Parameters reconstruction_parameters;
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
@@ -78,12 +78,18 @@ int main(int argc, char *argv[]) {
         image_names.emplace_back("frame" + ss.str() + ".png");
     }
 
-    ReconstructionPlugin reconstruction_plugin(
-            parameters, images_path, image_names, reconstruction_path, options, intrinsics_prior);
+    ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
+                                               images_path,
+                                               image_names,
+                                               reconstruction_path,
+                                               options,
+                                               intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters, reconstruction_plugin.get_mvs_scene());
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

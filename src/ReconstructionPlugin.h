@@ -113,6 +113,7 @@ public:
                          theia::CameraIntrinsicsPrior intrinsics_prior);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
+    const MVS::Scene& get_mvs_scene();
     bool post_draw() override;
 
     // Mouse IO
@@ -153,6 +154,17 @@ private:
     // std::ostringstream log_stream_;
     std::ostream& log_stream_ = std::cout;
 
+    // Callback functions
+    void initialize_callback();
+    void extend_callback();
+    void remove_view_callback(int view_id);
+    void remove_last_view_callback();
+    void reset_reconstruction_callback();
+    void reconstruct_mesh_callback();
+    void refine_mesh_callback();
+    void texture_mesh_callback();
+    void center_object_callback();
+
     // Helper functions
     void set_cameras();
     void show_cameras(bool visible);
@@ -162,19 +174,6 @@ private:
 
     void set_mesh();
     void show_mesh(bool visible);
-
-    // Callback functions
-    void initialize_callback();
-    void extend_callback();
-    void remove_view_callback(int view_id);
-    void remove_last_view_callback();
-    void reset_reconstruction_callback();
-
-    void reconstruct_mesh_callback();
-    void refine_mesh_callback();
-    void texture_mesh_callback();
-
-    void center_object_callback();
 };
 
 

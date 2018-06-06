@@ -1,5 +1,4 @@
 #include "CameraPlugin.h"
-#include "webcam.h"
 
 #include <sstream>
 #include <iomanip>
