@@ -45,9 +45,6 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     // Append mesh for mesh
     viewer->append_mesh();
     VIEWER_DATA_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
-
-    viewer->data().show_texture = parameters_.show_texture;
-    viewer->data().show_lines = parameters_.show_wireframe;
 }
 
 const MVS::Scene& ReconstructionPlugin::get_mvs_scene() {
@@ -61,12 +58,13 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     // Setup window
-    float window_width = 270.0f;
+    float window_width = 300.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
+    // Sparse reconstruction
     ImGui::Text("Sparse reconstruction:");
     if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
         initialize_callback();
@@ -76,6 +74,7 @@ bool ReconstructionPlugin::post_draw() {
     }
     ImGui::Spacing();
 
+    // Edit views
     ImGui::Text("Edit views:");
     ImGui::PushItemWidth(100.0f);
     ImGui::InputInt("", &parameters_.view_to_delete);
@@ -92,6 +91,7 @@ bool ReconstructionPlugin::post_draw() {
     }
     ImGui::Spacing();
 
+    // Dense reconstruction
     ImGui::Text("Dense reconstruction:");
     if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
         reconstruct_mesh_callback();
@@ -104,6 +104,7 @@ bool ReconstructionPlugin::post_draw() {
     }
     ImGui::Spacing();
 
+    // Display options
     ImGui::Text("Display options:");
     if (ImGui::Button("Center object", ImVec2(-1, 0))) {
         center_object_callback();
@@ -134,36 +135,54 @@ bool ReconstructionPlugin::post_draw() {
     }
     ImGui::Spacing();
 
-    ImGui::Text("Output");
+    // Input output
+    ImGui::Text("Input / Output:");
+    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+    ImGui::Spacing();
     if (ImGui::Button("Save point cloud", ImVec2(-1, 0))) {
         log_stream_ << std::endl;
 
-        std::string filename = "sparse_point_cloud.ply";
+        std::string filename = std::string(parameters_.filename_buffer) + ".ply";
         reconstruction_builder_.WritePly(reconstruction_path_ + filename);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
     }
     if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
         log_stream_ << std::endl;
 
-        std::string filename_mvs = "mesh.mvs";
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
         mvs_scene_.Save(reconstruction_path_ + filename_mvs);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
 
-        std::string filename_ply = "mesh.ply";
+        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
         mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
     }
+    if (ImGui::Button("Load mesh", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_.Load(reconstruction_path_ + filename_mvs);
+        set_mesh();
+        show_mesh(true);
+        show_point_cloud(false);
+        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+    }
+    std::ostringstream os;
+    os << "Mesh info:"
+       << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
+       << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
+    ImGui::TextUnformatted(os.str().c_str());
     ImGui::Spacing();
 
     // Debug info
-    std::ostringstream os;
-    // os << "View: \n" << viewer->core.view << std::endl;
-    // os << "Norm: \n" << viewer->core.norm << std::endl;
-    // os << "Proj: \n" << viewer->core.proj << std::endl;
+    // std::ostringstream debug;
+    // debug << "View: \n" << viewer->core.view << std::endl;
+    // debug << "Norm: \n" << viewer->core.norm << std::endl;
+    // debug << "Proj: \n" << viewer->core.proj << std::endl;
 
     // Eigen::Quaternionf quat = viewer->core.trackball_angle;
-    // os << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
-    ImGui::TextUnformatted(os.str().c_str());
+    // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
+    // ImGui::TextUnformatted(os.str().c_str());
 
     ImGui::End();
     return false;
@@ -523,6 +542,7 @@ void ReconstructionPlugin::set_mesh() {
         F(i, 2) = face[2];
     }
     viewer->data().set_mesh(V, F);
+    viewer->data().show_lines = parameters_.show_wireframe;
 
     // Add texture if available
     if (!mvs_scene_.mesh.faceTexcoords.IsEmpty()) {
@@ -563,9 +583,7 @@ void ReconstructionPlugin::set_mesh() {
 
         viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
         viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
-        viewer->data().show_texture = true;
-    } else {
-        viewer->data().show_texture = false;
+        viewer->data().show_texture = parameters_.show_texture;
     }
 }
 
@@ -601,49 +619,51 @@ bool ReconstructionPlugin::mouse_scroll(float delta_y)
 // Keyboard IO
 bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
 {
-    ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
-    switch (key) {
-        case 'i':
-        {
-            initialize_callback();
-            return true;
+    ImGui_ImplGlfwGL3_CharCallback(viewer->window, key);
+    if (!ImGui::GetIO().WantTextInput) {
+        switch (key) {
+            case 'i':
+            {
+                initialize_callback();
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case 'e':
+            {
+                extend_callback();
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case 'b':
+            {
+                remove_last_view_callback();
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case 'm':
+            {
+                reconstruct_mesh_callback();
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case 't':
+            {
+                texture_mesh_callback();
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case '1':
+            {
+                show_cameras(!parameters_.show_cameras);
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case '2':
+            {
+                show_point_cloud(!parameters_.show_point_cloud);
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            case '3':
+            {
+                show_mesh(!parameters_.show_mesh);
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            default: break;
         }
-        case 'e':
-        {
-            extend_callback();
-            return true;
-        }
-        case 'b':
-        {
-            remove_last_view_callback();
-            return true;
-        }
-        case 'm':
-        {
-            reconstruct_mesh_callback();
-            return true;
-        }
-        case 't':
-        {
-            texture_mesh_callback();
-            return true;
-        }
-        case '1':
-        {
-            show_cameras(!parameters_.show_cameras);
-            return true;
-        }
-        case '2':
-        {
-            show_point_cloud(!parameters_.show_point_cloud);
-            return true;
-        }
-        case '3':
-        {
-            show_mesh(!parameters_.show_mesh);
-            return true;
-        }
-        default: break;
     }
     return ImGui::GetIO().WantCaptureKeyboard;
 }

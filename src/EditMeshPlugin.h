@@ -14,17 +14,21 @@
 class EditMeshPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
     struct Parameters {
-        // Flags
-        bool active_edit = false;
-        bool active_bounding_box = false;
-
         // Gizmo
         ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
         ImGuizmo::MODE gizmo_mode = ImGuizmo::LOCAL;
+
+        // Menu
+        bool show_bounding_box = false;
+        bool show_mesh = false;
+        bool show_texture = false;
+        bool show_wireframe = false;
+        char filename_buffer[64] = "filename";
+        Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
     };
 
     EditMeshPlugin(Parameters parameters,
-                   const MVS::Scene& mvs_scene);
+                   std::string reconstruction_path);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool pre_draw() override;
@@ -49,9 +53,11 @@ private:
     // Parameters
     Parameters parameters_;
 
+    // Input and output paths
+    std::string reconstruction_path_;
+
     // Reconstruction
-    const MVS::Scene& mvs_scene_;
-    MVS::Scene mvs_scene_edit_;
+    MVS::Scene mvs_scene_;
 
     // Bounding box
     Eigen::MatrixXd bounding_box_vertices_;
@@ -61,12 +67,10 @@ private:
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
-    void start_edit_callback();
-    void pose_bounding_box_callback();
-    void done_bounding_box_callback();
+    void select_inside_callback();
 
     // Helpers
-    void set_mesh();
+    void set_mesh(const MVS::Scene& mvs_scene);
     void show_mesh(bool visible);
     void set_bounding_box();
     void transform_bounding_box();

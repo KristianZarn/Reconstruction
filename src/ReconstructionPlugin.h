@@ -94,7 +94,7 @@ public:
         // Gradient step to be used instead (0 - auto)
         float gradient_step = 45.05f;
 
-        // Viewer
+        // Menu
         int point_size = 3;
         int view_to_delete = 0;
         bool show_labels = true;
@@ -103,6 +103,7 @@ public:
         bool show_mesh = false;
         bool show_texture = true;
         bool show_wireframe = false;
+        char filename_buffer[64] = "filename";
     };
 
     ReconstructionPlugin(Parameters parameters,

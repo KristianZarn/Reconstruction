@@ -88,7 +88,8 @@ int main(int argc, char *argv[]) {
 
     // Attach edit mesh plugin
     EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters, reconstruction_plugin.get_mvs_scene());
+    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
+                                    reconstruction_path);
     viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer

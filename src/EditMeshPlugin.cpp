@@ -5,9 +5,9 @@
 #include <imgui_impl_glfw_gl3.h>
 
 EditMeshPlugin::EditMeshPlugin(Parameters parameters,
-                               const MVS::Scene &mvs_scene)
+                               std::string reconstruction_path)
         : parameters_(parameters),
-          mvs_scene_(mvs_scene) {}
+          reconstruction_path_(std::move(reconstruction_path)) {}
 
 void EditMeshPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -33,150 +33,193 @@ bool EditMeshPlugin::post_draw() {
     // Setup window
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowPos(ImVec2(270.0f, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(300.0f, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
-    if (ImGui::Button("Start edit", ImVec2(-1, 0))) {
-        start_edit_callback();
-    }
+    // Input output
+    ImGui::Text("Input / Output:");
+    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+    ImGui::Spacing();
+    if (ImGui::Button("Load mesh", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
 
-    // Show mesh info
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_.Load(reconstruction_path_ + filename_mvs);
+        set_mesh(mvs_scene_);
+        show_mesh(true);
+        set_bounding_box();
+        show_bounding_box(false);
+        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+    }
+    if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+    }
     std::ostringstream os;
     os << "Mesh info:"
-       << "\t" << mvs_scene_edit_.mesh.vertices.GetSize() << " vertices"
-       << "\t" << mvs_scene_edit_.mesh.faces.GetSize() << " faces";
+       << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
+       << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
     ImGui::TextUnformatted(os.str().c_str());
-
     ImGui::Spacing();
 
-    if (parameters_.active_edit) {
-        // Bounding box
-        if (ImGui::Button("Pose bounding box", ImVec2(-1, 0))) {
-            pose_bounding_box_callback();
-        }
-
-        if (parameters_.active_bounding_box) {
-            if (ImGui::RadioButton("Translate", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
-                parameters_.gizmo_operation = ImGuizmo::TRANSLATE;
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Rotate", parameters_.gizmo_operation == ImGuizmo::ROTATE))
-                parameters_.gizmo_operation = ImGuizmo::ROTATE;
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
-                parameters_.gizmo_operation = ImGuizmo::SCALE;
-            float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-            ImGuizmo::DecomposeMatrixToComponents(bounding_box_gizmo_.data(), matrixTranslation, matrixRotation, matrixScale);
-            ImGui::InputFloat3("Tr", matrixTranslation, 3);
-            ImGui::InputFloat3("Rt", matrixRotation, 3);
-            ImGui::InputFloat3("Sc", matrixScale, 3);
-            ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, bounding_box_gizmo_.data());
-
-            if (parameters_.gizmo_operation != ImGuizmo::SCALE)
-            {
-                if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
-                    parameters_.gizmo_mode = ImGuizmo::LOCAL;
-                ImGui::SameLine();
-                if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
-                    parameters_.gizmo_mode = ImGuizmo::WORLD;
-            }
-
-            // Setup gizmo
-            // Eigen::UniformScaling scale = Eigen::Scaling(0.33 * viewer->core.camera_base_zoom);
-            // Eigen::Matrix4f view = scale.inverse() * viewer->core.view;
-            Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_zoom) * viewer->core.view;
-
-            ImGuiIO& io = ImGui::GetIO();
-            ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-            ImGuizmo::Manipulate(view.data(),
-                                 viewer->core.proj.data(),
-                                 parameters_.gizmo_operation,
-                                 parameters_.gizmo_mode,
-                                 bounding_box_gizmo_.data());
-            // Debug info
-            std::ostringstream os;
-            os << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
-            os << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
-            ImGui::TextUnformatted(os.str().c_str());
-
-            // Transform bounding box
-            if (bounding_box_vertices_.rows() > 0) {
-                transform_bounding_box();
-            }
-
-            if (ImGui::Button("Done posing", ImVec2(-1, 0))) {
-                done_bounding_box_callback();
-            }
-        }
-        ImGui::Spacing();
+    // Display options
+    ImGui::Text("Display options:");
+    if (ImGui::Checkbox("Show bounding box", &parameters_.show_bounding_box)) {
+        show_bounding_box(parameters_.show_bounding_box);
     }
+    if (ImGui::Checkbox("Show mesh", &parameters_.show_mesh)) {
+        show_mesh(parameters_.show_mesh);
+    }
+    if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        viewer->data().show_texture = parameters_.show_texture;
+    }
+    if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        viewer->data().show_lines = parameters_.show_wireframe;
+    }
+    ImGui::Spacing();
+
+    // Bounding box
+    if (parameters_.show_bounding_box) {
+        ImGui::Text("Bounding box:");
+        if (ImGui::RadioButton("Translate", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
+            parameters_.gizmo_operation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", parameters_.gizmo_operation == ImGuizmo::ROTATE))
+            parameters_.gizmo_operation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
+            parameters_.gizmo_operation = ImGuizmo::SCALE;
+        if (parameters_.gizmo_operation != ImGuizmo::SCALE)
+        {
+            if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
+                parameters_.gizmo_mode = ImGuizmo::LOCAL;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
+                parameters_.gizmo_mode = ImGuizmo::WORLD;
+        }
+        if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
+            select_inside_callback();
+        }
+        // Setup bounding box gizmo
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_zoom) * viewer->core.view;
+        ImGuizmo::Manipulate(view.data(),
+                             viewer->core.proj.data(),
+                             parameters_.gizmo_operation,
+                             parameters_.gizmo_mode,
+                             bounding_box_gizmo_.data());
+        // Transform bounding box
+        transform_bounding_box();
+    }
+
+    // Modify mesh
+    ImGui::Text("Modify:");
+    if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
+        // TODO: invert selection
+    }
+    if (ImGui::Button("Remove selected faces", ImVec2(-1, 0))) {
+        // TODO: remove selected
+    }
+
+    // Debug info
+    // std::ostringstream debug;
+    // debug << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
+    // debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
+    // ImGui::TextUnformatted(os.str().c_str());
 
     ImGui::End();
     return false;
 }
 
-void EditMeshPlugin::start_edit_callback() {
-    log_stream_ << std::endl;
+void EditMeshPlugin::select_inside_callback() {
+    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    Eigen::MatrixXd V_box = viewer->data().V;
+    Eigen::Vector3d u = V_box.row(4) - V_box.row(0);
+    Eigen::Vector3d v = V_box.row(2) - V_box.row(0);
+    Eigen::Vector3d w = V_box.row(1) - V_box.row(0);
 
-    // Copy mvs scene
-    mvs_scene_edit_ = mvs_scene_;
+    // Check which points are in bounding box
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    std::unordered_set<int> selected_vertices_idx;
+    for (int i = 0; i < viewer->data().V.rows(); i++) {
+        Eigen::Vector3d x = viewer->data().V.row(i);
 
-    // Check if mesh empty
-    if (mvs_scene_edit_.mesh.vertices.IsEmpty() || mvs_scene_edit_.mesh.faces.IsEmpty()) {
-        log_stream_ << "Start edit failed: Mesh is empty" << std::endl;
-    } else {
-        // Set mesh
-        set_mesh();
-        show_mesh(true);
-        set_bounding_box();
-        show_bounding_box(false);
-        parameters_.active_edit = true;
-        log_stream_ << "Start edit successful: Mesh was copied for editing" << std::endl;
+        double ux = u.dot(x);
+        double vx = v.dot(x);
+        double wx = w.dot(x);
+
+        if (ux > u.dot(V_box.row(0)) && ux < u.dot(V_box.row(4)) &&
+                vx > v.dot(V_box.row(0)) && vx < v.dot(V_box.row(2)) &&
+                wx > w.dot(V_box.row(0)) && wx < w.dot(V_box.row(1))) {
+            selected_vertices_idx.insert(i);
+        }
     }
+
+    // Transform to selected faces
+    std::unordered_set<int> selected_faces_idx;
+    for (int i = 0; i < viewer->data().F.rows(); i++) {
+        Eigen::Vector3i f = viewer->data().F.row(i);
+
+        if (selected_vertices_idx.find(f(0)) != selected_vertices_idx.end() ||
+                selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
+                selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
+            selected_faces_idx.insert(i);
+        }
+    }
+
+    // Set colors of selected faces
+    Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
+    for (const auto& i : selected_faces_idx) {
+        colors.row(i) = Eigen::RowVector3d(1, 0, 0);
+    }
+    viewer->data().set_colors(colors);
 }
 
-void EditMeshPlugin::pose_bounding_box_callback() {
-    show_bounding_box(true);
-    parameters_.active_bounding_box = true;
-}
-
-void EditMeshPlugin::done_bounding_box_callback() {
-    show_bounding_box(false);
-    parameters_.active_bounding_box = false;
-}
-
-void EditMeshPlugin::set_mesh() {
+void EditMeshPlugin::set_mesh(const MVS::Scene& mvs_scene) {
     // Select viewer data
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     viewer->data().clear();
 
     // Add vertices
-    int num_vertices = mvs_scene_edit_.mesh.vertices.size();
+    int num_vertices = mvs_scene.mesh.vertices.size();
     Eigen::MatrixXd V(num_vertices, 3);
     for (int i = 0; i < num_vertices; i++) {
-        MVS::Mesh::Vertex vertex = mvs_scene_edit_.mesh.vertices[i];
+        MVS::Mesh::Vertex vertex = mvs_scene.mesh.vertices[i];
         V(i, 0) = vertex[0];
         V(i, 1) = vertex[1];
         V(i, 2) = vertex[2];
     }
     // Add faces
-    int num_faces = mvs_scene_edit_.mesh.faces.size();
+    int num_faces = mvs_scene.mesh.faces.size();
     Eigen::MatrixXi F(num_faces, 3);
     for (int i = 0; i < num_faces; i++) {
-        MVS::Mesh::Face face = mvs_scene_edit_.mesh.faces[i];
+        MVS::Mesh::Face face = mvs_scene.mesh.faces[i];
         F(i, 0) = face[0];
         F(i, 1) = face[1];
         F(i, 2) = face[2];
     }
     viewer->data().set_mesh(V, F);
+    viewer->data().set_colors(parameters_.default_color);
+    viewer->data().show_lines = parameters_.show_wireframe;
 
     // Add texture if available
-    if (!mvs_scene_edit_.mesh.faceTexcoords.IsEmpty()) {
+    if (!mvs_scene.mesh.faceTexcoords.IsEmpty()) {
 
         // Set UVs
-        int num_texcoords = mvs_scene_edit_.mesh.faceTexcoords.size();
+        int num_texcoords = mvs_scene.mesh.faceTexcoords.size();
         Eigen::MatrixXd TC(num_texcoords, 2);
         for (int i = 0; i < num_texcoords; i++) {
-            MVS::Mesh::TexCoord texcoord = mvs_scene_edit_.mesh.faceTexcoords[i];
+            MVS::Mesh::TexCoord texcoord = mvs_scene.mesh.faceTexcoords[i];
             TC(i, 0) = texcoord[0];
             TC(i, 1) = texcoord[1];
         }
@@ -189,7 +232,7 @@ void EditMeshPlugin::set_mesh() {
         viewer->data().set_uv(TC, FTC);
 
         // Set texture
-        SEACAVE::Image8U3 img = mvs_scene_edit_.mesh.textureDiffuse;
+        SEACAVE::Image8U3 img = mvs_scene.mesh.textureDiffuse;
         int width = img.width();
         int height = img.height();
 
@@ -208,20 +251,26 @@ void EditMeshPlugin::set_mesh() {
 
         viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
         viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
-        viewer->data().show_texture = true;
-    } else {
-        viewer->data().show_texture = false;
+        viewer->data().show_texture = parameters_.show_texture;
     }
 }
 
 void EditMeshPlugin::show_mesh(bool visible) {
+    parameters_.show_mesh = visible;
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     viewer->data().show_faces = visible;
 }
 
 void EditMeshPlugin::set_bounding_box() {
-    // Find bounding box limits for the mesh
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+
+    // Check if mesh empty
+    if (viewer->data().V.rows() < 0) {
+        log_stream_ << std::endl;
+        log_stream_ << "Set bounding box failed: Mesh is empty" << std::endl;
+    }
+
+    // Find bounding box limits for the mesh
     Eigen::Vector3d min = viewer->data().V.colwise().minCoeff();
     Eigen::Vector3d max = viewer->data().V.colwise().maxCoeff();
     Eigen::Vector3f center = (0.5 * (min.cast<float>() + max.cast<float>()));
@@ -270,12 +319,15 @@ void EditMeshPlugin::set_bounding_box() {
 
 void EditMeshPlugin::transform_bounding_box() {
     viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
-    Eigen::MatrixXd V = bounding_box_vertices_;
-    V = (V.rowwise().homogeneous() * bounding_box_gizmo_.cast<double>().transpose()).rowwise().hnormalized();
-    viewer->data().set_vertices(V);
+    if (bounding_box_vertices_.rows() > 0) {
+        Eigen::MatrixXd V = bounding_box_vertices_;
+        V = (V.rowwise().homogeneous() * bounding_box_gizmo_.cast<double>().transpose()).rowwise().hnormalized();
+        viewer->data().set_vertices(V);
+    }
 }
 
 void EditMeshPlugin::show_bounding_box(bool visible) {
+    parameters_.show_bounding_box = visible;
     viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
     viewer->data().show_faces = visible;
 }
