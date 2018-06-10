@@ -59,6 +59,9 @@ private:
     // Reconstruction
     MVS::Scene mvs_scene_;
 
+    // Selection
+    std::unordered_set<int> selected_faces_idx;
+
     // Bounding box
     Eigen::MatrixXd bounding_box_vertices_;
     Eigen::Matrix4f bounding_box_gizmo_;
@@ -68,6 +71,8 @@ private:
 
     // Callback functions
     void select_inside_callback();
+    void invert_selection_callback();
+    void remove_selection_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);
@@ -75,6 +80,7 @@ private:
     void set_bounding_box();
     void transform_bounding_box();
     void show_bounding_box(bool visible);
+    void color_selection();
 };
 
 

@@ -106,7 +106,7 @@ bool EditMeshPlugin::post_draw() {
             if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
                 parameters_.gizmo_mode = ImGuizmo::WORLD;
         }
-        if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
+        if (ImGui::Button("Select", ImVec2(-1, 0))) {
             select_inside_callback();
         }
         // Setup bounding box gizmo
@@ -125,10 +125,10 @@ bool EditMeshPlugin::post_draw() {
     // Modify mesh
     ImGui::Text("Modify:");
     if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
-        // TODO: invert selection
+        invert_selection_callback();
     }
-    if (ImGui::Button("Remove selected faces", ImVec2(-1, 0))) {
-        // TODO: remove selected
+    if (ImGui::Button("Remove selection", ImVec2(-1, 0))) {
+        remove_selection_callback();
     }
 
     // Debug info
@@ -166,7 +166,7 @@ void EditMeshPlugin::select_inside_callback() {
     }
 
     // Transform to selected faces
-    std::unordered_set<int> selected_faces_idx;
+    selected_faces_idx.clear();
     for (int i = 0; i < viewer->data().F.rows(); i++) {
         Eigen::Vector3i f = viewer->data().F.row(i);
 
@@ -178,7 +178,28 @@ void EditMeshPlugin::select_inside_callback() {
     }
 
     // Set colors of selected faces
-    Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
+    color_selection();
+}
+
+void EditMeshPlugin::invert_selection_callback() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    std::unordered_set<int> selection_inverse;
+    for (int i = 0; i < viewer->data().F.rows(); i++) {
+        if (selected_faces_idx.find(i) == selected_faces_idx.end()) {
+            selection_inverse.insert(i);
+        }
+    }
+    selected_faces_idx = selection_inverse;
+    color_selection();
+}
+
+void EditMeshPlugin::remove_selection_callback() {
+    // TODO: remove selected
+}
+
+void EditMeshPlugin::color_selection() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1); // todo: set to default color
     for (const auto& i : selected_faces_idx) {
         colors.row(i) = Eigen::RowVector3d(1, 0, 0);
     }
