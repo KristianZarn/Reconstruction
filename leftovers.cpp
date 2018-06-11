@@ -188,3 +188,39 @@ os << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
 // Eigen::Quaternionf quat = viewer->core.trackball_angle;
 // os << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
 ImGui::TextUnformatted(os.str().c_str());
+
+/*void EditMeshPlugin::remove_selection_callback() {
+    // Get vertices from faces
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    std::unordered_set<int> selected_vertices_idx;
+    for (const auto& i : selected_faces_idx) {
+        Eigen::Vector3i face = viewer->data().F.row(i);
+        selected_vertices_idx.insert(face(0));
+        selected_vertices_idx.insert(face(1));
+        selected_vertices_idx.insert(face(2));
+    }
+
+    // Remove vertices
+    MVS::Mesh::VertexIdxArr vertices;
+    for (const auto& i : selected_vertices_idx) {
+        MVS::Mesh::VIndex& tmp = vertices.AddEmpty();
+        tmp = (MVS::Mesh::VIndex) i;
+    }
+
+    // Debug
+    for (const auto& i : vertices) {
+        log_stream_ << i << std::endl;
+    }
+
+    log_stream_ << "Vertices before: " << mvs_scene_.mesh.vertices.size() << std::endl;
+    log_stream_ << "Faces before: " << mvs_scene_.mesh.faces.size() << std::endl;
+    mvs_scene_.mesh.RemoveVertices(vertices, false);
+    log_stream_ << "Vertices after: " << mvs_scene_.mesh.vertices.size() << std::endl;
+    log_stream_ << "Faces after: " << mvs_scene_.mesh.faces.size() << std::endl;
+
+    // Reset mesh in viewer
+    set_mesh(mvs_scene_);
+    show_mesh(true);
+    set_bounding_box();
+    show_bounding_box(false);
+}*/

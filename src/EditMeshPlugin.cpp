@@ -33,6 +33,7 @@ bool EditMeshPlugin::post_draw() {
     // Setup window
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
+    // ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(300.0f, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
@@ -46,6 +47,7 @@ bool EditMeshPlugin::post_draw() {
         std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
         mvs_scene_.Load(reconstruction_path_ + filename_mvs);
         set_mesh(mvs_scene_);
+        center_object_callback();
         show_mesh(true);
         set_bounding_box();
         show_bounding_box(false);
@@ -71,8 +73,8 @@ bool EditMeshPlugin::post_draw() {
 
     // Display options
     ImGui::Text("Display options:");
-    if (ImGui::Checkbox("Show bounding box", &parameters_.show_bounding_box)) {
-        show_bounding_box(parameters_.show_bounding_box);
+    if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+        center_object_callback();
     }
     if (ImGui::Checkbox("Show mesh", &parameters_.show_mesh)) {
         show_mesh(parameters_.show_mesh);
@@ -84,6 +86,13 @@ bool EditMeshPlugin::post_draw() {
     if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
         viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
         viewer->data().show_lines = parameters_.show_wireframe;
+    }
+    ImGui::Spacing();
+    if (ImGui::Checkbox("Show bounding box", &parameters_.show_bounding_box)) {
+        show_bounding_box(parameters_.show_bounding_box);
+    }
+    if (ImGui::Checkbox("Show plane", &parameters_.show_plane)) {
+        // TODO: show plane
     }
     ImGui::Spacing();
 
@@ -98,31 +107,32 @@ bool EditMeshPlugin::post_draw() {
         ImGui::SameLine();
         if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
             parameters_.gizmo_operation = ImGuizmo::SCALE;
-        if (parameters_.gizmo_operation != ImGuizmo::SCALE)
-        {
+        if (parameters_.gizmo_operation != ImGuizmo::SCALE) {
             if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
                 parameters_.gizmo_mode = ImGuizmo::LOCAL;
             ImGui::SameLine();
             if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
                 parameters_.gizmo_mode = ImGuizmo::WORLD;
         }
-        if (ImGui::Button("Select", ImVec2(-1, 0))) {
+        if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
             select_inside_callback();
         }
         // Setup bounding box gizmo
         ImGuiIO& io = ImGui::GetIO();
         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_zoom) * viewer->core.view;
+        Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_base_zoom) *
+                Eigen::Scaling(1.0f / viewer->core.camera_zoom) * viewer->core.view;
         ImGuizmo::Manipulate(view.data(),
                              viewer->core.proj.data(),
                              parameters_.gizmo_operation,
                              parameters_.gizmo_mode,
                              bounding_box_gizmo_.data());
+
         // Transform bounding box
         transform_bounding_box();
     }
 
-    // Modify mesh
+    // Modify
     ImGui::Text("Modify:");
     if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
         invert_selection_callback();
@@ -132,13 +142,32 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Debug info
-    // std::ostringstream debug;
-    // debug << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
-    // debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
-    // ImGui::TextUnformatted(os.str().c_str());
+    std::ostringstream debug;
+    debug << "View: \n" << viewer->core.view << std::endl;
+    debug << "camera_base_translation: \n" << viewer->core.camera_base_translation << std::endl;
+    debug << "camera_translation: \n" << viewer->core.camera_translation << std::endl;
+    debug << "camera_center: \n" << viewer->core.camera_center << std::endl;
+    debug << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
+    debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
+    debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
+    ImGui::TextUnformatted(debug.str().c_str());
 
     ImGui::End();
     return false;
+}
+
+void EditMeshPlugin::center_object_callback() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    if (viewer->data().V.rows() > 0) {
+        Eigen::Vector3d min_point = viewer->data().V.colwise().minCoeff();
+        Eigen::Vector3d max_point = viewer->data().V.colwise().maxCoeff();
+        Eigen::Vector3d center = viewer->data().V.colwise().mean();
+        viewer->core.camera_base_translation = -center.cast<float>();
+        viewer->core.camera_translation.setConstant(0);
+
+        viewer->core.camera_base_zoom = 2.0 / (max_point-min_point).array().abs().maxCoeff();
+        viewer->core.camera_zoom = 1.0;
+    }
 }
 
 void EditMeshPlugin::select_inside_callback() {
@@ -194,7 +223,22 @@ void EditMeshPlugin::invert_selection_callback() {
 }
 
 void EditMeshPlugin::remove_selection_callback() {
-    // TODO: remove selected
+    // Get vertices from faces
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+
+    // Remove faces
+    MVS::Mesh::FaceIdxArr faces;
+    for (const auto& i : selected_faces_idx) {
+        MVS::Mesh::FIndex& tmp = faces.AddEmpty();
+        tmp = (MVS::Mesh::FIndex) i;
+    }
+    mvs_scene_.mesh.RemoveFaces(faces, true);
+
+    // Reset mesh in viewer
+    set_mesh(mvs_scene_);
+    show_mesh(true);
+    set_bounding_box();
+    show_bounding_box(false);
 }
 
 void EditMeshPlugin::color_selection() {

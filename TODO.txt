@@ -1,0 +1,38 @@
+
+SPARSE:
+- fix random number generator in theiaSFM
+- primerjaj track length, omejitev track length
+- multithreading v theiaSFM
+- unique ptrs in reconstruction builder
+- GPU sift
+- reestimate tracks after remove view
+
+DENSE:
+- undistort images
+- densify point cloud ?
+
+EDIT:
+- remove big faces
+- decimation
+- keep biggest connected components
+- plane selection
+- selection with mouse
+- fix crash when mesh cannot be loaded
+- fix delete selection (delete vertices too)
+
+OTHER:
+- prikaz zajetih slik
+- lepši prikaz kamer
+- undo button
+
+BIG FEATURES:
+- realtime camera position
+- next best view
+
+--------------------------------------------------
+PRIORITY:
+- fix delete selection (delete vertices too)
+
+--------------------------------------------------
+DONE (testing):
+- fix center object

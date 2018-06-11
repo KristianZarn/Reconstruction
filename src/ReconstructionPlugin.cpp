@@ -229,6 +229,7 @@ void ReconstructionPlugin::initialize_callback() {
     set_point_cloud();
     show_point_cloud(true);
     show_mesh(false);
+    center_object_callback();
 }
 
 void ReconstructionPlugin::extend_callback() {
@@ -429,21 +430,27 @@ void ReconstructionPlugin::texture_mesh_callback() {
 }
 
 void ReconstructionPlugin::center_object_callback() {
-    // First try to center mesh then point cloud
+    Eigen::MatrixXd points;
     viewer->selected_data_index = VIEWER_DATA_MESH;
-    if (viewer->data().V.rows() > 0) {
-        viewer->core.get_scale_and_shift_to_fit_mesh(
-                viewer->data().V,
-                viewer->core.camera_zoom,
-                viewer->core.camera_translation);
-    } else {
-        viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
-        Eigen::MatrixXd points = viewer->data().points.leftCols(3);
-        viewer->core.get_scale_and_shift_to_fit_mesh(
-                points,
-                viewer->core.camera_zoom,
-                viewer->core.camera_translation);
+    if (points.rows() == 0 && viewer->data().V.rows() > 0) {
+        points = viewer->data().V;
     }
+    viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
+    if (points.rows() == 0 && viewer->data().points.rows() > 0) {
+        points = viewer->data().points.leftCols(3);
+    }
+    if (points.rows() == 0) {
+        return;
+    }
+
+    Eigen::Vector3d min_point = points.colwise().minCoeff();
+    Eigen::Vector3d max_point = points.colwise().maxCoeff();
+    Eigen::Vector3d center = points.colwise().mean();
+    viewer->core.camera_base_translation = -center.cast<float>();
+    viewer->core.camera_translation.setConstant(0);
+
+    viewer->core.camera_base_zoom = 2.0 / (max_point-min_point).array().abs().maxCoeff();
+    viewer->core.camera_zoom = 1.0;
 }
 
 void ReconstructionPlugin::set_cameras() {

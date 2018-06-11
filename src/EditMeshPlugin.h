@@ -19,10 +19,11 @@ public:
         ImGuizmo::MODE gizmo_mode = ImGuizmo::LOCAL;
 
         // Menu
-        bool show_bounding_box = false;
         bool show_mesh = false;
         bool show_texture = false;
         bool show_wireframe = false;
+        bool show_bounding_box = false;
+        bool show_plane = false;
         char filename_buffer[64] = "filename";
         Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
     };
@@ -70,6 +71,7 @@ private:
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
+    void center_object_callback();
     void select_inside_callback();
     void invert_selection_callback();
     void remove_selection_callback();
@@ -82,6 +84,5 @@ private:
     void show_bounding_box(bool visible);
     void color_selection();
 };
-
 
 #endif //REALTIME_RECONSTRUCTION_THEIA_EDITMESHPLUGIN_H
