@@ -83,7 +83,7 @@ private:
     // Callback functions
     void center_object_callback();
     void select_inside_callback();
-    void select_near_faces_callback();
+    void select_faces_below_callback();
     void invert_selection_callback();
     void remove_selection_callback();
 

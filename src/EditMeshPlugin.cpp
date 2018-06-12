@@ -122,7 +122,6 @@ bool EditMeshPlugin::post_draw() {
         if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
             select_inside_callback();
         }
-
         // Show gizmo
         ImGuizmo::Manipulate(view.data(),
                              viewer->core.proj.data(),
@@ -136,10 +135,9 @@ bool EditMeshPlugin::post_draw() {
     if (parameters_.selection_mode == SelectionMode::PLANE) {
         ImGui::Text("Plane options:");
         gizmo_options();
-        if (ImGui::Button("Select near faces", ImVec2(-1, 0))) {
-            select_near_faces_callback();
+        if (ImGui::Button("Select below", ImVec2(-1, 0))) {
+            select_faces_below_callback();
         }
-
         // Show gizmo
         ImGuizmo::Manipulate(view.data(),
                              viewer->core.proj.data(),
@@ -224,8 +222,8 @@ void EditMeshPlugin::select_inside_callback() {
         double wx = w.dot(x);
 
         if (ux > u.dot(V_box.row(0)) && ux < u.dot(V_box.row(4)) &&
-                vx > v.dot(V_box.row(0)) && vx < v.dot(V_box.row(2)) &&
-                wx > w.dot(V_box.row(0)) && wx < w.dot(V_box.row(1))) {
+            vx > v.dot(V_box.row(0)) && vx < v.dot(V_box.row(2)) &&
+            wx > w.dot(V_box.row(0)) && wx < w.dot(V_box.row(1))) {
             selected_vertices_idx.insert(i);
         }
     }
@@ -236,8 +234,8 @@ void EditMeshPlugin::select_inside_callback() {
         Eigen::Vector3i f = viewer->data().F.row(i);
 
         if (selected_vertices_idx.find(f(0)) != selected_vertices_idx.end() ||
-                selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
-                selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
+            selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
+            selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
             selected_faces_idx.insert(i);
         }
     }
@@ -246,8 +244,40 @@ void EditMeshPlugin::select_inside_callback() {
     color_selection();
 }
 
-void EditMeshPlugin::select_near_faces_callback() {
-    // TODO: select near faces
+void EditMeshPlugin::select_faces_below_callback() {
+    viewer->selected_data_index = VIEWER_DATA_PLANE;
+    Eigen::MatrixXd V_plane = viewer->data().V;
+    Eigen::Vector3d u = V_plane.row(3) - V_plane.row(0);
+    Eigen::Vector3d v = V_plane.row(1) - V_plane.row(0);
+
+    Eigen::Vector3d plane_normal = u.cross(v).normalized();
+    Eigen::Vector3d plane_center = V_plane.colwise().mean();
+
+    // Check which points are below plane
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    std::unordered_set<int> selected_vertices_idx;
+    for (int i = 0; i < viewer->data().V.rows(); i++) {
+        Eigen::Vector3d point = viewer->data().V.row(i);
+
+        if (plane_normal.dot(point - plane_center) < 0) {
+            selected_vertices_idx.insert(i);
+        }
+    }
+
+    // Transform to selected faces
+    selected_faces_idx.clear();
+    for (int i = 0; i < viewer->data().F.rows(); i++) {
+        Eigen::Vector3i f = viewer->data().F.row(i);
+
+        if (selected_vertices_idx.find(f(0)) != selected_vertices_idx.end() ||
+            selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
+            selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
+            selected_faces_idx.insert(i);
+        }
+    }
+
+    // Set colors of selected faces
+    color_selection();
 }
 
 void EditMeshPlugin::invert_selection_callback() {
@@ -409,7 +439,7 @@ void EditMeshPlugin::set_bounding_box() {
             1, 5, 7,
             1, 7, 3;
 
-    // Center bounding box on object TODO: set orientation too
+    // Center bounding box on object
     bounding_box_gizmo_.col(3).head<3>() = center;
 
     // Set viewer data
@@ -465,6 +495,12 @@ void EditMeshPlugin::set_plane() {
     Eigen::MatrixXi tmp_F(2, 3);
     tmp_F << 0, 1, 2,
             2, 3, 0;
+
+
+    // Rotate around x by 180 degrees
+    Eigen::Affine3f rotation;
+    rotation = Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitX()).matrix();
+    plane_gizmo_ = rotation * Eigen::Matrix4f::Identity();
 
     // Center plane on object
     plane_gizmo_.col(3).head<3>() = center;
