@@ -20,8 +20,13 @@ void EditMeshPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     viewer->append_mesh();
     VIEWER_DATA_BOUNDING_BOX = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
+    // Append mesh for plane
+    viewer->append_mesh();
+    VIEWER_DATA_PLANE = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
     // Initial gizmo pose
     bounding_box_gizmo_ = Eigen::Matrix4f::Identity();
+    plane_gizmo_ = Eigen::Matrix4f::Identity();
 }
 
 bool EditMeshPlugin::pre_draw() {
@@ -33,7 +38,6 @@ bool EditMeshPlugin::post_draw() {
     // Setup window
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
-    // ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(300.0f, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
@@ -50,7 +54,7 @@ bool EditMeshPlugin::post_draw() {
         center_object_callback();
         show_mesh(true);
         set_bounding_box();
-        show_bounding_box(false);
+        set_plane();
         log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
     }
     if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
@@ -88,48 +92,61 @@ bool EditMeshPlugin::post_draw() {
         viewer->data().show_lines = parameters_.show_wireframe;
     }
     ImGui::Spacing();
-    if (ImGui::Checkbox("Show bounding box", &parameters_.show_bounding_box)) {
-        show_bounding_box(parameters_.show_bounding_box);
+
+    // Selection
+    ImGui::Text("Selection:");
+    if (ImGui::RadioButton("Pick faces", parameters_.selection_mode == SelectionMode::PICK)) {
+        parameters_.selection_mode = SelectionMode::PICK;
     }
-    if (ImGui::Checkbox("Show plane", &parameters_.show_plane)) {
-        // TODO: show plane
+    if (ImGui::RadioButton("Bounding box", parameters_.selection_mode == SelectionMode::BOX)) {
+        parameters_.selection_mode = SelectionMode::BOX;
     }
+    if (ImGui::RadioButton("Plane", parameters_.selection_mode == SelectionMode::PLANE)) {
+        parameters_.selection_mode = SelectionMode::PLANE;
+    }
+    show_bounding_box(parameters_.selection_mode == SelectionMode::BOX);
+    show_plane(parameters_.selection_mode == SelectionMode::PLANE);
     ImGui::Spacing();
 
-    // Bounding box
-    if (parameters_.show_bounding_box) {
-        ImGui::Text("Bounding box:");
-        if (ImGui::RadioButton("Translate", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
-            parameters_.gizmo_operation = ImGuizmo::TRANSLATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", parameters_.gizmo_operation == ImGuizmo::ROTATE))
-            parameters_.gizmo_operation = ImGuizmo::ROTATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
-            parameters_.gizmo_operation = ImGuizmo::SCALE;
-        if (parameters_.gizmo_operation != ImGuizmo::SCALE) {
-            if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
-                parameters_.gizmo_mode = ImGuizmo::LOCAL;
-            ImGui::SameLine();
-            if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
-                parameters_.gizmo_mode = ImGuizmo::WORLD;
-        }
+    // Gizmo setup
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_base_zoom) *
+                           Eigen::Scaling(1.0f / viewer->core.camera_zoom) *
+                           viewer->core.view;
+
+    // Selection: Bounding box
+    if (parameters_.selection_mode == SelectionMode::BOX) {
+        ImGui::Text("Bounding box options:");
+        gizmo_options();
         if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
             select_inside_callback();
         }
-        // Setup bounding box gizmo
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_base_zoom) *
-                Eigen::Scaling(1.0f / viewer->core.camera_zoom) * viewer->core.view;
+
+        // Show gizmo
         ImGuizmo::Manipulate(view.data(),
                              viewer->core.proj.data(),
                              parameters_.gizmo_operation,
                              parameters_.gizmo_mode,
                              bounding_box_gizmo_.data());
-
-        // Transform bounding box
         transform_bounding_box();
+    }
+
+    // Selection: Plane
+    if (parameters_.selection_mode == SelectionMode::PLANE) {
+        ImGui::Text("Plane options:");
+        gizmo_options();
+        if (ImGui::Button("Select near faces", ImVec2(-1, 0))) {
+            select_near_faces_callback();
+        }
+
+        // Show gizmo
+        ImGuizmo::Manipulate(view.data(),
+                             viewer->core.proj.data(),
+                             parameters_.gizmo_operation,
+                             parameters_.gizmo_mode,
+                             plane_gizmo_.data());
+        transform_plane();
     }
 
     // Modify
@@ -142,7 +159,7 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Debug info
-    std::ostringstream debug;
+    /*std::ostringstream debug;
     debug << "View: \n" << viewer->core.view << std::endl;
     debug << "camera_base_translation: \n" << viewer->core.camera_base_translation << std::endl;
     debug << "camera_translation: \n" << viewer->core.camera_translation << std::endl;
@@ -150,10 +167,29 @@ bool EditMeshPlugin::post_draw() {
     debug << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
     debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
     debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
-    ImGui::TextUnformatted(debug.str().c_str());
+    ImGui::TextUnformatted(debug.str().c_str());*/
 
     ImGui::End();
     return false;
+}
+
+void EditMeshPlugin::gizmo_options() {
+    if (ImGui::RadioButton("Translate", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
+        parameters_.gizmo_operation = ImGuizmo::TRANSLATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Rotate", parameters_.gizmo_operation == ImGuizmo::ROTATE))
+        parameters_.gizmo_operation = ImGuizmo::ROTATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
+        parameters_.gizmo_operation = ImGuizmo::SCALE;
+
+    if (parameters_.gizmo_operation != ImGuizmo::SCALE) {
+        if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
+            parameters_.gizmo_mode = ImGuizmo::LOCAL;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
+            parameters_.gizmo_mode = ImGuizmo::WORLD;
+    }
 }
 
 void EditMeshPlugin::center_object_callback() {
@@ -210,6 +246,10 @@ void EditMeshPlugin::select_inside_callback() {
     color_selection();
 }
 
+void EditMeshPlugin::select_near_faces_callback() {
+    // TODO: select near faces
+}
+
 void EditMeshPlugin::invert_selection_callback() {
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     std::unordered_set<int> selection_inverse;
@@ -237,8 +277,6 @@ void EditMeshPlugin::remove_selection_callback() {
     // Reset mesh in viewer
     set_mesh(mvs_scene_);
     show_mesh(true);
-    set_bounding_box();
-    show_bounding_box(false);
 }
 
 void EditMeshPlugin::color_selection() {
@@ -333,6 +371,7 @@ void EditMeshPlugin::set_bounding_box() {
     if (viewer->data().V.rows() < 0) {
         log_stream_ << std::endl;
         log_stream_ << "Set bounding box failed: Mesh is empty" << std::endl;
+        return;
     }
 
     // Find bounding box limits for the mesh
@@ -370,7 +409,7 @@ void EditMeshPlugin::set_bounding_box() {
             1, 5, 7,
             1, 7, 3;
 
-    // Center bounding box on object
+    // Center bounding box on object TODO: set orientation too
     bounding_box_gizmo_.col(3).head<3>() = center;
 
     // Set viewer data
@@ -392,8 +431,64 @@ void EditMeshPlugin::transform_bounding_box() {
 }
 
 void EditMeshPlugin::show_bounding_box(bool visible) {
-    parameters_.show_bounding_box = visible;
     viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    viewer->data().show_faces = visible;
+}
+
+void EditMeshPlugin::set_plane() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+
+    // Check if mesh empty
+    if (viewer->data().V.rows() < 0) {
+        log_stream_ << std::endl;
+        log_stream_ << "Set plane failed: Mesh is empty" << std::endl;
+        return;
+    }
+
+    // Find bounding box limits for the mesh
+    Eigen::Vector3d min = viewer->data().V.colwise().minCoeff();
+    Eigen::Vector3d max = viewer->data().V.colwise().maxCoeff();
+    Eigen::Vector3f center = (0.5 * (min.cast<float>() + max.cast<float>()));
+
+    // Set plane size
+    double size = (max - min).array().abs().maxCoeff();
+
+    // Vertices
+    Eigen::MatrixXd tmp_V(4, 3);
+    tmp_V << -size/2, -size/2, 0.0,
+            -size/2, size/2, 0.0,
+            size/2, size/2, 0.0,
+            size/2, -size/2, 0.0;
+    plane_vertices_ = tmp_V;
+
+    // Faces
+    Eigen::MatrixXi tmp_F(2, 3);
+    tmp_F << 0, 1, 2,
+            2, 3, 0;
+
+    // Center plane on object
+    plane_gizmo_.col(3).head<3>() = center;
+
+    // Set viewer data
+    viewer->selected_data_index = VIEWER_DATA_PLANE;
+    viewer->data().clear();
+    viewer->data().set_mesh(tmp_V, tmp_F);
+    viewer->data().set_face_based(true);
+    viewer->data().set_colors(Eigen::RowVector4d(0, 255, 0, 64)/255.0);
+    viewer->data().show_lines = false;
+}
+
+void EditMeshPlugin::transform_plane() {
+    viewer->selected_data_index = VIEWER_DATA_PLANE;
+    if (plane_vertices_.rows() > 0) {
+        Eigen::MatrixXd V = plane_vertices_;
+        V = (V.rowwise().homogeneous() * plane_gizmo_.cast<double>().transpose()).rowwise().hnormalized();
+        viewer->data().set_vertices(V);
+    }
+}
+
+void EditMeshPlugin::show_plane(bool visible) {
+    viewer->selected_data_index = VIEWER_DATA_PLANE;
     viewer->data().show_faces = visible;
 }
 

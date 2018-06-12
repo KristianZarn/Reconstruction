@@ -13,6 +13,12 @@
 
 class EditMeshPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
+    enum class SelectionMode {
+        BOX,
+        PLANE,
+        PICK
+    };
+
     struct Parameters {
         // Gizmo
         ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
@@ -22,8 +28,7 @@ public:
         bool show_mesh = false;
         bool show_texture = false;
         bool show_wireframe = false;
-        bool show_bounding_box = false;
-        bool show_plane = false;
+        SelectionMode selection_mode = SelectionMode::PICK;
         char filename_buffer[64] = "filename";
         Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
     };
@@ -50,6 +55,7 @@ private:
     // Viewer data indices
     unsigned int VIEWER_DATA_MESH_EDIT;
     unsigned int VIEWER_DATA_BOUNDING_BOX;
+    unsigned int VIEWER_DATA_PLANE;
 
     // Parameters
     Parameters parameters_;
@@ -67,22 +73,34 @@ private:
     Eigen::MatrixXd bounding_box_vertices_;
     Eigen::Matrix4f bounding_box_gizmo_;
 
+    // Plane
+    Eigen::MatrixXd plane_vertices_;
+    Eigen::Matrix4f plane_gizmo_;
+
     // Log
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
     void center_object_callback();
     void select_inside_callback();
+    void select_near_faces_callback();
     void invert_selection_callback();
     void remove_selection_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);
     void show_mesh(bool visible);
+
     void set_bounding_box();
     void transform_bounding_box();
     void show_bounding_box(bool visible);
+
+    void set_plane();
+    void transform_plane();
+    void show_plane(bool visible);
+
     void color_selection();
+    void gizmo_options();
 };
 
 #endif //REALTIME_RECONSTRUCTION_THEIA_EDITMESHPLUGIN_H

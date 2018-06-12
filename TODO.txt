@@ -12,6 +12,7 @@ DENSE:
 - densify point cloud ?
 
 EDIT:
+- nastavi orientacijo bbox in plane glede na rotacijo prve kamere?
 - remove big faces
 - decimation
 - keep biggest connected components
@@ -32,6 +33,10 @@ BIG FEATURES:
 --------------------------------------------------
 PRIORITY:
 - fix delete selection (delete vertices too)
+- plane selection
+    * velikost ravnine je ena stranica od kvadra (najdaljša?)
+    * premik ravnine s klikom na trikotnik
+- selection with mouse
 
 --------------------------------------------------
 DONE (testing):
