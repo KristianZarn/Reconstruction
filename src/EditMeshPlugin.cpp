@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <igl/unproject_onto_mesh.h>
 
 EditMeshPlugin::EditMeshPlugin(Parameters parameters,
                                std::string reconstruction_path)
@@ -95,6 +96,9 @@ bool EditMeshPlugin::post_draw() {
 
     // Selection
     ImGui::Text("Selection:");
+    if (ImGui::RadioButton("None", parameters_.selection_mode == SelectionMode::NONE)) {
+        parameters_.selection_mode = SelectionMode::NONE;
+    }
     if (ImGui::RadioButton("Pick faces", parameters_.selection_mode == SelectionMode::PICK)) {
         parameters_.selection_mode = SelectionMode::PICK;
     }
@@ -166,6 +170,22 @@ bool EditMeshPlugin::post_draw() {
     debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
     debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
     ImGui::TextUnformatted(debug.str().c_str());*/
+
+    /*if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+        std::cout << "selected faces: \n";
+        for (const auto& i : selected_faces_idx) {
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        // viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
+        std::cout << "face based: " << viewer->data().face_based << std::endl;
+        std::cout << "diffuse: \n";
+        for (int i = 0; i < viewer->data().F_material_diffuse.rows(); i++) {
+            std::cout << viewer->data().F_material_diffuse.row(i) << std::endl;
+        }
+    }*/
 
     ImGui::End();
     return false;
@@ -303,6 +323,7 @@ void EditMeshPlugin::remove_selection_callback() {
         tmp = (MVS::Mesh::FIndex) i;
     }
     mvs_scene_.mesh.RemoveFaces(faces, true);
+    selected_faces_idx.clear();
 
     // Reset mesh in viewer
     set_mesh(mvs_scene_);
@@ -311,7 +332,11 @@ void EditMeshPlugin::remove_selection_callback() {
 
 void EditMeshPlugin::color_selection() {
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-    Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1); // todo: set to default color
+    Eigen::MatrixXd colors(viewer->data().F.rows(), 3);
+    for (int i = 0; i < viewer->data().F.rows(); i++) {
+        colors.row(i) = parameters_.default_color;
+    }
+    // Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
     for (const auto& i : selected_faces_idx) {
         colors.row(i) = Eigen::RowVector3d(1, 0, 0);
     }
@@ -537,6 +562,76 @@ bool EditMeshPlugin::mouse_down(int button, int modifier)
 
 bool EditMeshPlugin::mouse_up(int button, int modifier)
 {
+    if (!ImGui::GetIO().WantCaptureMouse && (parameters_.selection_mode == SelectionMode::PICK)) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        int face_id;
+        Eigen::Vector3f barycentric;
+        double x = viewer->current_mouse_x;
+        double y = viewer->core.viewport(3) - viewer->current_mouse_y;
+
+        // Cast a ray
+        bool hit = igl::unproject_onto_mesh(
+                Eigen::Vector2f(x, y),
+                viewer->core.view,
+                viewer->core.proj,
+                viewer->core.viewport,
+                viewer->data().V,
+                viewer->data().F,
+                face_id,
+                barycentric);
+
+        if (hit) {
+            // Toggle face selection
+            if (selected_faces_idx.find(face_id) == selected_faces_idx.end()) {
+                selected_faces_idx.insert(face_id);
+            } else {
+                selected_faces_idx.erase(face_id);
+            }
+            // Set colors of selected faces
+            color_selection();
+            return true;
+        }
+    }
+
+    if (!ImGui::GetIO().WantCaptureMouse && (parameters_.selection_mode == SelectionMode::PLANE)) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        int face_id;
+        Eigen::Vector3f barycentric;
+        double x = viewer->current_mouse_x;
+        double y = viewer->core.viewport(3) - viewer->current_mouse_y;
+
+        // Cast a ray
+        bool hit = igl::unproject_onto_mesh(
+                Eigen::Vector2f(x, y),
+                viewer->core.view,
+                viewer->core.proj,
+                viewer->core.viewport,
+                viewer->data().V,
+                viewer->data().F,
+                face_id,
+                barycentric);
+
+        if (hit) {
+            // Center plane on face
+            Eigen::RowVector3i face = viewer->data().F.row(face_id);
+            Eigen::MatrixXd points(3, 3);
+            points.row(0) = viewer->data().V.row(face(0));
+            points.row(1) = viewer->data().V.row(face(1));
+            points.row(2) = viewer->data().V.row(face(2));
+            Eigen::Vector3d center = points.colwise().mean();
+            Eigen::Affine3f translation(Eigen::Translation3f(center.cast<float>()));
+
+            // Set plane rotation
+            Eigen::Vector3d u = points.row(1) - points.row(0);
+            Eigen::Vector3d v = points.row(2) - points.row(0);
+            Eigen::Vector3f face_normal = (u).cross(v).normalized().cast<float>();
+            Eigen::Vector3f plane_normal = Eigen::Vector3f::UnitZ();
+            Eigen::Affine3f rotation(Eigen::Quaternionf().setFromTwoVectors(plane_normal, face_normal));
+
+            plane_gizmo_ = (translation * rotation).matrix();
+            return true;
+        }
+    }
     return ImGui::GetIO().WantCaptureMouse;
 }
 

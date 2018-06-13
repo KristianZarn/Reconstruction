@@ -15,10 +15,10 @@ EDIT:
 - remove big faces
 - decimation
 - keep biggest connected components
-- plane selection
-- selection with mouse
+
 - fix crash when mesh cannot be loaded
 - fix delete selection (delete vertices too)
+- fix color on selection
 
 OTHER:
 - prikaz zajetih slik
@@ -34,9 +34,6 @@ PRIORITY:
 - fix delete selection
     * delete vertices too
     * test again and write issue
-- plane selection
-    * premik ravnine s klikom na trikotnik
-- selection with mouse (clicking toggles selection)
 
 --------------------------------------------------
 TESTING:

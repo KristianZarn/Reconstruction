@@ -224,3 +224,5 @@ ImGui::TextUnformatted(os.str().c_str());
     set_bounding_box();
     show_bounding_box(false);
 }*/
+
+// Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);

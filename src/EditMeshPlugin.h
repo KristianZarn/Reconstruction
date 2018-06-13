@@ -14,9 +14,10 @@
 class EditMeshPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
     enum class SelectionMode {
+        NONE,
+        PICK,
         BOX,
-        PLANE,
-        PICK
+        PLANE
     };
 
     struct Parameters {
@@ -28,7 +29,7 @@ public:
         bool show_mesh = false;
         bool show_texture = false;
         bool show_wireframe = false;
-        SelectionMode selection_mode = SelectionMode::PICK;
+        SelectionMode selection_mode = SelectionMode::NONE;
         char filename_buffer[64] = "filename";
         Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
     };
