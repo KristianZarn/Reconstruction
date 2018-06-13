@@ -115,9 +115,9 @@ bool EditMeshPlugin::post_draw() {
     // Gizmo setup
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    Eigen::Matrix4f view = Eigen::Scaling(1.0f / viewer->core.camera_base_zoom) *
-                           Eigen::Scaling(1.0f / viewer->core.camera_zoom) *
-                           viewer->core.view;
+    Eigen::Affine3f scale_base_zoom(Eigen::Scaling(1.0f / viewer->core.camera_base_zoom));
+    Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
+    Eigen::Matrix4f view = scale_base_zoom * scale_zoom * viewer->core.view;
 
     // Selection: Bounding box
     if (parameters_.selection_mode == SelectionMode::BOX) {
@@ -216,10 +216,11 @@ void EditMeshPlugin::center_object_callback() {
         Eigen::Vector3d min_point = viewer->data().V.colwise().minCoeff();
         Eigen::Vector3d max_point = viewer->data().V.colwise().maxCoeff();
         Eigen::Vector3d center = viewer->data().V.colwise().mean();
-        viewer->core.camera_base_translation = -center.cast<float>();
+        viewer->core.camera_base_translation = (-center).cast<float>();
         viewer->core.camera_translation.setConstant(0);
 
-        viewer->core.camera_base_zoom = 2.0 / (max_point-min_point).array().abs().maxCoeff();
+        Eigen::Vector3d diff = (max_point-min_point).array().abs();
+        viewer->core.camera_base_zoom = static_cast<float>(2.0 / diff.maxCoeff());
         viewer->core.camera_zoom = 1.0;
     }
 }
@@ -432,7 +433,7 @@ void EditMeshPlugin::set_bounding_box() {
     // Find bounding box limits for the mesh
     Eigen::Vector3d min = viewer->data().V.colwise().minCoeff();
     Eigen::Vector3d max = viewer->data().V.colwise().maxCoeff();
-    Eigen::Vector3f center = (0.5 * (min.cast<float>() + max.cast<float>()));
+    Eigen::Vector3d center = (0.5 * (min + max));
 
     min = min - center.cast<double>();
     max = max - center.cast<double>();
@@ -465,7 +466,8 @@ void EditMeshPlugin::set_bounding_box() {
             1, 7, 3;
 
     // Center bounding box on object
-    bounding_box_gizmo_.col(3).head<3>() = center;
+    Eigen::Affine3f translation(Eigen::Translation3f(center.cast<float>()));
+    bounding_box_gizmo_ = translation * Eigen::Matrix4f::Identity();
 
     // Set viewer data
     viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
@@ -503,10 +505,11 @@ void EditMeshPlugin::set_plane() {
     // Find bounding box limits for the mesh
     Eigen::Vector3d min = viewer->data().V.colwise().minCoeff();
     Eigen::Vector3d max = viewer->data().V.colwise().maxCoeff();
-    Eigen::Vector3f center = (0.5 * (min.cast<float>() + max.cast<float>()));
+    Eigen::Vector3d center = (0.5 * (min + max));
 
     // Set plane size
-    double size = (max - min).array().abs().maxCoeff();
+    Eigen::Vector3d diff = (max - min).array().abs();
+    double size = diff.maxCoeff();
 
     // Vertices
     Eigen::MatrixXd tmp_V(4, 3);
@@ -528,7 +531,8 @@ void EditMeshPlugin::set_plane() {
     plane_gizmo_ = rotation * Eigen::Matrix4f::Identity();
 
     // Center plane on object
-    plane_gizmo_.col(3).head<3>() = center;
+    Eigen::Affine3f translation(Eigen::Translation3f(center.cast<float>()));
+    plane_gizmo_ = translation * Eigen::Matrix4f::Identity();
 
     // Set viewer data
     viewer->selected_data_index = VIEWER_DATA_PLANE;

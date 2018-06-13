@@ -446,10 +446,11 @@ void ReconstructionPlugin::center_object_callback() {
     Eigen::Vector3d min_point = points.colwise().minCoeff();
     Eigen::Vector3d max_point = points.colwise().maxCoeff();
     Eigen::Vector3d center = points.colwise().mean();
-    viewer->core.camera_base_translation = -center.cast<float>();
+    viewer->core.camera_base_translation = (-center).cast<float>();
     viewer->core.camera_translation.setConstant(0);
 
-    viewer->core.camera_base_zoom = 2.0 / (max_point-min_point).array().abs().maxCoeff();
+    Eigen::Vector3d diff = (max_point - min_point).array().abs();
+    viewer->core.camera_base_zoom = static_cast<float>(2.0 / diff.maxCoeff());
     viewer->core.camera_zoom = 1.0;
 }
 
