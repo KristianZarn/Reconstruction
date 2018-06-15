@@ -171,21 +171,24 @@ bool EditMeshPlugin::post_draw() {
     debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
     ImGui::TextUnformatted(debug.str().c_str());*/
 
-    /*if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+    if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+        std::cout << "vertices: " << mvs_scene_.mesh.vertices.size() << std::endl;
+        std::cout << "vertex faces: " << mvs_scene_.mesh.vertexFaces.size() << std::endl;
+
         std::cout << "selected faces: \n";
-        for (const auto& i : selected_faces_idx) {
+        for (const auto& i : selected_faces_idx_) {
             std::cout << i << " ";
         }
         std::cout << std::endl;
 
-        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-        // viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
-        std::cout << "face based: " << viewer->data().face_based << std::endl;
-        std::cout << "diffuse: \n";
-        for (int i = 0; i < viewer->data().F_material_diffuse.rows(); i++) {
-            std::cout << viewer->data().F_material_diffuse.row(i) << std::endl;
+        std::cout << "selected vertices: \n";
+        for (const auto& i : selected_faces_idx_) {
+            // MVS
+            MVS::Mesh::Face face = mvs_scene_.mesh.faces[i];
+            std::cout << "face: " << i << ", "
+                      << "vertices: " << face.x << ", " << face.y << ", " << face.z << std::endl;
         }
-    }*/
+    }
 
     ImGui::End();
     return false;
@@ -250,14 +253,14 @@ void EditMeshPlugin::select_inside_callback() {
     }
 
     // Transform to selected faces
-    selected_faces_idx.clear();
+    selected_faces_idx_.clear();
     for (int i = 0; i < viewer->data().F.rows(); i++) {
         Eigen::Vector3i f = viewer->data().F.row(i);
 
         if (selected_vertices_idx.find(f(0)) != selected_vertices_idx.end() ||
             selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
             selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
-            selected_faces_idx.insert(i);
+            selected_faces_idx_.insert(i);
         }
     }
 
@@ -286,14 +289,14 @@ void EditMeshPlugin::select_faces_below_callback() {
     }
 
     // Transform to selected faces
-    selected_faces_idx.clear();
+    selected_faces_idx_.clear();
     for (int i = 0; i < viewer->data().F.rows(); i++) {
         Eigen::Vector3i f = viewer->data().F.row(i);
 
         if (selected_vertices_idx.find(f(0)) != selected_vertices_idx.end() ||
             selected_vertices_idx.find(f(1)) != selected_vertices_idx.end() ||
             selected_vertices_idx.find(f(2)) != selected_vertices_idx.end()) {
-            selected_faces_idx.insert(i);
+            selected_faces_idx_.insert(i);
         }
     }
 
@@ -305,30 +308,50 @@ void EditMeshPlugin::invert_selection_callback() {
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     std::unordered_set<int> selection_inverse;
     for (int i = 0; i < viewer->data().F.rows(); i++) {
-        if (selected_faces_idx.find(i) == selected_faces_idx.end()) {
+        if (selected_faces_idx_.find(i) == selected_faces_idx_.end()) {
             selection_inverse.insert(i);
         }
     }
-    selected_faces_idx = selection_inverse;
+    selected_faces_idx_ = selection_inverse;
     color_selection();
 }
 
 void EditMeshPlugin::remove_selection_callback() {
     // Get vertices from faces
-    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    std::unordered_set<int> selected_vertices_idx;
+    for (const auto& i : selected_faces_idx_) {
+        MVS::Mesh::Face face = mvs_scene_.mesh.faces[i];
+        selected_vertices_idx.insert(face.x);
+        selected_vertices_idx.insert(face.y);
+        selected_vertices_idx.insert(face.z);
+    }
 
     // Remove faces
-    MVS::Mesh::FaceIdxArr faces;
-    for (const auto& i : selected_faces_idx) {
-        MVS::Mesh::FIndex& tmp = faces.AddEmpty();
+    MVS::Mesh::FaceIdxArr faces_to_remove;
+    for (const auto& i : selected_faces_idx_) {
+        MVS::Mesh::FIndex& tmp = faces_to_remove.AddEmpty();
         tmp = (MVS::Mesh::FIndex) i;
     }
-    mvs_scene_.mesh.RemoveFaces(faces, true);
-    selected_faces_idx.clear();
+    mvs_scene_.mesh.RemoveFaces(faces_to_remove, false);
+    mvs_scene_.mesh.ListIncidenteFaces();
+
+    // Remove vertices without incident faces
+    MVS::Mesh::VertexIdxArr vertices_to_remove;
+    for (const auto& i : selected_vertices_idx) {
+        if (mvs_scene_.mesh.vertexFaces[i].IsEmpty()) {
+            MVS::Mesh::VIndex& tmp = vertices_to_remove.AddEmpty();
+            tmp = (MVS::Mesh::VIndex) i;
+        }
+    }
+    mvs_scene_.mesh.RemoveVertices(vertices_to_remove, true);
+    mvs_scene_.mesh.ListIncidenteFaces();
+    selected_faces_idx_.clear();
 
     // Reset mesh in viewer
     set_mesh(mvs_scene_);
     show_mesh(true);
+    set_bounding_box();
+    set_plane();
 }
 
 void EditMeshPlugin::color_selection() {
@@ -338,7 +361,7 @@ void EditMeshPlugin::color_selection() {
         colors.row(i) = parameters_.default_color;
     }
     // Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
-    for (const auto& i : selected_faces_idx) {
+    for (const auto& i : selected_faces_idx_) {
         colors.row(i) = Eigen::RowVector3d(1, 0, 0);
     }
     viewer->data().set_colors(colors);
@@ -524,7 +547,6 @@ void EditMeshPlugin::set_plane() {
     tmp_F << 0, 1, 2,
             2, 3, 0;
 
-
     // Rotate around x by 180 degrees
     Eigen::Affine3f rotation;
     rotation = Eigen::AngleAxisf(M_PI, Eigen::Vector3f::UnitX()).matrix();
@@ -586,10 +608,10 @@ bool EditMeshPlugin::mouse_up(int button, int modifier)
 
         if (hit) {
             // Toggle face selection
-            if (selected_faces_idx.find(face_id) == selected_faces_idx.end()) {
-                selected_faces_idx.insert(face_id);
+            if (selected_faces_idx_.find(face_id) == selected_faces_idx_.end()) {
+                selected_faces_idx_.insert(face_id);
             } else {
-                selected_faces_idx.erase(face_id);
+                selected_faces_idx_.erase(face_id);
             }
             // Set colors of selected faces
             color_selection();

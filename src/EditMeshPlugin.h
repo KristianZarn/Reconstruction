@@ -68,7 +68,7 @@ private:
     MVS::Scene mvs_scene_;
 
     // Selection
-    std::unordered_set<int> selected_faces_idx;
+    std::unordered_set<int> selected_faces_idx_;
 
     // Bounding box
     Eigen::MatrixXd bounding_box_vertices_;

@@ -189,11 +189,40 @@ os << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
 // os << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
 ImGui::TextUnformatted(os.str().c_str());
 
+// Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
+
+log_stream_ << "Before: " << std::endl;
+log_stream_ << "Vertices: " << mvs_scene_.mesh.vertices.size() << std::endl;
+log_stream_ << "Faces: " << mvs_scene_.mesh.faces.size() << std::endl;
+log_stream_ << "vertex normals: " << mvs_scene_.mesh.vertexNormals.size() << std::endl;
+log_stream_ << "vertex vertices: " << mvs_scene_.mesh.vertexVertices.size() << std::endl;
+log_stream_ << "vertex faces: " << mvs_scene_.mesh.vertexFaces.size() << std::endl;
+log_stream_ << "vertex boundary: " << mvs_scene_.mesh.vertexBoundary.size() << std::endl;
+log_stream_ << "face normals: " << mvs_scene_.mesh.faceNormals.size() << std::endl;
+log_stream_ << "face texcoords: " << mvs_scene_.mesh.faceTexcoords.size() << std::endl;
+
 /*void EditMeshPlugin::remove_selection_callback() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+
+    // Remove faces
+    MVS::Mesh::FaceIdxArr faces;
+    for (const auto& i : selected_faces_idx_) {
+        MVS::Mesh::FIndex& tmp = faces.AddEmpty();
+        tmp = (MVS::Mesh::FIndex) i;
+    }
+    mvs_scene_.mesh.RemoveFaces(faces, true);
+    selected_faces_idx_.clear();
+
+    // Reset mesh in viewer
+    set_mesh(mvs_scene_);
+    show_mesh(true);
+}*/
+
+void EditMeshPlugin::remove_selection_callback() {
     // Get vertices from faces
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     std::unordered_set<int> selected_vertices_idx;
-    for (const auto& i : selected_faces_idx) {
+    for (const auto& i : selected_faces_idx_) {
         Eigen::Vector3i face = viewer->data().F.row(i);
         selected_vertices_idx.insert(face(0));
         selected_vertices_idx.insert(face(1));
@@ -207,22 +236,14 @@ ImGui::TextUnformatted(os.str().c_str());
         tmp = (MVS::Mesh::VIndex) i;
     }
 
-    // Debug
-    for (const auto& i : vertices) {
-        log_stream_ << i << std::endl;
-    }
-
-    log_stream_ << "Vertices before: " << mvs_scene_.mesh.vertices.size() << std::endl;
-    log_stream_ << "Faces before: " << mvs_scene_.mesh.faces.size() << std::endl;
-    mvs_scene_.mesh.RemoveVertices(vertices, false);
-    log_stream_ << "Vertices after: " << mvs_scene_.mesh.vertices.size() << std::endl;
-    log_stream_ << "Faces after: " << mvs_scene_.mesh.faces.size() << std::endl;
+    mvs_scene_.mesh.ListIncidenteFaces();
+    mvs_scene_.mesh.RemoveVertices(vertices, true);
+    mvs_scene_.mesh.ListIncidenteFaces();
+    selected_faces_idx_.clear();
 
     // Reset mesh in viewer
     set_mesh(mvs_scene_);
     show_mesh(true);
     set_bounding_box();
-    show_bounding_box(false);
-}*/
-
-// Eigen::MatrixXd colors = Eigen::MatrixXd::Constant(viewer->data().F.rows(), 3, 1);
+    set_plane();
+}

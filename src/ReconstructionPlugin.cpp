@@ -345,6 +345,10 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     // Clean the mesh
     mvs_scene_.mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
                           parameters_.close_holes, parameters_.smooth_mesh, false);
+
+    // Recompute array of vertices incident to each vertex
+    mvs_scene_.mesh.ListIncidenteFaces();
+
     set_mesh();
     show_mesh(true);
     show_point_cloud(false);
