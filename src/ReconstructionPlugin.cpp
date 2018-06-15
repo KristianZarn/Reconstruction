@@ -606,31 +606,26 @@ void ReconstructionPlugin::show_mesh(bool visible) {
 }
 
 // Mouse IO
-bool ReconstructionPlugin::mouse_down(int button, int modifier)
-{
+bool ReconstructionPlugin::mouse_down(int button, int modifier) {
     ImGui_ImplGlfwGL3_MouseButtonCallback(viewer->window, button, GLFW_PRESS, modifier);
     return ImGui::GetIO().WantCaptureMouse;
 }
 
-bool ReconstructionPlugin::mouse_up(int button, int modifier)
-{
+bool ReconstructionPlugin::mouse_up(int button, int modifier) {
     return ImGui::GetIO().WantCaptureMouse;
 }
 
-bool ReconstructionPlugin::mouse_move(int mouse_x, int mouse_y)
-{
+bool ReconstructionPlugin::mouse_move(int mouse_x, int mouse_y) {
     return ImGui::GetIO().WantCaptureMouse;
 }
 
-bool ReconstructionPlugin::mouse_scroll(float delta_y)
-{
+bool ReconstructionPlugin::mouse_scroll(float delta_y) {
     ImGui_ImplGlfwGL3_ScrollCallback(viewer->window, 0.f, delta_y);
     return ImGui::GetIO().WantCaptureMouse;
 }
 
 // Keyboard IO
-bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
-{
+bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(viewer->window, key);
     if (!ImGui::GetIO().WantTextInput) {
         switch (key) {
@@ -680,14 +675,12 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers)
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-bool ReconstructionPlugin::key_down(int key, int modifiers)
-{
+bool ReconstructionPlugin::key_down(int key, int modifiers) {
     ImGui_ImplGlfwGL3_KeyCallback(viewer->window, key, 0, GLFW_PRESS, modifiers);
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 
-bool ReconstructionPlugin::key_up(int key, int modifiers)
-{
+bool ReconstructionPlugin::key_up(int key, int modifiers) {
     ImGui_ImplGlfwGL3_KeyCallback(viewer->window, key, 0, GLFW_RELEASE, modifiers);
     return ImGui::GetIO().WantCaptureKeyboard;
 }

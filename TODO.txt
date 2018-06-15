@@ -19,7 +19,8 @@ EDIT:
 - fix color on selection
 
 OTHER:
-- undo button (reload previous point cloud / mesh)
+- undo button (naloži prejšnji point cloud / mesh)
+    * rajši popravi "remove previous view"
 - prikaz zajetih slik
 - lepši prikaz kamer (ne samo pike)
 

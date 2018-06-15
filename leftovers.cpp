@@ -247,3 +247,17 @@ void EditMeshPlugin::remove_selection_callback() {
     set_bounding_box();
     set_plane();
 }
+
+// Debug
+if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+std::cout << "Debug button" << std::endl;
+std::ostringstream debug;
+debug << "View: \n" << viewer->core.view << std::endl;
+debug << "camera_base_translation: \n" << viewer->core.camera_base_translation << std::endl;
+debug << "camera_translation: \n" << viewer->core.camera_translation << std::endl;
+debug << "camera_center: \n" << viewer->core.camera_center << std::endl;
+debug << "camera_base_zoom: \n" << viewer->core.camera_base_zoom << std::endl;
+debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
+debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
+ImGui::TextUnformatted(debug.str().c_str());
+}
