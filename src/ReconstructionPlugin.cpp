@@ -165,6 +165,7 @@ bool ReconstructionPlugin::post_draw() {
         set_mesh();
         show_mesh(true);
         show_point_cloud(false);
+        center_object_callback();
         log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
     }
     std::ostringstream os;

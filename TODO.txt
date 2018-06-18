@@ -30,6 +30,7 @@ BIG FEATURES:
 
 --------------------------------------------------
 PRIORITY:
+- GPU sift
 - undistort images (for mvs)
 - realtime camera position
 

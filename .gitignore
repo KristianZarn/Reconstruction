@@ -4,3 +4,6 @@
 # Ignore build files
 cmake-build-debug/
 cmake-build-release/
+
+# Ignore dataset
+dataset/
