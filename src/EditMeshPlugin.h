@@ -87,6 +87,7 @@ private:
     void select_faces_below_callback();
     void invert_selection_callback();
     void remove_selection_callback();
+    void reset_mesh_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);

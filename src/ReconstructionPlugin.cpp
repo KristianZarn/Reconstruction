@@ -75,7 +75,7 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Spacing();
 
     // Edit views
-    ImGui::Text("Edit views:");
+    ImGui::Text("Edit reconstruction:");
     ImGui::PushItemWidth(100.0f);
     ImGui::InputInt("", &parameters_.view_to_delete);
     ImGui::PopItemWidth();
@@ -301,9 +301,12 @@ void ReconstructionPlugin::reset_reconstruction_callback() {
     // Reset dense reconstruction
     mvs_scene_.Release();
     // Reset viewer data
-    for (auto& viewer_data : viewer->data_list) {
-        viewer_data.clear();
-    }
+    viewer->selected_data_index = VIEWER_DATA_CAMERAS;
+    viewer->data().clear();
+    viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
+    viewer->data().clear();
+    viewer->selected_data_index = VIEWER_DATA_MESH;
+    viewer->data().clear();
     log_stream_ << "Reconstruction reset" << std::endl;
 }
 

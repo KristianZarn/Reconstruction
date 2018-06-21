@@ -69,6 +69,9 @@ bool EditMeshPlugin::post_draw() {
         mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
     }
+    if (ImGui::Button("Reset mesh", ImVec2(-1, 0))) {
+        reset_mesh_callback();
+    }
     std::ostringstream os;
     os << "Mesh info:"
        << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
@@ -188,6 +191,25 @@ void EditMeshPlugin::gizmo_options() {
         if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
             parameters_.gizmo_mode = ImGuizmo::WORLD;
     }
+}
+
+void EditMeshPlugin::reset_mesh_callback() {
+    log_stream_ << std::endl;
+    // Reset reconstruction
+    mvs_scene_.Release();
+    // Reset viewer data
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    viewer->data().clear();
+    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    viewer->data().clear();
+    viewer->selected_data_index = VIEWER_DATA_PLANE;
+    viewer->data().clear();
+    // Reset selection
+    selected_faces_idx_.clear();
+    // Reset gizmos
+    bounding_box_gizmo_ = Eigen::Matrix4f::Identity();
+    plane_gizmo_ = Eigen::Matrix4f::Identity();
+    log_stream_ << "Mesh reset" << std::endl;
 }
 
 void EditMeshPlugin::center_object_callback() {

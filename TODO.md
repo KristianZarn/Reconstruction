@@ -8,6 +8,9 @@
 - **reestimate tracks after remove view**
 - pri dodajanju kamere preveri koliko "estimated tracks" vidi.
 - **Vizualizacija GSD in/ali degree of redundancy**
+- **Napiši svoj reconstruction estimator**
+    - večino se da skopirat iz incremental estimator
+- implement AC-RANSAC ?
 
 # DENSE:
 - undistort images
@@ -23,7 +26,6 @@
 - (low) keep biggest connected components
 - decimacija
 - fix color on selection
-- reset mesh
 
 # OTHER:
 - **prikaz zajetih slik**
