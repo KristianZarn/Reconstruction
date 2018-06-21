@@ -13,19 +13,24 @@
 int main(int argc, char *argv[]) {
 
     // std::string images_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/castle_images/";
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_images/";
     // std::string reconstruction_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/castle_reconstruction/";
-
-    std::string images_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_images/";
-    std::string reconstruction_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_reconstruction/";
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_reconstruction/";
 
     // std::string images_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/flasa_images/";
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/fountain_images/";
     // std::string reconstruction_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/flasa_reconstruction/";
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/fountain_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/zhenjue_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/zhenjue_reconstruction/";
+
+    std::string images_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/temple_images/";
+    std::string reconstruction_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/temple_reconstruction/";
 
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
 
@@ -72,7 +77,7 @@ int main(int argc, char *argv[]) {
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
     std::vector<std::string> image_names;
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 50; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names.emplace_back("frame" + ss.str() + ".png");

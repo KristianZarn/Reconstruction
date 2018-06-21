@@ -58,7 +58,7 @@ public:
         unsigned int texture_size_multiple = 0;
         // Specify the heuristic used when deciding where to place a new patch
         // (0 - best fit, 3 - good speed, 100 - best speed)
-        unsigned int patch_packing_heuristic = 3;
+        unsigned int patch_packing_heuristic = 1;
         // Color used for faces not covered by any image
         uint32_t empty_color = 0x00FF7F27;
 

@@ -296,8 +296,11 @@ void ReconstructionPlugin::remove_last_view_callback() {
 
 void ReconstructionPlugin::reset_reconstruction_callback() {
     log_stream_ << std::endl;
-
+    // Reset sparse reconstruction
     reconstruction_builder_.ResetReconstruction();
+    // Reset dense reconstruction
+    mvs_scene_.Release();
+    // Reset viewer data
     for (auto& viewer_data : viewer->data_list) {
         viewer_data.clear();
     }
