@@ -108,7 +108,7 @@ bool EditMeshPlugin::post_draw() {
     if (ImGui::RadioButton("Bounding box", parameters_.selection_mode == SelectionMode::BOX)) {
         parameters_.selection_mode = SelectionMode::BOX;
     }
-    if (ImGui::RadioButton("Plane [s]", parameters_.selection_mode == SelectionMode::PLANE)) {
+    if (ImGui::RadioButton("Plane", parameters_.selection_mode == SelectionMode::PLANE)) {
         parameters_.selection_mode = SelectionMode::PLANE;
     }
     show_bounding_box(parameters_.selection_mode == SelectionMode::BOX);
@@ -161,6 +161,9 @@ bool EditMeshPlugin::post_draw() {
     }
     if (ImGui::Button("Remove selection", ImVec2(-1, 0))) {
         remove_selection_callback();
+    }
+    if (ImGui::Button("Fit plane to selection", ImVec2(-1, 0))) {
+        fit_plane_callback();
     }
 
     // Debug
@@ -351,6 +354,41 @@ void EditMeshPlugin::remove_selection_callback() {
     show_mesh(true);
     set_bounding_box();
     set_plane();
+}
+
+void EditMeshPlugin::fit_plane_callback() {
+    if (!selected_faces_idx_.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+
+        // Set vertex mean as plane center
+        Eigen::MatrixXd vertices(selected_faces_idx_.size() * 3, 3);
+        int i = 0;
+        for (const auto& idx : selected_faces_idx_) {
+            Eigen::RowVector3i face = viewer->data().F.row(idx);
+            vertices.row(i++) = viewer->data().V.row(face(0));
+            vertices.row(i++) = viewer->data().V.row(face(1));
+            vertices.row(i++) = viewer->data().V.row(face(2));
+        }
+        Eigen::Vector3d plane_center = vertices.colwise().mean();
+        Eigen::Affine3f translation(Eigen::Translation3f(plane_center.cast<float>()));
+
+        // Set face normals mean as plane normal
+        Eigen::MatrixXd face_normals(selected_faces_idx_.size(), 3);
+        i = 0;
+        for (const auto& idx : selected_faces_idx_) {
+            face_normals.row(i++) = viewer->data().F_normals.row(idx);
+        }
+        Eigen::Vector3d plane_normal = face_normals.colwise().mean();
+        Eigen::Vector3f initial_normal = Eigen::Vector3f::UnitZ();
+        Eigen::Affine3f rotation(Eigen::Quaternionf().setFromTwoVectors(initial_normal, plane_normal.cast<float>()));
+
+        // Apply transform to gizmo
+        plane_gizmo_ = (translation * rotation).matrix();
+        parameters_.selection_mode = SelectionMode::PLANE;
+    } else {
+        log_stream_ << std::endl;
+        log_stream_ << "Fit plane failed: selection is empty." << std::endl;
+    }
 }
 
 void EditMeshPlugin::color_selection() {
@@ -632,47 +670,6 @@ bool EditMeshPlugin::key_pressed(unsigned int key, int modifiers) {
                         }
                         // Set colors of selected faces
                         color_selection();
-                        return true;
-                    }
-                }
-
-                if (!ImGui::GetIO().WantCaptureMouse &&
-                    (parameters_.selection_mode == SelectionMode::PLANE)) {
-                    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-                    int face_id;
-                    Eigen::Vector3f barycentric;
-                    double x = viewer->current_mouse_x;
-                    double y = viewer->core.viewport(3) - viewer->current_mouse_y;
-
-                    // Cast a ray
-                    bool hit = igl::unproject_onto_mesh(
-                            Eigen::Vector2f(x, y),
-                            viewer->core.view,
-                            viewer->core.proj,
-                            viewer->core.viewport,
-                            viewer->data().V,
-                            viewer->data().F,
-                            face_id,
-                            barycentric);
-
-                    if (hit) {
-                        // Center plane on face
-                        Eigen::RowVector3i face = viewer->data().F.row(face_id);
-                        Eigen::MatrixXd points(3, 3);
-                        points.row(0) = viewer->data().V.row(face(0));
-                        points.row(1) = viewer->data().V.row(face(1));
-                        points.row(2) = viewer->data().V.row(face(2));
-                        Eigen::Vector3d center = points.colwise().mean();
-                        Eigen::Affine3f translation(Eigen::Translation3f(center.cast<float>()));
-
-                        // Set plane rotation
-                        Eigen::Vector3d u = points.row(1) - points.row(0);
-                        Eigen::Vector3d v = points.row(2) - points.row(0);
-                        Eigen::Vector3f face_normal = (u).cross(v).normalized().cast<float>();
-                        Eigen::Vector3f plane_normal = Eigen::Vector3f::UnitZ();
-                        Eigen::Affine3f rotation(Eigen::Quaternionf().setFromTwoVectors(plane_normal, face_normal));
-
-                        plane_gizmo_ = (translation * rotation).matrix();
                         return true;
                     }
                 }

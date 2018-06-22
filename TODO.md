@@ -31,6 +31,7 @@
 - **prikaz zajetih slik**
 - **lepši prikaz kamer (ne samo pike)**
 - **sprobi zhenhuje dataset z TheiaSFM in OpenMVG**
+- hide all možnost
 
 # BIG FEATURES:
 - next best view
@@ -39,7 +40,6 @@
 --------------------------------------------------
 # PRIORITY:
 - undistort images (for mvs)
-- izberi več trikotnikov in nato ravnina
-    - gumb fit plane
 - decimacija in velikost textrure pri exportu
     - recimo dva parametera ki ju nastavi uporabnik pred exportom.
+- shranjevanje jpg slik (za teksturo, lahko pa tut za webcam)

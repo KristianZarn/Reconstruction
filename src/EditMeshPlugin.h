@@ -82,12 +82,13 @@ private:
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
+    void reset_mesh_callback();
     void center_object_callback();
     void select_inside_callback();
     void select_faces_below_callback();
     void invert_selection_callback();
     void remove_selection_callback();
-    void reset_mesh_callback();
+    void fit_plane_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);

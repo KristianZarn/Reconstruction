@@ -231,7 +231,6 @@ namespace theia {
             summary.message = "View could not be added.";
         }
         return summary;
-        // TODO: cleanup if fail (as option?)
     }
 
     bool RealtimeReconstructionBuilder::IsInitialized() {
