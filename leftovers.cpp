@@ -261,3 +261,69 @@ debug << "camera_zoom: \n" << viewer->core.camera_zoom << std::endl;
 debug << "object_scale: \n" << viewer->core.object_scale << std::endl;
 ImGui::TextUnformatted(debug.str().c_str());
 }
+
+void EditMeshPlugin::decimate_callback() {
+    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+    Eigen::MatrixXd vertices = viewer->data().V;
+    Eigen::MatrixXi faces = viewer->data().F;
+    Eigen::MatrixXd V_dec;
+    Eigen::MatrixXi F_dec;
+    Eigen::VectorXi F_idx;
+    Eigen::VectorXi V_idx;
+    igl::decimate(vertices, faces, static_cast<const size_t>(parameters_.decimate_mesh + 1), V_dec, F_dec, F_idx, V_idx);
+
+    log_stream_ << "V_dec size: " << V_dec.rows() << std::endl;
+    log_stream_ << "V_dec: \n" << V_dec.topRows(10) << std::endl;
+
+    log_stream_ << "F_dec size: " << F_dec.rows() << std::endl;
+    log_stream_ << "F_dec: \n" << F_dec.topRows(10) << std::endl;
+
+    log_stream_ << "F_idx size: " << F_idx.rows() << std::endl;
+    log_stream_ << "F_idx: \n" << F_idx.topRows(10) << std::endl;
+
+    log_stream_ << "V_idx size: " << V_idx.rows() << std::endl;
+    log_stream_ << "V_idx: \n" << V_idx.topRows(10) << std::endl;
+
+    // Set UVs
+    Eigen::MatrixXd TC = viewer->data().V_uv;
+    Eigen::MatrixXd TC_dec(F_idx.size() * 3, 2);
+    for (int i = 0; i < F_idx.size(); i++) {
+        std::cout << "F_idx(i): " << F_idx(i) << std::endl;
+        std::cout << TC.row(F_idx(i) * 3 + 0) << std::endl;
+        TC_dec.row(i * 3 + 0) = TC.row(F_idx(i) * 3 + 0);
+        TC_dec.row(i * 3 + 1) = TC.row(F_idx(i) * 3 + 1);
+        TC_dec.row(i * 3 + 2) = TC.row(F_idx(i) * 3 + 2);
+    }
+    Eigen::MatrixXi FTC(F_idx.size(), 3);
+    for (int i = 0; i < F_idx.size(); i++) {
+        FTC(i, 0) = i*3 + 0;
+        FTC(i, 1) = i*3 + 1;
+        FTC(i, 2) = i*3 + 2;
+    }
+
+    viewer->data().clear();
+    viewer->data().set_mesh(V_dec, F_dec);
+    viewer->data().set_uv(TC_dec, FTC);
+
+    // Set texture
+    SEACAVE::Image8U3 img = mvs_scene_.mesh.textureDiffuse;
+    int width = img.width();
+    int height = img.height();
+
+    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> R(width, height);
+    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> G(width, height);
+    Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic> B(width, height);
+
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            Pixel8U pixel = img.getPixel(j, i);
+            R(i, j) = pixel.r;
+            G(i, j) = pixel.g;
+            B(i, j) = pixel.b;
+        }
+    }
+
+    viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
+    viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
+    viewer->data().show_texture = parameters_.show_texture;
+}

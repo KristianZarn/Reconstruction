@@ -4,6 +4,8 @@
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <igl/unproject_onto_mesh.h>
+#include <igl/qslim.h>
+#include <igl/decimate.h>
 
 EditMeshPlugin::EditMeshPlugin(Parameters parameters,
                                std::string reconstruction_path)
@@ -165,12 +167,36 @@ bool EditMeshPlugin::post_draw() {
     if (ImGui::Button("Fit plane to selection", ImVec2(-1, 0))) {
         fit_plane_callback();
     }
+    ImGui::PushItemWidth(150.0f);
+    ImGui::InputInt("##decimate", &parameters_.decimate_target);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    if (ImGui::Button("Decimate", ImVec2(-1, 0))) {
+        decimate_callback();
+    }
+    ImGui::PushItemWidth(150.0f);
+    ImGui::InputInt("##resize", &parameters_.texture_size);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    if (ImGui::Button("Resize texture", ImVec2(-1, 0))) {
+        // TODO: resize texture
+    }
 
     // Debug
+    ImGui::Spacing();
     if (ImGui::Button("Debug", ImVec2(-1, 0))) {
         std::cout << "Debug button" << std::endl;
         // std::ostringstream debug;
         // ImGui::TextUnformatted(debug.str().c_str());
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        log_stream_ << "Vertices: " << viewer->data().V.rows() << std::endl;
+        log_stream_ << "Faces: " << viewer->data().F.rows() << std::endl;
+        log_stream_ << "V_uv: " << viewer->data().V_uv.rows() << " "
+                    << mvs_scene_.mesh.faceTexcoords.size() << std::endl;
+        log_stream_ << "F_uv: " << viewer->data().F_uv.rows() << std::endl;
+
+        log_stream_ << "test: V_uv == 3 * faces" << std::endl;
+        log_stream_ << "test: F_uv == faces" << std::endl;
     }
 
     ImGui::End();
@@ -388,6 +414,74 @@ void EditMeshPlugin::fit_plane_callback() {
     } else {
         log_stream_ << std::endl;
         log_stream_ << "Fit plane failed: selection is empty." << std::endl;
+    }
+}
+
+void EditMeshPlugin::decimate_callback() {
+    if (parameters_.decimate_target < mvs_scene_.mesh.faces.size()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+        Eigen::MatrixXd vertices = viewer->data().V;
+        Eigen::MatrixXi faces = viewer->data().F;
+        Eigen::MatrixXd V_dec;
+        Eigen::MatrixXi F_dec;
+        Eigen::VectorXi F_idx;
+        Eigen::VectorXi V_idx;
+        igl::decimate(vertices, faces, static_cast<size_t>(parameters_.decimate_target), V_dec, F_dec, F_idx, V_idx);
+
+        // Set MVS mesh
+        MVS::Mesh::VertexArr vertices_dec;
+        for (int i = 0; i < V_dec.rows(); i++) {
+            Eigen::RowVector3d vertex = V_dec.row(i);
+            MVS::Mesh::Vertex& tmp = vertices_dec.AddEmpty();
+            tmp.x = static_cast<MVS::Mesh::Type>(vertex(0));
+            tmp.y = static_cast<MVS::Mesh::Type>(vertex(1));
+            tmp.z = static_cast<MVS::Mesh::Type>(vertex(2));
+        }
+        mvs_scene_.mesh.vertices.Release();
+        mvs_scene_.mesh.vertices = vertices_dec;
+
+        MVS::Mesh::FaceArr faces_dec;
+        for (int i = 0; i < F_dec.rows(); i++) {
+            Eigen::RowVector3i face = F_dec.row(i);
+            MVS::Mesh::Face& tmp = faces_dec.AddEmpty();
+            tmp.x = static_cast<MVS::Mesh::VIndex>(face(0));
+            tmp.y = static_cast<MVS::Mesh::VIndex>(face(1));
+            tmp.z = static_cast<MVS::Mesh::VIndex>(face(2));
+        }
+        mvs_scene_.mesh.faces.Release();
+        mvs_scene_.mesh.faces = faces_dec;
+
+        mvs_scene_.mesh.ListIncidenteFaces();
+
+        // Set UVs
+        if (!mvs_scene_.mesh.faceTexcoords.IsEmpty()) {
+            Eigen::MatrixXd TC = viewer->data().V_uv;
+            MVS::Mesh::TexCoordArr tex_coords;
+            for (int i = 0; i < F_idx.size(); i++) {
+                MVS::Mesh::TexCoord& tc1 = tex_coords.AddEmpty();
+                tc1.x = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3, 0));
+                tc1.y = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3, 1));
+
+                MVS::Mesh::TexCoord& tc2 = tex_coords.AddEmpty();
+                tc2.x = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 1, 0));
+                tc2.y = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 1, 1));
+
+                MVS::Mesh::TexCoord& tc3 = tex_coords.AddEmpty();
+                tc3.x = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 2, 0));
+                tc3.y = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 2, 1));
+            }
+            mvs_scene_.mesh.faceTexcoords.Release();
+            mvs_scene_.mesh.faceTexcoords = tex_coords;
+        }
+
+        set_mesh(mvs_scene_);
+        set_bounding_box();
+        set_plane();
+        log_stream_ << std::endl;
+        log_stream_ << "Decimate success: new number of faces is " << mvs_scene_.mesh.faces.size() << "." << std::endl;
+    } else {
+        log_stream_ << std::endl;
+        log_stream_ << "Decimate failed: target number of faces has to be lower than current number." << std::endl;
     }
 }
 

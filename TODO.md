@@ -24,8 +24,8 @@
 # EDIT:
 - (low) fix crash when mesh cannot be loaded
 - (low) keep biggest connected components
-- decimacija
-- fix color on selection
+- (low) fix color on selection
+- (low) update uv's on delete
 
 # OTHER:
 - **prikaz zajetih slik**
@@ -40,6 +40,5 @@
 --------------------------------------------------
 # PRIORITY:
 - undistort images (for mvs)
-- decimacija in velikost textrure pri exportu
-    - recimo dva parametera ki ju nastavi uporabnik pred exportom.
-- shranjevanje jpg slik (za teksturo, lahko pa tut za webcam)
+- velikost textrure
+- uv koordinate po odstranjevanju točk/trikotnikov

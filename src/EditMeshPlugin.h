@@ -25,13 +25,21 @@ public:
         ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
         ImGuizmo::MODE gizmo_mode = ImGuizmo::LOCAL;
 
-        // Menu
+        // Input output
+        char filename_buffer[64] = "filename";
+        Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
+
+        // Display
         bool show_mesh = false;
         bool show_texture = false;
         bool show_wireframe = false;
+
+        // Selection
         SelectionMode selection_mode = SelectionMode::NONE;
-        char filename_buffer[64] = "filename";
-        Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
+
+        // Modify
+        int decimate_target = 10000;
+        int texture_size = 2048;
     };
 
     EditMeshPlugin(Parameters parameters,
@@ -89,6 +97,7 @@ private:
     void invert_selection_callback();
     void remove_selection_callback();
     void fit_plane_callback();
+    void decimate_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);

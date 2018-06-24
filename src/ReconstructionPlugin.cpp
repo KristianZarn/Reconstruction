@@ -77,7 +77,7 @@ bool ReconstructionPlugin::post_draw() {
     // Edit views
     ImGui::Text("Edit reconstruction:");
     ImGui::PushItemWidth(100.0f);
-    ImGui::InputInt("", &parameters_.view_to_delete);
+    ImGui::InputInt("##remove", &parameters_.view_to_delete);
     ImGui::PopItemWidth();
     ImGui::SameLine();
     if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
