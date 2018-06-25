@@ -4,13 +4,13 @@
 - primerjaj track length, omejitev track length
 - multithreading v theiaSFM
 - unique ptrs in reconstruction builder
-- **GPU sift**
 - **reestimate tracks after remove view**
 - pri dodajanju kamere preveri koliko "estimated tracks" vidi.
 - **Vizualizacija GSD in/ali degree of redundancy**
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
 - implement AC-RANSAC ?
+- integriraj še popSift (za primerjavo)
 
 # DENSE:
 - undistort images
@@ -19,7 +19,7 @@
     - TextureMesh ima samo resolution level možnost
     - texture packing (ni pomoči ?)
     - **Poglej velikost teksture v mvs_scene in zmanjšaj po potrebi**
-- Refine mesh crash (temple)
+- Refine mesh crash (temple) - že dela ?
 
 # EDIT:
 - (low) fix crash when mesh cannot be loaded

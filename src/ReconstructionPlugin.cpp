@@ -367,6 +367,7 @@ void ReconstructionPlugin::refine_mesh_callback() {
         log_stream_ << "Refining mesh ..." << std::endl;
         auto time_begin = std::chrono::steady_clock::now();
 
+        mvs_scene_.mesh.FixNonManifold();
         // mvs_scene_.RefineMeshCUDA(parameters_.refine_resolution_level,
         //                           parameters_.refine_min_resolution,
         //                           parameters_.refine_max_views,
@@ -380,7 +381,6 @@ void ReconstructionPlugin::refine_mesh_callback() {
         //                           parameters_.regularity_weight,
         //                           parameters_.rigidity_elasticity_ratio,
         //                           parameters_.gradient_step);
-
         mvs_scene_.RefineMesh(parameters_.refine_resolution_level,
                               parameters_.refine_min_resolution,
                               parameters_.refine_max_views,

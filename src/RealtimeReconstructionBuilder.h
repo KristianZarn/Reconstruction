@@ -18,6 +18,7 @@
 #include <theia/sfm/reconstruction_builder.h>
 
 #include "RealtimeFeatureMatcher.h"
+#include "CudaSiftDescriptorExtractor.h"
 
 namespace theia {
 
@@ -40,13 +41,8 @@ namespace theia {
             // likely to contain outliers.
             int max_track_length = 50;
 
-            // Descriptor type for extracting features.
-            DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
-
-            // The density of features to extract. DENSE means more features are
-            // extracted per image and SPARSE means fewer features per image are
-            // extracted.
-            FeatureDensity feature_density = FeatureDensity::NORMAL;
+            // Options for descriptor extractor
+            CudaSiftDescriptorExtractor::Options descriptor_extractor_options;
 
             // Options for computing matches between images.
             RealtimeFeatureMatcher::Options matching_options;
@@ -55,8 +51,8 @@ namespace theia {
             ReconstructionEstimatorOptions reconstruction_estimator_options;
         };
 
-        explicit RealtimeReconstructionBuilder(const Options& options,
-                                               const CameraIntrinsicsPrior& intrinsics_prior);
+        RealtimeReconstructionBuilder(const Options& options,
+                                      const CameraIntrinsicsPrior& intrinsics_prior);
 
         // Builds initial reconstruction from two images
         ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_fullpath,

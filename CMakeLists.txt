@@ -4,7 +4,6 @@ project(realtime_reconstruction_theia)
 set(CMAKE_CXX_STANDARD 17)
 
 # LIBRARIES
-
 # Basic libraries needed by others
 find_package(X11 REQUIRED)
 find_package(Threads REQUIRED)
@@ -55,6 +54,9 @@ find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
 find_package(OpenMVS REQUIRED)
 
+# SUBDIRECTORIES
+add_subdirectory(external/CudaSift)
+
 # TARGETS
 set(SOURCE_FILES
     external/webcam/webcam.cpp
@@ -62,12 +64,14 @@ set(SOURCE_FILES
     src/helpers.cpp
     src/RealtimeReconstructionBuilder.cpp
     src/RealtimeFeatureMatcher.cpp
+    src/CudaSiftDescriptorExtractor.cpp
     src/CameraPlugin.cpp
     src/ReconstructionPlugin.cpp
     src/EditMeshPlugin.cpp)
 
 set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/external
+    ${CMAKE_SOURCE_DIR}/external/CudaSift
     ${CMAKE_SOURCE_DIR}/src
     $ENV{HOME}/Sources/libigl/external/imgui
     $ENV{HOME}/Sources/libigl/external/stb_image
@@ -93,6 +97,7 @@ set(LIBRARIES
     ${X11_LIBRARIES}
     Threads::Threads
     ${THEIA_LIBRARIES}
+    cudasift
     ${OpenMVS_LIBRARIES}
     ${CUDA_LIBRARIES})
 

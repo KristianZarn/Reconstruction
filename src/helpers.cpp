@@ -11,8 +11,6 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
     options.num_threads = 4;
 
     // Feature detection options
-    options.descriptor_type = theia::DescriptorExtractorType::SIFT;
-    options.feature_density = theia::FeatureDensity::NORMAL;
 
     // Matching options
     options.min_track_length = 2;

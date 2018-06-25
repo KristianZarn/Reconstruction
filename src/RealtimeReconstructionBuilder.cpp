@@ -3,7 +3,7 @@
 
 #include <theia/util/filesystem.h>
 #include <theia/image/image.h>
-#include <theia/image/descriptor/create_descriptor_extractor.h>
+#include <theia/image/descriptor/sift_descriptor.h>
 #include <theia/matching/create_feature_matcher.h>
 #include <theia/matching/image_pair_match.h>
 #include <theia/sfm/colorize_reconstruction.h>
@@ -17,7 +17,9 @@ namespace theia {
             : options_(options), intrinsics_prior_(intrinsics_prior) {
 
         // Initialize descriptor extractor
-        descriptor_extractor_ = CreateDescriptorExtractor(options_.descriptor_type, options_.feature_density);
+        descriptor_extractor_ = std::make_unique<CudaSiftDescriptorExtractor>(options_.descriptor_extractor_options);
+        // SiftParameters sift_params;
+        // descriptor_extractor_ = std::make_unique<SiftDescriptorExtractor>(sift_params);
         descriptor_extractor_->Initialize();
 
         // Initialize matcher
