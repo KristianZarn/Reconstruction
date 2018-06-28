@@ -9,6 +9,7 @@
 #include "CameraPlugin.h"
 #include "RealtimeReconstructionBuilder.h"
 #include "ReconstructionPlugin.h"
+#include "EditMeshPlugin.h"
 
 int main(int argc, char *argv[]) {
 
@@ -72,6 +73,12 @@ int main(int argc, char *argv[]) {
     ReconstructionPlugin reconstruction_plugin(
             parameters, images_path, image_names, reconstruction_path, options, intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
+
+    // Attach edit mesh plugin
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
+                                    reconstruction_path);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

@@ -10,7 +10,7 @@
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
 - implement AC-RANSAC ?
-- integriraj še popSift (za primerjavo)
+- napiši issue za popsift glede porabe pomnilnika
 
 # DENSE:
 - undistort images

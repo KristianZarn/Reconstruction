@@ -54,8 +54,9 @@ find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
 find_package(OpenMVS REQUIRED)
 
-# SUBDIRECTORIES
-add_subdirectory(external/CudaSift)
+# PopSift
+find_package(PopSift REQUIRED)
+find_package(Boost 1.53.0 REQUIRED COMPONENTS program_options system filesystem)
 
 # TARGETS
 set(SOURCE_FILES
@@ -64,7 +65,7 @@ set(SOURCE_FILES
     src/helpers.cpp
     src/RealtimeReconstructionBuilder.cpp
     src/RealtimeFeatureMatcher.cpp
-    src/CudaSiftDescriptorExtractor.cpp
+    src/PopSiftDescriptorExtractor.cpp
     src/CameraPlugin.cpp
     src/ReconstructionPlugin.cpp
     src/EditMeshPlugin.cpp)
@@ -97,7 +98,8 @@ set(LIBRARIES
     ${X11_LIBRARIES}
     Threads::Threads
     ${THEIA_LIBRARIES}
-    cudasift
+    PopSift::popsift
+    ${Boost_LIBRARIES}
     ${OpenMVS_LIBRARIES}
     ${CUDA_LIBRARIES})
 

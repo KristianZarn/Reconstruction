@@ -18,7 +18,8 @@
 #include <theia/sfm/reconstruction_builder.h>
 
 #include "RealtimeFeatureMatcher.h"
-#include "CudaSiftDescriptorExtractor.h"
+// #include "CudaSiftDescriptorExtractor.h"
+#include "PopSiftDescriptorExtractor.h"
 
 namespace theia {
 
@@ -42,7 +43,8 @@ namespace theia {
             int max_track_length = 50;
 
             // Options for descriptor extractor
-            CudaSiftDescriptorExtractor::Options descriptor_extractor_options;
+            // CudaSiftDescriptorExtractor::Options descriptor_extractor_options;
+            popsift::Config descriptor_extractor_options;
 
             // Options for computing matches between images.
             RealtimeFeatureMatcher::Options matching_options;
