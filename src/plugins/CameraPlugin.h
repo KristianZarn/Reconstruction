@@ -13,6 +13,8 @@ public:
     CameraPlugin(std::string device, int width, int height, std::string output_path);
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
+
+    const RGBImage& get_current_frame();
     const std::vector<std::string>& get_captured_image_names();
 
     // Mouse IO
@@ -33,12 +35,15 @@ private:
     int image_height_;
     std::string images_path_;
 
-    // Other members
-    Webcam webcam_;
+    // Camera members
     GLuint textureID_;
-    std::string camera_message_;
+    Webcam webcam_;
+    RGBImage current_frame_;
     int saved_frames_count_;
     std::vector<std::string> image_names_;
+
+    // GUI
+    std::string camera_message_;
 
     // Callback functions
     void capture_frame_callback();

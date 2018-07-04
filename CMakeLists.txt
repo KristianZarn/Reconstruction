@@ -63,12 +63,12 @@ set(SOURCE_FILES
     external/webcam/webcam.cpp
     external/imguizmo/ImGuizmo.cpp
     src/helpers.cpp
-    src/RealtimeReconstructionBuilder.cpp
-    src/RealtimeFeatureMatcher.cpp
-    src/PopSiftDescriptorExtractor.cpp
-    src/CameraPlugin.cpp
-    src/ReconstructionPlugin.cpp
-    src/EditMeshPlugin.cpp)
+    src/reconstruction/RealtimeReconstructionBuilder.cpp
+    src/reconstruction/RealtimeFeatureMatcher.cpp
+    src/reconstruction/PopSiftDescriptorExtractor.cpp
+    src/plugins/CameraPlugin.cpp
+    src/plugins/ReconstructionPlugin.cpp
+    src/plugins/EditMeshPlugin.cpp)
 
 set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/external

@@ -9,7 +9,7 @@
 #include <igl/opengl/glfw/ViewerPlugin.h>
 #include <OpenMVS/MVS.h>
 
-#include "RealtimeReconstructionBuilder.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
@@ -114,7 +114,6 @@ public:
                          theia::CameraIntrinsicsPrior intrinsics_prior);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
-    const MVS::Scene& get_mvs_scene();
     bool post_draw() override;
 
     // Mouse IO

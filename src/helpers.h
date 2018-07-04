@@ -8,16 +8,14 @@
 #include <theia/sfm/reconstruction_builder.h>
 #include <theia/sfm/reconstruction_estimator.h>
 
-#include "RealtimeReconstructionBuilder.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
 
 theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions();
 
 theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename);
 
-void PrintReconstructionSummary(const theia::ReconstructionEstimatorSummary& summary);
-
-bool theia_to_mvs(const theia::Reconstruction& reconstruction,
-                  const std::string& images_path,
-                  MVS::Scene& mvs_scene);
+bool TheiaToMVS(const theia::Reconstruction &reconstruction,
+                const std::string &images_path,
+                MVS::Scene &mvs_scene);
 
 #endif //REALTIME_RECONSTRUCTION_UTILITY_H

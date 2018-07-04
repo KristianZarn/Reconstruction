@@ -10,7 +10,7 @@
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
 - implement AC-RANSAC ?
-- napiši issue za popsift glede porabe pomnilnika
+- remove unestimated views
 
 # DENSE:
 - undistort images
@@ -19,13 +19,13 @@
     - TextureMesh ima samo resolution level možnost
     - texture packing (ni pomoči ?)
     - **Poglej velikost teksture v mvs_scene in zmanjšaj po potrebi**
-- Refine mesh crash (temple) - že dela ?
 
 # EDIT:
 - (low) fix crash when mesh cannot be loaded
 - (low) keep biggest connected components
 - (low) fix color on selection
 - (low) update uv's on delete
+- polnjenje lukenj (po odstanjevanju ravnine npr.)
 
 # OTHER:
 - **prikaz zajetih slik**
@@ -41,4 +41,4 @@
 # PRIORITY:
 - undistort images (for mvs)
 - velikost textrure
-- uv koordinate po odstranjevanju točk/trikotnikov
+- uv koordinate po odstranjevanju točk/trikotnikov ?

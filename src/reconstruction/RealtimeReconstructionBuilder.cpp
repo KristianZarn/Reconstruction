@@ -236,22 +236,6 @@ namespace theia {
         return summary;
     }
 
-    bool RealtimeReconstructionBuilder::IsInitialized() {
-        return (reconstruction_->NumViews() > 0);
-    }
-
-    Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
-        return reconstruction_.get();
-    }
-
-    void RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {
-        theia::ColorizeReconstruction(images_path, options_.num_threads, reconstruction_.get());
-    }
-
-    void RealtimeReconstructionBuilder::WritePly(const std::string& output_fullpath) {
-        theia::WritePlyFile(output_fullpath, *reconstruction_, 2);
-    }
-
     void RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
@@ -291,6 +275,26 @@ namespace theia {
         for (const auto& view_id :reconstruction_->ViewIds()) {
             RemoveView(view_id);
         }
+    }
+
+    bool RealtimeReconstructionBuilder::LocalizeImage(theia::FloatImage image) {
+
+    }
+
+    bool RealtimeReconstructionBuilder::IsInitialized() {
+        return (reconstruction_->NumViews() > 0);
+    }
+
+    Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
+        return reconstruction_.get();
+    }
+
+    void RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {
+        theia::ColorizeReconstruction(images_path, options_.num_threads, reconstruction_.get());
+    }
+
+    void RealtimeReconstructionBuilder::WritePly(const std::string& output_fullpath) {
+        theia::WritePlyFile(output_fullpath, *reconstruction_, 2);
     }
 
     void RealtimeReconstructionBuilder::PrintStatistics(std::ostream &stream,

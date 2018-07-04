@@ -6,10 +6,10 @@
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "helpers.h"
-#include "CameraPlugin.h"
-#include "RealtimeReconstructionBuilder.h"
-#include "ReconstructionPlugin.h"
-#include "EditMeshPlugin.h"
+#include "plugins/CameraPlugin.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "plugins/ReconstructionPlugin.h"
+#include "plugins/EditMeshPlugin.h"
 
 int main(int argc, char *argv[]) {
 

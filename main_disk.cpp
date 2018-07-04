@@ -6,9 +6,9 @@
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "helpers.h"
-#include "RealtimeReconstructionBuilder.h"
-#include "ReconstructionPlugin.h"
-#include "EditMeshPlugin.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "plugins/ReconstructionPlugin.h"
+#include "plugins/EditMeshPlugin.h"
 
 int main(int argc, char *argv[]) {
 

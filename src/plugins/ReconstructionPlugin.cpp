@@ -36,6 +36,7 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
 
     // First mesh is for cameras
+    viewer->append_mesh();
     VIEWER_DATA_CAMERAS = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
     // Append mesh for point cloud
@@ -45,10 +46,6 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     // Append mesh for mesh
     viewer->append_mesh();
     VIEWER_DATA_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
-}
-
-const MVS::Scene& ReconstructionPlugin::get_mvs_scene() {
-    return mvs_scene_;
 }
 
 bool ReconstructionPlugin::post_draw() {
@@ -318,7 +315,7 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
 
     // Convert reconstruction to mvs scene
     mvs_scene_.Release();
-    theia_to_mvs(*(reconstruction_builder_.GetReconstruction()), undistoreted_images_folder, mvs_scene_);
+    TheiaToMVS(*(reconstruction_builder_.GetReconstruction()), undistoreted_images_folder, mvs_scene_);
 
     // Select neighbor views
     int i = 0;

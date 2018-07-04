@@ -40,11 +40,11 @@ bool CameraPlugin::post_draw() {
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Get frame from webcam
-    auto frame = webcam_.frame();
+    current_frame_ = webcam_.frame();
 
     // Replace texture with new frame
     glBindTexture(GL_TEXTURE_2D, textureID_);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width_, image_height_, GL_RGB, GL_UNSIGNED_BYTE, frame.data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width_, image_height_, GL_RGB, GL_UNSIGNED_BYTE, current_frame_.data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Add an image
@@ -80,6 +80,10 @@ void CameraPlugin::capture_frame_callback() {
     image_names_.push_back(filename);
     camera_message_ = "Image saved to: \n" + fullname;
     saved_frames_count_++;
+}
+
+const RGBImage& CameraPlugin::get_current_frame() {
+    return current_frame_;
 }
 
 const std::vector<std::string>& CameraPlugin::get_captured_image_names() {

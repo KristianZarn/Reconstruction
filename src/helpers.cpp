@@ -12,7 +12,9 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
 
     // Feature detection options
     options.descriptor_extractor_options.setMode(popsift::Config::VLFeat);
-    options.descriptor_extractor_options.setThreshold(0.02f);
+    // options.descriptor_extractor_options.setThreshold(0.04f);
+    options.descriptor_extractor_options.setThreshold(0.0f);
+    // options.descriptor_extractor_options.setDownsampling(2);
     // options.descriptor_extractor_options.setOctaves(5);
 
     // Matching options
@@ -121,25 +123,9 @@ theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename) {
     return camera_intrinsics_prior;
 }
 
-void PrintReconstructionSummary(const theia::ReconstructionEstimatorSummary& summary) {
-    if (summary.success) {
-        std::cout << "Summary: reconstruction successful " << std::endl;
-        std::cout << "\n\tNum estimated views = " << summary.estimated_views.size()
-                  << "\n\tNum estimated tracks = " << summary.estimated_tracks.size()
-                  << "\n\tPose estimation time = " << summary.pose_estimation_time
-                  << "\n\tTriangulation time = " << summary.triangulation_time
-                  << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
-                  << "\n\tTotal time = " << summary.total_time
-                  << "\n\tMessage = " << summary.message << "\n\n";
-    } else {
-        std::cout << "Summary: reconstruction failed: \n";
-        std::cout << "\n\tMessage = " << summary.message << "\n\n";
-    }
-}
-
-bool theia_to_mvs(const theia::Reconstruction& reconstruction,
-                  const std::string& images_path,
-                  MVS::Scene& mvs_scene) {
+bool TheiaToMVS(const theia::Reconstruction &reconstruction,
+                const std::string &images_path,
+                MVS::Scene &mvs_scene) {
 
     // Map from Theia view_id to MVS vector index
     std::unordered_map<theia::ViewId, int> viewid_to_imageidx;
