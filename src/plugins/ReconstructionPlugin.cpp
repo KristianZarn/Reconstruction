@@ -21,16 +21,16 @@
 
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
-                                           const std::vector<std::string>& image_names,
                                            std::string reconstruction_path,
+                                           std::shared_ptr<std::vector<std::string>> image_names,
                                            theia::RealtimeReconstructionBuilder::Options options,
                                            theia::CameraIntrinsicsPrior intrinsics_prior)
         : parameters_(parameters),
           images_path_(std::move(images_path)),
-          image_names_(image_names),
           reconstruction_path_(std::move(reconstruction_path)),
-          reconstruction_builder_(options, intrinsics_prior),
-          mvs_scene_(static_cast<unsigned int>(options.num_threads)) {}
+          image_names_(image_names),
+          reconstruction_builder_(std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior)),
+          mvs_scene_(std::make_shared<MVS::Scene>(options.num_threads)) {}
 
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -140,25 +140,25 @@ bool ReconstructionPlugin::post_draw() {
         log_stream_ << std::endl;
 
         std::string filename = std::string(parameters_.filename_buffer) + ".ply";
-        reconstruction_builder_.WritePly(reconstruction_path_ + filename);
+        reconstruction_builder_->WritePly(reconstruction_path_ + filename);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
     }
     if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
         log_stream_ << std::endl;
 
         std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
+        mvs_scene_->Save(reconstruction_path_ + filename_mvs);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
 
         std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
+        mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
         log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
     }
     if (ImGui::Button("Load mesh", ImVec2(-1, 0))) {
         log_stream_ << std::endl;
 
         std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_.Load(reconstruction_path_ + filename_mvs);
+        mvs_scene_->Load(reconstruction_path_ + filename_mvs);
         set_mesh();
         show_mesh(true);
         show_point_cloud(false);
@@ -167,8 +167,8 @@ bool ReconstructionPlugin::post_draw() {
     }
     std::ostringstream os;
     os << "Mesh info:"
-       << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
-       << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
+       << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
+       << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
     ImGui::TextUnformatted(os.str().c_str());
     ImGui::Spacing();
 
@@ -186,15 +186,23 @@ bool ReconstructionPlugin::post_draw() {
     return false;
 }
 
+std::shared_ptr<theia::RealtimeReconstructionBuilder> ReconstructionPlugin::get_reconstruction_builder() {
+    return reconstruction_builder_;
+}
+
+std::shared_ptr<MVS::Scene> ReconstructionPlugin::get_mvs_scene_() {
+    return mvs_scene_;
+}
+
 void ReconstructionPlugin::initialize_callback() {
     log_stream_ << std::endl;
 
     // Images for initial reconstruction
     std::string image1, image2;
-    if ((parameters_.next_image_idx + 1) < image_names_.size()) {
-        image1 = images_path_ + image_names_[parameters_.next_image_idx];
+    if ((parameters_.next_image_idx + 1) < image_names_->size()) {
+        image1 = images_path_ + (*image_names_)[parameters_.next_image_idx];
         parameters_.next_image_idx++;
-        image2 = images_path_ + image_names_[parameters_.next_image_idx];
+        image2 = images_path_ + (*image_names_)[parameters_.next_image_idx];
         parameters_.next_image_idx++;
     } else {
         log_stream_ << "Initialization failed:\n"
@@ -207,7 +215,7 @@ void ReconstructionPlugin::initialize_callback() {
     auto time_begin = std::chrono::steady_clock::now();
 
     theia::ReconstructionEstimatorSummary summary =
-            reconstruction_builder_.InitializeReconstruction(image1, image2);
+            reconstruction_builder_->InitializeReconstruction(image1, image2);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -216,12 +224,12 @@ void ReconstructionPlugin::initialize_callback() {
     // Reconstruction summary
     if (summary.success) {
         log_stream_ << "Initialization successful: \n";
-        reconstruction_builder_.ColorizeReconstruction(images_path_);
+        reconstruction_builder_->ColorizeReconstruction(images_path_);
     } else {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\tMessage = " << summary.message << "\n\n";
     }
-    reconstruction_builder_.PrintStatistics(log_stream_);
+    reconstruction_builder_->PrintStatistics(log_stream_);
     set_cameras();
     show_cameras(true);
     set_point_cloud();
@@ -235,8 +243,8 @@ void ReconstructionPlugin::extend_callback() {
 
     // Image for extend
     std::string image;
-    if (parameters_.next_image_idx < image_names_.size()) {
-        image = images_path_ + image_names_[parameters_.next_image_idx];
+    if (parameters_.next_image_idx < image_names_->size()) {
+        image = images_path_ + (*image_names_)[parameters_.next_image_idx];
         parameters_.next_image_idx++;
     } else {
         log_stream_ << "Extend failed:\n"
@@ -248,7 +256,7 @@ void ReconstructionPlugin::extend_callback() {
     log_stream_ << "Extending reconstruction ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
-    theia::ReconstructionEstimatorSummary summary = reconstruction_builder_.ExtendReconstruction(image);
+    theia::ReconstructionEstimatorSummary summary = reconstruction_builder_->ExtendReconstruction(image);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -257,12 +265,12 @@ void ReconstructionPlugin::extend_callback() {
     // Reconstruction summary
     if (summary.success) {
         log_stream_ << "Extend successful: \n";
-        reconstruction_builder_.ColorizeReconstruction(images_path_);
+        reconstruction_builder_->ColorizeReconstruction(images_path_);
     } else {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\tMessage = " << summary.message << "\n\n";
     }
-    reconstruction_builder_.PrintStatistics(log_stream_);
+    reconstruction_builder_->PrintStatistics(log_stream_);
     set_cameras();
     show_cameras(true);
     set_point_cloud();
@@ -273,9 +281,9 @@ void ReconstructionPlugin::extend_callback() {
 void ReconstructionPlugin::remove_view_callback(int view_id) {
     log_stream_ << std::endl;
 
-    reconstruction_builder_.RemoveView(static_cast<theia::ViewId>(view_id));
+    reconstruction_builder_->RemoveView(static_cast<theia::ViewId>(view_id));
     log_stream_ << "Removed view with id = " << view_id << std::endl;
-    reconstruction_builder_.PrintStatistics(log_stream_);
+    reconstruction_builder_->PrintStatistics(log_stream_);
 
     set_point_cloud();
     show_point_cloud(true);
@@ -284,7 +292,7 @@ void ReconstructionPlugin::remove_view_callback(int view_id) {
 }
 
 void ReconstructionPlugin::remove_last_view_callback() {
-    std::vector<theia::ViewId> view_ids = reconstruction_builder_.GetReconstruction()->ViewIds();
+    std::vector<theia::ViewId> view_ids = reconstruction_builder_->GetReconstruction().ViewIds();
     if (!view_ids.empty()) {
         theia::ViewId view_to_delete = *std::max_element(view_ids.begin(), view_ids.end());
         remove_view_callback(view_to_delete);
@@ -294,9 +302,9 @@ void ReconstructionPlugin::remove_last_view_callback() {
 void ReconstructionPlugin::reset_reconstruction_callback() {
     log_stream_ << std::endl;
     // Reset sparse reconstruction
-    reconstruction_builder_.ResetReconstruction();
+    reconstruction_builder_->ResetReconstruction();
     // Reset dense reconstruction
-    mvs_scene_.Release();
+    mvs_scene_->Release();
     // Reset viewer data
     viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().clear();
@@ -314,17 +322,17 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     std::string undistoreted_images_folder = images_path_;
 
     // Convert reconstruction to mvs scene
-    mvs_scene_.Release();
-    TheiaToMVS(*(reconstruction_builder_.GetReconstruction()), undistoreted_images_folder, mvs_scene_);
+    mvs_scene_->Release();
+    TheiaToMVS(reconstruction_builder_->GetReconstruction(), undistoreted_images_folder, *mvs_scene_);
 
     // Select neighbor views
     int i = 0;
-    for (auto& image : mvs_scene_.images) {
+    for (auto& image : mvs_scene_->images) {
         image.ReloadImage(0, false);
-        image.UpdateCamera(mvs_scene_.platforms);
+        image.UpdateCamera(mvs_scene_->platforms);
         if (image.neighbors.IsEmpty()) {
             SEACAVE::IndexArr points;
-            mvs_scene_.SelectNeighborViews(static_cast<uint32_t>(i), points);
+            mvs_scene_->SelectNeighborViews(static_cast<uint32_t>(i), points);
         }
         i++;
     }
@@ -333,25 +341,25 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
     log_stream_ << "Reconstructing mesh ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
-    mvs_scene_.ReconstructMesh(parameters_.dist_insert,
-                               parameters_.use_free_space_support,
-                               parameters_.fix_non_manifold,
-                               parameters_.thickness_factor,
-                               parameters_.quality_factor);
+    mvs_scene_->ReconstructMesh(parameters_.dist_insert,
+                                parameters_.use_free_space_support,
+                                parameters_.fix_non_manifold,
+                                parameters_.thickness_factor,
+                                parameters_.quality_factor);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
     log_stream_ << "Reconstruct mesh time: " << time_elapsed.count() << " s" << std::endl;
     log_stream_ << "Reconstruct mesh result: \n\t"
-                << mvs_scene_.mesh.vertices.GetSize() << " vertices, "
-                << mvs_scene_.mesh.faces.GetSize() << " faces." << std::endl;
+                << mvs_scene_->mesh.vertices.GetSize() << " vertices, "
+                << mvs_scene_->mesh.faces.GetSize() << " faces." << std::endl;
 
     // Clean the mesh
-    mvs_scene_.mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
+    mvs_scene_->mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
                           parameters_.close_holes, parameters_.smooth_mesh, false);
 
     // Recompute array of vertices incident to each vertex
-    mvs_scene_.mesh.ListIncidenteFaces();
+    mvs_scene_->mesh.ListIncidenteFaces();
 
     set_mesh();
     show_mesh(true);
@@ -360,46 +368,46 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
 
 void ReconstructionPlugin::refine_mesh_callback() {
     log_stream_ << std::endl;
-    if (!mvs_scene_.mesh.IsEmpty()) {
+    if (!mvs_scene_->mesh.IsEmpty()) {
         log_stream_ << "Refining mesh ..." << std::endl;
         auto time_begin = std::chrono::steady_clock::now();
 
-        mvs_scene_.mesh.FixNonManifold();
-        // mvs_scene_.RefineMeshCUDA(parameters_.refine_resolution_level,
-        //                           parameters_.refine_min_resolution,
-        //                           parameters_.refine_max_views,
-        //                           parameters_.refine_decimate,
-        //                           parameters_.refine_close_holes,
-        //                           parameters_.ensure_edge_size,
-        //                           parameters_.max_face_area,
-        //                           parameters_.scales,
-        //                           parameters_.scale_step,
-        //                           parameters_.alternative_pair,
-        //                           parameters_.regularity_weight,
-        //                           parameters_.rigidity_elasticity_ratio,
-        //                           parameters_.gradient_step);
-        mvs_scene_.RefineMesh(parameters_.refine_resolution_level,
-                              parameters_.refine_min_resolution,
-                              parameters_.refine_max_views,
-                              parameters_.refine_decimate,
-                              parameters_.refine_close_holes,
-                              parameters_.ensure_edge_size,
-                              parameters_.max_face_area,
-                              parameters_.scales,
-                              parameters_.scale_step,
-                              parameters_.reduce_memory,
-                              parameters_.alternative_pair,
-                              parameters_.regularity_weight,
-                              parameters_.rigidity_elasticity_ratio,
-                              parameters_.planar_vertex_ratio,
-                              parameters_.gradient_step);
+        mvs_scene_->mesh.FixNonManifold();
+        // mvs_scene_->RefineMeshCUDA(parameters_.refine_resolution_level,
+        //                            parameters_.refine_min_resolution,
+        //                            parameters_.refine_max_views,
+        //                            parameters_.refine_decimate,
+        //                            parameters_.refine_close_holes,
+        //                            parameters_.ensure_edge_size,
+        //                            parameters_.max_face_area,
+        //                            parameters_.scales,
+        //                            parameters_.scale_step,
+        //                            parameters_.alternative_pair,
+        //                            parameters_.regularity_weight,
+        //                            parameters_.rigidity_elasticity_ratio,
+        //                            parameters_.gradient_step);
+        mvs_scene_->RefineMesh(parameters_.refine_resolution_level,
+                               parameters_.refine_min_resolution,
+                               parameters_.refine_max_views,
+                               parameters_.refine_decimate,
+                               parameters_.refine_close_holes,
+                               parameters_.ensure_edge_size,
+                               parameters_.max_face_area,
+                               parameters_.scales,
+                               parameters_.scale_step,
+                               parameters_.reduce_memory,
+                               parameters_.alternative_pair,
+                               parameters_.regularity_weight,
+                               parameters_.rigidity_elasticity_ratio,
+                               parameters_.planar_vertex_ratio,
+                               parameters_.gradient_step);
 
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
         log_stream_ << "Refine mesh time: " << time_elapsed.count() << " s" << std::endl;
         log_stream_ << "Refine mesh result: \n\t"
-                    << mvs_scene_.mesh.vertices.GetSize() << " vertices, "
-                    << mvs_scene_.mesh.faces.GetSize() << " faces." << std::endl;
+                    << mvs_scene_->mesh.vertices.GetSize() << " vertices, "
+                    << mvs_scene_->mesh.faces.GetSize() << " faces." << std::endl;
 
         set_mesh();
         show_mesh(true);
@@ -411,19 +419,19 @@ void ReconstructionPlugin::refine_mesh_callback() {
 
 void ReconstructionPlugin::texture_mesh_callback() {
     log_stream_ << std::endl;
-    if (!mvs_scene_.mesh.IsEmpty()) {
+    if (!mvs_scene_->mesh.IsEmpty()) {
         log_stream_ << "Texturing mesh ..." << std::endl;
         auto time_begin = std::chrono::steady_clock::now();
 
-        mvs_scene_.TextureMesh(parameters_.texture_resolution_level,
-                               parameters_.min_resolution,
-                               parameters_.texture_outlier_treshold,
-                               parameters_.cost_smoothness_ratio,
-                               parameters_.global_seam_leveling,
-                               parameters_.local_seam_leveling,
-                               parameters_.texture_size_multiple,
-                               parameters_.patch_packing_heuristic,
-                               Pixel8U(parameters_.empty_color));
+        mvs_scene_->TextureMesh(parameters_.texture_resolution_level,
+                                parameters_.min_resolution,
+                                parameters_.texture_outlier_treshold,
+                                parameters_.cost_smoothness_ratio,
+                                parameters_.global_seam_leveling,
+                                parameters_.local_seam_leveling,
+                                parameters_.texture_size_multiple,
+                                parameters_.patch_packing_heuristic,
+                                Pixel8U(parameters_.empty_color));
 
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -466,18 +474,18 @@ void ReconstructionPlugin::set_cameras() {
     viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().clear();
 
-    theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
+    const theia::Reconstruction& reconstruction = reconstruction_builder_->GetReconstruction();
 
     // Add cameras
     std::unordered_set<theia::ViewId> view_ids;
-    theia::GetEstimatedViewsFromReconstruction(*reconstruction, &view_ids);
+    theia::GetEstimatedViewsFromReconstruction(reconstruction, &view_ids);
 
     auto num_views = static_cast<int>(view_ids.size());
     Eigen::MatrixXd cameras(num_views, 3);
 
     int i = 0;
     for (const auto& view_id : view_ids) {
-        Eigen::Vector3d position = reconstruction->View(view_id)->Camera().GetPosition();
+        Eigen::Vector3d position = reconstruction.View(view_id)->Camera().GetPosition();
         cameras(i, 0) = position(0);
         cameras(i, 1) = position(1);
         cameras(i, 2) = position(2);
@@ -499,11 +507,11 @@ void ReconstructionPlugin::set_point_cloud() {
     viewer->selected_data_index = VIEWER_DATA_POINT_CLOUD;
     viewer->data().clear();
 
-    theia::Reconstruction* reconstruction = reconstruction_builder_.GetReconstruction();
+    const theia::Reconstruction& reconstruction = reconstruction_builder_->GetReconstruction();
 
     // Add points and colors
     std::unordered_set<theia::TrackId> track_ids;
-    theia::GetEstimatedTracksFromReconstruction(*reconstruction, &track_ids);
+    theia::GetEstimatedTracksFromReconstruction(reconstruction, &track_ids);
 
     auto num_points = static_cast<int>(track_ids.size());
     Eigen::MatrixXd points(num_points, 3);
@@ -511,7 +519,7 @@ void ReconstructionPlugin::set_point_cloud() {
 
     int i = 0;
     for (const auto& track_id : track_ids) {
-        const theia::Track* track = reconstruction->Track(track_id);
+        const theia::Track* track = reconstruction.Track(track_id);
 
         Eigen::Vector3d point = track->Point().hnormalized();
         points(i, 0) = point(0);
@@ -540,19 +548,19 @@ void ReconstructionPlugin::set_mesh() {
     viewer->data().clear();
 
     // Add vertices
-    int num_vertices = mvs_scene_.mesh.vertices.size();
+    int num_vertices = mvs_scene_->mesh.vertices.size();
     Eigen::MatrixXd V(num_vertices, 3);
     for (int i = 0; i < num_vertices; i++) {
-        MVS::Mesh::Vertex vertex = mvs_scene_.mesh.vertices[i];
+        MVS::Mesh::Vertex vertex = mvs_scene_->mesh.vertices[i];
         V(i, 0) = vertex[0];
         V(i, 1) = vertex[1];
         V(i, 2) = vertex[2];
     }
     // Add faces
-    int num_faces = mvs_scene_.mesh.faces.size();
+    int num_faces = mvs_scene_->mesh.faces.size();
     Eigen::MatrixXi F(num_faces, 3);
     for (int i = 0; i < num_faces; i++) {
-        MVS::Mesh::Face face = mvs_scene_.mesh.faces[i];
+        MVS::Mesh::Face face = mvs_scene_->mesh.faces[i];
         F(i, 0) = face[0];
         F(i, 1) = face[1];
         F(i, 2) = face[2];
@@ -561,13 +569,13 @@ void ReconstructionPlugin::set_mesh() {
     viewer->data().show_lines = parameters_.show_wireframe;
 
     // Add texture if available
-    if (!mvs_scene_.mesh.faceTexcoords.IsEmpty()) {
+    if (!mvs_scene_->mesh.faceTexcoords.IsEmpty()) {
 
         // Set UVs
-        int num_texcoords = mvs_scene_.mesh.faceTexcoords.size();
+        int num_texcoords = mvs_scene_->mesh.faceTexcoords.size();
         Eigen::MatrixXd TC(num_texcoords, 2);
         for (int i = 0; i < num_texcoords; i++) {
-            MVS::Mesh::TexCoord texcoord = mvs_scene_.mesh.faceTexcoords[i];
+            MVS::Mesh::TexCoord texcoord = mvs_scene_->mesh.faceTexcoords[i];
             TC(i, 0) = texcoord[0];
             TC(i, 1) = texcoord[1];
         }
@@ -580,7 +588,7 @@ void ReconstructionPlugin::set_mesh() {
         viewer->data().set_uv(TC, FTC);
 
         // Set texture
-        SEACAVE::Image8U3 img = mvs_scene_.mesh.textureDiffuse;
+        SEACAVE::Image8U3 img = mvs_scene_->mesh.textureDiffuse;
         int width = img.width();
         int height = img.height();
 

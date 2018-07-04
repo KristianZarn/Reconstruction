@@ -277,16 +277,17 @@ namespace theia {
         }
     }
 
-    bool RealtimeReconstructionBuilder::LocalizeImage(theia::FloatImage image) {
+    bool RealtimeReconstructionBuilder::LocalizeImage(const theia::FloatImage& image) {
+        // TODO: localize image
+        return false;
+    }
 
+    const Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {
+        return *reconstruction_;
     }
 
     bool RealtimeReconstructionBuilder::IsInitialized() {
         return (reconstruction_->NumViews() > 0);
-    }
-
-    Reconstruction* RealtimeReconstructionBuilder::GetReconstruction() {
-        return reconstruction_.get();
     }
 
     void RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {

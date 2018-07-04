@@ -86,17 +86,17 @@ int main(int argc, char *argv[]) {
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
-    std::vector<std::string> image_names;
+    std::shared_ptr<std::vector<std::string>> image_names = std::make_unique<std::vector<std::string>>();
     for (int i = 0; i < 50; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
-        image_names.emplace_back("frame" + ss.str() + ".png");
+        image_names->emplace_back("frame" + ss.str() + ".png");
     }
 
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
                                                images_path,
-                                               image_names,
                                                reconstruction_path,
+                                               image_names,
                                                options,
                                                intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);

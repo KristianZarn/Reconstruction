@@ -56,16 +56,19 @@ namespace theia {
         RealtimeReconstructionBuilder(const Options& options,
                                       const CameraIntrinsicsPrior& intrinsics_prior);
 
+        // Main functionality
         ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_fullpath,
                                                                 const std::string& image2_fullpath);
         ReconstructionEstimatorSummary ExtendReconstruction(const std::string& image_fullpath);
         void RemoveView(ViewId view_id);
         void ResetReconstruction();
-        bool LocalizeImage(theia::FloatImage image);
+        bool LocalizeImage(const theia::FloatImage& image);
+
+        // Accessors
+        const Reconstruction& GetReconstruction();
 
         // Utility functions
         bool IsInitialized();
-        Reconstruction* GetReconstruction();
         void ColorizeReconstruction(const std::string& images_path);
         void WritePly(const std::string& output_fullpath);
         void PrintStatistics(std::ostream& stream,

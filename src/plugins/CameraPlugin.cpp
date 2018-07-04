@@ -16,7 +16,8 @@ CameraPlugin::CameraPlugin(std::string device, int width, int height, std::strin
           image_height_(height),
           images_path_(std::move(images_path)),
           webcam_(device_string_, image_width_, image_height_),
-          saved_frames_count_(0) {}
+          saved_frames_count_(0),
+          image_names_(std::make_unique<std::vector<std::string>>()) {}
 
 void CameraPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -77,7 +78,7 @@ void CameraPlugin::capture_frame_callback() {
     int channels = 3;
     igl::stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
 
-    image_names_.push_back(filename);
+    image_names_->push_back(filename);
     camera_message_ = "Image saved to: \n" + fullname;
     saved_frames_count_++;
 }
@@ -86,7 +87,7 @@ const RGBImage& CameraPlugin::get_current_frame() {
     return current_frame_;
 }
 
-const std::vector<std::string>& CameraPlugin::get_captured_image_names() {
+std::shared_ptr<std::vector<std::string>> CameraPlugin::get_captured_image_names() {
     return image_names_;
 }
 

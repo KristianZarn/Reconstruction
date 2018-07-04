@@ -108,13 +108,17 @@ public:
 
     ReconstructionPlugin(Parameters parameters,
                          std::string images_path,
-                         const std::vector<std::string>& image_names,
                          std::string reconstruction_path,
+                         std::shared_ptr<std::vector<std::string>> image_names,
                          theia::RealtimeReconstructionBuilder::Options options,
                          theia::CameraIntrinsicsPrior intrinsics_prior);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
+
+    // Accessors
+    std::shared_ptr<theia::RealtimeReconstructionBuilder> get_reconstruction_builder();
+    std::shared_ptr<MVS::Scene> get_mvs_scene_();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -143,12 +147,12 @@ private:
 
     // Input and output paths
     std::string images_path_;
-    const std::vector<std::string>& image_names_;
     std::string reconstruction_path_;
+    std::shared_ptr<std::vector<std::string>> image_names_;
 
     // Reconstruction
-    theia::RealtimeReconstructionBuilder reconstruction_builder_;
-    MVS::Scene mvs_scene_;
+    std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
+    std::shared_ptr<MVS::Scene> mvs_scene_;
 
     // Log
     // std::ostringstream log_stream_;

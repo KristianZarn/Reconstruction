@@ -68,10 +68,14 @@ int main(int argc, char *argv[]) {
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters parameters;
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    std::shared_ptr<std::vector<std::string>> image_names = camera_plugin.get_captured_image_names();
 
-    const std::vector<std::string>& image_names = camera_plugin.get_captured_image_names();
-    ReconstructionPlugin reconstruction_plugin(
-            parameters, images_path, image_names, reconstruction_path, options, intrinsics_prior);
+    ReconstructionPlugin reconstruction_plugin(parameters,
+                                               images_path,
+                                               reconstruction_path,
+                                               image_names,
+                                               options,
+                                               intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin

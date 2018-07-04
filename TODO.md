@@ -10,7 +10,7 @@
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
 - implement AC-RANSAC ?
-- remove unestimated views
+- remove unestimated views (button)
 
 # DENSE:
 - undistort images
@@ -26,6 +26,7 @@
 - (low) fix color on selection
 - (low) update uv's on delete
 - polnjenje lukenj (po odstanjevanju ravnine npr.)
+- isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # OTHER:
 - **prikaz zajetih slik**
