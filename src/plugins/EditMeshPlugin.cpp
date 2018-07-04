@@ -101,9 +101,6 @@ bool EditMeshPlugin::post_draw() {
 
     // Selection
     ImGui::Text("Selection:");
-    if (ImGui::RadioButton("None", parameters_.selection_mode == SelectionMode::NONE)) {
-        parameters_.selection_mode = SelectionMode::NONE;
-    }
     if (ImGui::RadioButton("Pick faces [s]", parameters_.selection_mode == SelectionMode::PICK)) {
         parameters_.selection_mode = SelectionMode::PICK;
     }
@@ -731,7 +728,7 @@ bool EditMeshPlugin::mouse_scroll(float delta_y) {
 
 // Keyboard IO
 bool EditMeshPlugin::key_pressed(unsigned int key, int modifiers) {
-    ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
+    ImGui_ImplGlfwGL3_CharCallback(viewer->window, key);
     if (!ImGui::GetIO().WantTextInput) {
         switch (key) {
             case 's':

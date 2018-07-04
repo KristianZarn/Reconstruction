@@ -14,7 +14,6 @@
 class EditMeshPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
     enum class SelectionMode {
-        NONE,
         PICK,
         BOX,
         PLANE
@@ -35,7 +34,7 @@ public:
         bool show_wireframe = false;
 
         // Selection
-        SelectionMode selection_mode = SelectionMode::NONE;
+        SelectionMode selection_mode = SelectionMode::PICK;
 
         // Modify
         int decimate_target = 10000;

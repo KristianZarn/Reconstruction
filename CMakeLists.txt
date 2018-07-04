@@ -68,7 +68,8 @@ set(SOURCE_FILES
     src/reconstruction/PopSiftDescriptorExtractor.cpp
     src/plugins/CameraPlugin.cpp
     src/plugins/ReconstructionPlugin.cpp
-    src/plugins/EditMeshPlugin.cpp)
+    src/plugins/EditMeshPlugin.cpp
+    src/plugins/LocalizationPlugin.cpp)
 
 set(INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/external
