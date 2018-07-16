@@ -14,7 +14,7 @@ public:
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
 
-    const RGBImage& get_current_frame();
+    RGBImage* get_current_frame();
     std::shared_ptr<std::vector<std::string>> get_captured_image_names();
 
     // Mouse IO

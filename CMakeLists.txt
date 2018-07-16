@@ -16,7 +16,7 @@ find_path(LIBIGL_INCLUDE_DIR igl/readOBJ.h
         PATH_SUFFIXES include)
 
 find_path(LIBIGL_LIBS_DIR libigl_core.a
-        PATHS $ENV{HOME}/Sources/libigl/optional
+        PATHS $ENV{HOME}/Sources/libigl/optionaldata
         PATH_SUFFIXES build)
 
 add_library(igl::core STATIC IMPORTED)

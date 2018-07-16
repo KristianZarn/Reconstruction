@@ -10,11 +10,12 @@
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
+#include "plugins/LocalizationPlugin.h"
 
 int main(int argc, char *argv[]) {
 
     // Initialization
-    std::string camera_device = "/dev/video1";
+    std::string camera_device = "/dev/video0";
     std::string images_path =
             "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/webcam_images/";
     std::string reconstruction_path =
@@ -78,11 +79,17 @@ int main(int argc, char *argv[]) {
                                                intrinsics_prior);
     viewer.plugins.push_back(&reconstruction_plugin);
 
+    // Attach localization plugin
+    LocalizationPlugin localization_plugin(images_path,
+                                           reconstruction_plugin.get_reconstruction_builder(),
+                                           camera_plugin.get_current_frame());
+    viewer.plugins.push_back(&localization_plugin);
+
     // Attach edit mesh plugin
-    EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
-                                    reconstruction_path);
-    viewer.plugins.push_back(&edit_mesh_plugin);
+    // EditMeshPlugin::Parameters edit_mesh_parameters;
+    // EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
+    //                                 reconstruction_path);
+    // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

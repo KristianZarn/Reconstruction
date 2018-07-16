@@ -83,8 +83,8 @@ void CameraPlugin::capture_frame_callback() {
     saved_frames_count_++;
 }
 
-const RGBImage& CameraPlugin::get_current_frame() {
-    return current_frame_;
+RGBImage* CameraPlugin::get_current_frame() {
+    return &current_frame_;
 }
 
 std::shared_ptr<std::vector<std::string>> CameraPlugin::get_captured_image_names() {

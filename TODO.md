@@ -11,6 +11,7 @@
     - večino se da skopirat iz incremental estimator
 - implement AC-RANSAC ?
 - remove unestimated views (button)
+- update next_image_idx if reconstruction fails
 
 # DENSE:
 - undistort images
@@ -28,15 +29,21 @@
 - polnjenje lukenj (po odstanjevanju ravnine npr.)
 - isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
+# LOCALIZATION:
+- stalna lokalizacija
+    - možnost vklop / izklop
+    - prikaz stanja (uspeh / neuspeh, itd.)
+    - prikaz imena referenčne slike
+- run in seperate thread
+
+# NEXT BEST VIEW:
+- todo
+
 # OTHER:
-- **prikaz zajetih slik**
+- prikaz zajetih slik
 - **lepši prikaz kamer (ne samo pike)**
 - **sprobi zhenhuje dataset z TheiaSFM in OpenMVG**
 - hide all možnost
-
-# BIG FEATURES:
-- next best view
-- realtime camera position
 
 --------------------------------------------------
 # PRIORITY:

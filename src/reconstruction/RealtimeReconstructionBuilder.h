@@ -16,6 +16,7 @@
 #include <theia/sfm/reconstruction_estimator.h>
 #include <theia/sfm/reconstruction_estimator_options.h>
 #include <theia/sfm/reconstruction_builder.h>
+#include <theia/sfm/estimators/estimate_calibrated_absolute_pose.h>
 
 #include "RealtimeFeatureMatcher.h"
 // #include "CudaSiftDescriptorExtractor.h"
@@ -62,7 +63,7 @@ namespace theia {
         ReconstructionEstimatorSummary ExtendReconstruction(const std::string& image_fullpath);
         void RemoveView(ViewId view_id);
         void ResetReconstruction();
-        bool LocalizeImage(const theia::FloatImage& image);
+        bool LocalizeImage(const theia::FloatImage& image, CalibratedAbsolutePose& pose);
 
         // Accessors
         const Reconstruction& GetReconstruction();

@@ -50,17 +50,18 @@ namespace theia {
         void MatchImages(std::vector<ImagePairMatch>* matches,
                          const std::vector<std::pair<std::string, std::string>>& pairs_to_match);
 
-    private:
-        // Returns true if the image pair is a valid match.
-        bool MatchImagePair(const KeypointsAndDescriptors& features1,
-                            const KeypointsAndDescriptors& features2,
-                            std::vector<IndexedFeatureMatch>* matches);
-
         // Performs geometric verification.
         bool GeometricVerification(const KeypointsAndDescriptors& features1,
                                    const KeypointsAndDescriptors& features2,
                                    const std::vector<IndexedFeatureMatch>& putative_matches,
                                    ImagePairMatch* image_pair_match);
+
+        // Returns true if the image pair is a valid match.
+        bool MatchImagePair(const KeypointsAndDescriptors& features1,
+                            const KeypointsAndDescriptors& features2,
+                            std::vector<IndexedFeatureMatch>* matches);
+
+
 
         // Initializes the cascade hasher (only if needed).
         void InitializeCascadeHasher(int descriptor_dimension);

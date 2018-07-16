@@ -6,8 +6,10 @@
 #include <theia/image/descriptor/sift_descriptor.h>
 #include <theia/matching/create_feature_matcher.h>
 #include <theia/matching/image_pair_match.h>
+#include <theia/matching/feature_matcher_utils.h>
 #include <theia/sfm/colorize_reconstruction.h>
 #include <theia/sfm/reconstruction_estimator_utils.h>
+#include <theia/sfm/estimators/feature_correspondence_2d_3d.h>
 #include <theia/io/write_ply_file.h>
 
 namespace theia {
@@ -277,9 +279,77 @@ namespace theia {
         }
     }
 
-    bool RealtimeReconstructionBuilder::LocalizeImage(const theia::FloatImage& image) {
-        // TODO: localize image
-        return false;
+    bool RealtimeReconstructionBuilder::LocalizeImage(const theia::FloatImage& image, CalibratedAbsolutePose& pose) {
+        // Feature extraction
+        std::vector<Keypoint> image_keypoints;
+        std::vector<Eigen::VectorXf> image_descriptors;
+        descriptor_extractor_->DetectAndExtractDescriptors(image, &image_keypoints, &image_descriptors);
+
+        KeypointsAndDescriptors features_camera;
+        features_camera.image_name = "camera";
+        features_camera.keypoints = image_keypoints;
+        features_camera.descriptors = image_descriptors;
+        HashedImage hashed_camera = feature_matcher_->cascade_hasher_->CreateHashedSiftDescriptors(image_descriptors);
+
+        // Get features of last added view
+        std::vector<theia::ViewId> view_ids = reconstruction_->ViewIds();
+        theia::ViewId match_view_id = *std::max_element(view_ids.begin(), view_ids.end());
+        std::string match_view_name = reconstruction_->View(match_view_id)->Name();
+
+        const KeypointsAndDescriptors& features_match = feature_matcher_->keypoints_and_descriptors_[match_view_name];
+        HashedImage& hashed_match = feature_matcher_->hashed_images_[features_match.image_name];
+
+        // Compute matches
+        std::vector<IndexedFeatureMatch> putative_matches;
+        const double lowes_ratio = feature_matcher_->options_.lowes_ratio;
+        feature_matcher_->cascade_hasher_->MatchImages(hashed_camera, features_camera.descriptors,
+                                                       hashed_match, features_match.descriptors,
+                                                       lowes_ratio, &putative_matches);
+
+        // Get normalized 2D 3D matches
+        const Camera& camera = reconstruction_->View(match_view_id)->Camera();
+        std::vector<FeatureCorrespondence2D3D> pose_match;
+        for (const auto& match_correspondence : putative_matches) {
+            const Keypoint& keypoint_camera = features_camera.keypoints[match_correspondence.feature1_ind];
+            const Keypoint& keypoint_match = features_match.keypoints[match_correspondence.feature2_ind];
+
+            Feature feature_camera(keypoint_camera.x(), keypoint_camera.y());
+            Feature feature_match(keypoint_match.x(), keypoint_match.y());
+
+            const auto feature_match_tmp = std::make_pair(match_view_id, feature_match);
+            TrackId track_id = image_feature_to_track_id_[feature_match_tmp];
+            const Track* track = reconstruction_->Track(track_id);
+            if (!track->IsEstimated()) {
+                continue;
+            }
+
+            FeatureCorrespondence2D3D pose_correspondence;
+            pose_correspondence.feature = camera.PixelToNormalizedCoordinates(feature_camera).hnormalized();
+            pose_correspondence.world_point = track->Point().hnormalized();
+            pose_match.emplace_back(pose_correspondence);
+        }
+
+        // Return if number of putative matches is too small
+        if (pose_match.size() < options_.matching_options.min_num_feature_matches) {
+            return false;
+        }
+
+        // Set up the ransac parameters for absolute pose estimation.
+        RansacParameters ransac_parameters;
+
+        // Compute the reprojection error threshold scaled to account for the image resolution.
+        const double resolution_scaled_reprojection_error_threshold_pixels = ComputeResolutionScaledThreshold(
+                options_.reconstruction_estimator_options.absolute_pose_reprojection_error_threshold,
+                camera.ImageWidth(),
+                camera.ImageHeight());
+
+        ransac_parameters.error_thresh = resolution_scaled_reprojection_error_threshold_pixels *
+                resolution_scaled_reprojection_error_threshold_pixels / (camera.FocalLength() * camera.FocalLength());
+
+        RansacSummary ransac_summary;
+        EstimateCalibratedAbsolutePose(ransac_parameters, RansacType::RANSAC, pose_match, &pose, &ransac_summary);
+
+        return ransac_summary.inliers.size() >= options_.matching_options.min_num_feature_matches;
     }
 
     const Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {

@@ -28,7 +28,7 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
         : parameters_(parameters),
           images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
-          image_names_(image_names),
+          image_names_(std::move(image_names)),
           reconstruction_builder_(std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior)),
           mvs_scene_(std::make_shared<MVS::Scene>(options.num_threads)) {}
 
@@ -181,6 +181,7 @@ bool ReconstructionPlugin::post_draw() {
     // Eigen::Quaternionf quat = viewer->core.trackball_angle;
     // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
     // ImGui::TextUnformatted(os.str().c_str());
+    ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
 
     ImGui::End();
     return false;

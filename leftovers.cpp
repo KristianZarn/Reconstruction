@@ -327,3 +327,45 @@ void EditMeshPlugin::decimate_callback() {
     viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
     viewer->data().show_texture = parameters_.show_texture;
 }
+
+// Symetric matching for pose estimation
+// Compute matches
+ImagePairMatch pair_match;
+pair_match.image1 = features_camera.image_name;
+pair_match.image2 = features_match.image_name;
+
+std::vector<IndexedFeatureMatch> putative_matches;
+const double lowes_ratio = feature_matcher_->options_.lowes_ratio;
+feature_matcher_->cascade_hasher_->MatchImages(hashed_camera, features_camera.descriptors,
+hashed_match, features_match.descriptors,
+lowes_ratio, &putative_matches);
+
+
+
+// Symmetric matching
+std::vector<IndexedFeatureMatch> backwards_matches;
+feature_matcher_->cascade_hasher_->MatchImages(hashed_match, features_match.descriptors,
+hashed_camera, features_camera.descriptors,
+lowes_ratio, &backwards_matches);
+IntersectMatches(backwards_matches, &putative_matches);
+
+// Geometric verification
+feature_matcher_->GeometricVerification(features_camera, features_match, putative_matches, &pair_match);
+
+// Get normalized 2D 3D matches
+const Camera& camera = reconstruction_->View(match_view_id)->Camera();
+std::vector<FeatureCorrespondence2D3D> pose_match;
+for (const auto& match_correspondence : pair_match.correspondences) {
+
+const auto match_feature = std::make_pair(match_view_id, match_correspondence.feature2);
+TrackId track_id = image_feature_to_track_id_[match_feature];
+const Track* track = reconstruction_->Track(track_id);
+if (!track->IsEstimated()) {
+continue;
+}
+
+FeatureCorrespondence2D3D pose_correspondence;
+pose_correspondence.feature = camera.PixelToNormalizedCoordinates(match_correspondence.feature1).hnormalized();
+pose_correspondence.world_point = track->Point().hnormalized();
+pose_match.emplace_back(pose_correspondence);
+}

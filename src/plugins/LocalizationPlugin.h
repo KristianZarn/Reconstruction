@@ -3,14 +3,21 @@
 
 #include <string>
 #include <ostream>
+#include <chrono>
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/ViewerPlugin.h>
+#include <theia/image/image.h>
+
+#include "webcam/webcam.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
 
 class LocalizationPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    LocalizationPlugin();
+    LocalizationPlugin(std::string images_path,
+                       std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
+                       RGBImage* camera_frame = nullptr);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
@@ -27,9 +34,38 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
+    // Viewer data index
+    unsigned int VIEWER_DATA_LOCALIZATION;
 
+    // Input path
+    std::string images_path_;
 
+    // Interface
+    char filename_buffer_[64] = "frame003.png"; // TODO: change back after debugging
+    bool show_camera_ = false;
+    bool localization_active_ = false;
 
+    // Reconstruction
+    std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
+
+    // Camera
+    RGBImage* camera_frame_;
+    // std::unique_ptr<float[]> camera_frame_data_;
+    // theia::FloatImage camera_frame_theia_;
+    Eigen::MatrixXd camera_vertices_;
+    Eigen::Matrix4d camera_transformation_;
+
+    // Log
+    std::ostream& log_stream_ = std::cout;
+
+    // Callback functions
+    bool localize_image_callback();
+    bool localize_current_frame_callback();
+
+    // Helpers
+    void set_camera();
+    void transform_camera();
+    void show_camera(bool visible);
 };
 
 
