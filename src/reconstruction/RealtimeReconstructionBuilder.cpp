@@ -336,6 +336,7 @@ namespace theia {
 
         // Set up the ransac parameters for absolute pose estimation.
         RansacParameters ransac_parameters;
+        ransac_parameters.max_iterations = 1000;
 
         // Compute the reprojection error threshold scaled to account for the image resolution.
         const double resolution_scaled_reprojection_error_threshold_pixels = ComputeResolutionScaledThreshold(

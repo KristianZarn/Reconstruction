@@ -101,21 +101,21 @@ bool LocalizationPlugin::localize_image_callback() {
 
     if (success) {
         // Set camera transformation
-        // TODO: fix rotation
         Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
         Eigen::Affine3d rotate;
-        rotate = camera_pose.rotation;
+        rotate = camera_pose.rotation.transpose();
         Eigen::Affine3d translate(Eigen::Translation3d(camera_pose.position));
         camera_transformation_ = (translate * rotate * scale).matrix();
     }
 
+    show_camera(true);
     return success;
 }
 
 bool LocalizationPlugin::localize_current_frame_callback() {
     // Read image
     // std::unique_ptr<float[]> camera_frame_data_ = std::make_unique<float[]>(camera_frame_->size);
-    float camera_frame_data_[camera_frame_->size];
+    float camera_frame_data_[camera_frame_->size]; // TODO: fix this
     for (int i = 0; i < camera_frame_->size; i++) {
         camera_frame_data_[i] = camera_frame_->data[i] / 255.0f;
     }
@@ -130,10 +130,9 @@ bool LocalizationPlugin::localize_current_frame_callback() {
 
     if (success) {
         // Set camera transformation
-        // TODO: fix rotation
         Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
         Eigen::Affine3d rotate;
-        rotate = camera_pose.rotation;
+        rotate = camera_pose.rotation.transpose();
         Eigen::Affine3d translate(Eigen::Translation3d(camera_pose.position));
         camera_transformation_ = (translate * rotate * scale).matrix();
     }

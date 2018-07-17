@@ -23,18 +23,16 @@
 
 # EDIT:
 - (low) fix crash when mesh cannot be loaded
-- (low) keep biggest connected components
 - (low) fix color on selection
 - (low) update uv's on delete
 - polnjenje lukenj (po odstanjevanju ravnine npr.)
 - isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # LOCALIZATION:
-- stalna lokalizacija
-    - možnost vklop / izklop
-    - prikaz stanja (uspeh / neuspeh, itd.)
-    - prikaz imena referenčne slike
-- run in seperate thread
+- ločena nit
+- bolj pametno iskanje ujemanj (vocabulary tree, ali kaj drugega)
+    - ideja: vocabulary tree samo pri lokalizaciji iz nič, drugače pa iskanje ujemanj z najbližjo sliko
+    - za začetek lahko matching z vsemi slikami namesto vocabulary tree
 
 # NEXT BEST VIEW:
 - todo
@@ -50,3 +48,6 @@
 - undistort images (for mvs)
 - velikost textrure
 - uv koordinate po odstranjevanju točk/trikotnikov ?
+- lasten reconstruction estimator
+- ločena nit za lokalizacijo
+- "pametno" iskanje ujemanj pri lokalizaciji
