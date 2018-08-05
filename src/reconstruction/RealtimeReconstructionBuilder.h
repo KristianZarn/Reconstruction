@@ -73,8 +73,19 @@ namespace theia {
         // Reset reconstruction by removing all views
         void ResetReconstruction();
 
-        // Localize the pose of the given image
-        bool LocalizeImage(const theia::FloatImage& image, CalibratedAbsolutePose& pose);
+        // Global localization
+        bool LocalizeImage(const FloatImage& image,
+                           CalibratedAbsolutePose& pose);
+
+        // Localization based on previous pose
+        bool LocalizeImage(const FloatImage& image,
+                           const CalibratedAbsolutePose& prev_pose,
+                           CalibratedAbsolutePose& pose);
+
+        // Helper function for localization
+        bool LocalizeImage(const FloatImage& image,
+                           const std::vector<ViewId>& views_to_match,
+                           CalibratedAbsolutePose& pose);
 
         // Get constant reference to reconstruction
         const Reconstruction& GetReconstruction();

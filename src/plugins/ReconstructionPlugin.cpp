@@ -477,25 +477,62 @@ void ReconstructionPlugin::set_cameras() {
 
     const theia::Reconstruction& reconstruction = reconstruction_builder_->GetReconstruction();
 
+    // Camera in default position
+    int num_vertices = 5;
+    Eigen::MatrixXd default_V(num_vertices, 3);
+    default_V << 0, 0, 0,
+                -0.75, -0.5, 1,
+                -0.75,  0.5, 1,
+                 0.75,  0.5, 1,
+                 0.75, -0.5, 1;
+
+    int num_faces = 6;
+    Eigen::MatrixXi default_F(num_faces, 3);
+    default_F << 0, 1, 2,
+                0, 2, 3,
+                0, 3, 4,
+                0, 4, 1,
+                1, 3, 2,
+                1, 4, 3;
+
     // Add cameras
     std::unordered_set<theia::ViewId> view_ids;
     theia::GetEstimatedViewsFromReconstruction(reconstruction, &view_ids);
-
     auto num_views = static_cast<int>(view_ids.size());
-    Eigen::MatrixXd cameras(num_views, 3);
+
+    Eigen::MatrixXd cameras_V(num_views * num_vertices, 3);
+    Eigen::MatrixXi cameras_F(num_views * num_faces, 3);
 
     int i = 0;
     for (const auto& view_id : view_ids) {
+        // Get pose
         Eigen::Vector3d position = reconstruction.View(view_id)->Camera().GetPosition();
-        cameras(i, 0) = position(0);
-        cameras(i, 1) = position(1);
-        cameras(i, 2) = position(2);
+        Eigen::Matrix3d rotation = reconstruction.View(view_id)->Camera().GetOrientationAsRotationMatrix();
+
+        // Camera transformation
+        Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.5));
+        Eigen::Affine3d rotate;
+        rotate = rotation.transpose();
+        Eigen::Affine3d translate;
+        translate = Eigen::Translation3d(position);
+        Eigen::Affine3d transformation = translate * rotate * scale;
+
+        // Apply transformation
+        Eigen::MatrixXd transformed_V = (default_V.rowwise().homogeneous() * transformation.matrix().transpose()).rowwise().hnormalized();
+        Eigen::MatrixXi transformed_F = default_F.array() + i * num_vertices;
+
+        cameras_V.middleRows(i * num_vertices, num_vertices) = transformed_V;
+        cameras_F.middleRows(i * num_faces, num_faces) = transformed_F;
 
         // Add camera label
         viewer->data().add_label(position, std::to_string(view_id));
         i++;
     }
-    viewer->data().set_points(cameras, Eigen::RowVector3d(0, 1, 0));
+
+    // Set viewer data
+    viewer->data().set_mesh(cameras_V, cameras_F);
+    viewer->data().set_face_based(true);
+    viewer->data().set_colors(Eigen::RowVector3d(128, 128, 128)/255.0);
 }
 
 void ReconstructionPlugin::show_cameras(bool visible) {

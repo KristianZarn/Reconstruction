@@ -1,6 +1,9 @@
 #include "LocalizationPlugin.h"
 
 #include <utility>
+#include <thread>
+#include <future>
+#include <chrono>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -40,7 +43,7 @@ bool LocalizationPlugin::post_draw() {
     ImGui::Begin("Localization", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Localize image
-    ImGui::Text("Image:");
+    ImGui::Text("Image to localize:");
     ImGui::InputText("Filename", filename_buffer_, 64, ImGuiInputTextFlags_AutoSelectAll);
     if (ImGui::Button("Localize image", ImVec2(-1, 0))) {
         localize_image_callback();
@@ -52,19 +55,38 @@ bool LocalizationPlugin::post_draw() {
         show_camera(show_camera_);
     }
 
+    // Camera localization (show only if camera present)
     if (camera_frame_ != nullptr) {
         if (!localization_active_) {
-            if (ImGui::Button("Start localization", ImVec2(-1, 0))) {
-                localization_active_ = true;
-                show_camera(true);
+            if (ImGui::Button("Start localization [o]", ImVec2(-1, 0))) {
+                toggle_localization_callback(true);
             }
         } else {
-            bool success = localize_current_frame_callback();
-            if (ImGui::Button("Stop localization", ImVec2(-1, 0))) {
-                localization_active_ = false;
-                show_camera(false);
+            if (ImGui::Button("Stop localization [o]", ImVec2(-1, 0))) {
+                toggle_localization_callback(false);
             }
-            ImGui::Text("Status: %s", success ? "true" : "false");
+
+            if (!localization_future_.valid()) {
+                localization_future_ = std::async(
+                        std::launch::async,
+                        &LocalizationPlugin::localize_current_frame,
+                        this);
+            } else if (localization_future_.valid() &&
+                       localization_future_.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                localization_success_ = localization_future_.get();
+            }
+
+            ImGui::Text("Status:");
+            ImGui::SameLine();
+            if (localization_success_) {
+                ImGui::ColorButton("Status", ImVec4(0, 1, 0, 0), ImGuiColorEditFlags_NoOptions, ImVec2(50, 0));
+                viewer->selected_data_index = VIEWER_DATA_LOCALIZATION;
+                viewer->data().set_colors(Eigen::RowVector3d(0, 255, 0)/255.0);
+            } else {
+                ImGui::ColorButton("Status", ImVec4(1, 0, 0, 0), ImGuiColorEditFlags_NoOptions, ImVec2(50, 0));
+                viewer->selected_data_index = VIEWER_DATA_LOCALIZATION;
+                viewer->data().set_colors(Eigen::RowVector3d(255, 0, 0)/255.0);
+            }
         }
     }
 
@@ -87,7 +109,8 @@ bool LocalizationPlugin::localize_image_callback() {
     auto time_begin = std::chrono::steady_clock::now();
 
     theia::CalibratedAbsolutePose camera_pose;
-    bool success = reconstruction_builder_->LocalizeImage(image, camera_pose);
+    std::vector<theia::ViewId> views_to_match = {0, 1};
+    bool success = reconstruction_builder_->LocalizeImage(image, views_to_match, camera_pose);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -112,23 +135,37 @@ bool LocalizationPlugin::localize_image_callback() {
     return success;
 }
 
-bool LocalizationPlugin::localize_current_frame_callback() {
+void LocalizationPlugin::toggle_localization_callback(bool active) {
+    localization_active_ = active;
+    show_camera(active);
+}
+
+bool LocalizationPlugin::localize_current_frame() {
+    log_stream_ << "Localizing image ..." << std::endl;
+    auto time_begin = std::chrono::steady_clock::now();
+
     // Read image
-    // std::unique_ptr<float[]> camera_frame_data_ = std::make_unique<float[]>(camera_frame_->size);
-    float camera_frame_data_[camera_frame_->size]; // TODO: fix this
+    camera_frame_data_.reserve(camera_frame_->size);
     for (int i = 0; i < camera_frame_->size; i++) {
         camera_frame_data_[i] = camera_frame_->data[i] / 255.0f;
     }
 
     theia::FloatImage image(static_cast<const int>(camera_frame_->width),
                             static_cast<const int>(camera_frame_->height),
-                            3, camera_frame_data_);
+                            3, camera_frame_data_.data());
 
     // Localize image
+    bool success;
     theia::CalibratedAbsolutePose camera_pose;
-    bool success = reconstruction_builder_->LocalizeImage(image, camera_pose);
+    if (localization_success_) {
+        success = reconstruction_builder_->LocalizeImage(image, prev_camera_pose_, camera_pose);
+    } else {
+        success = reconstruction_builder_->LocalizeImage(image, camera_pose);
+    }
 
     if (success) {
+        prev_camera_pose_ = camera_pose;
+
         // Set camera transformation
         Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
         Eigen::Affine3d rotate;
@@ -136,6 +173,10 @@ bool LocalizationPlugin::localize_current_frame_callback() {
         Eigen::Affine3d translate(Eigen::Translation3d(camera_pose.position));
         camera_transformation_ = (translate * rotate * scale).matrix();
     }
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Localize time: " << time_elapsed.count() << " s" << std::endl;
 
     return success;
 }
@@ -204,6 +245,16 @@ bool LocalizationPlugin::mouse_scroll(float delta_y) {
 // Keyboard IO
 bool LocalizationPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(viewer->window, key);
+    if (!ImGui::GetIO().WantTextInput) {
+        switch (key) {
+            case 'o':
+            {
+                toggle_localization_callback(!localization_active_);
+                return ImGui::GetIO().WantCaptureKeyboard;
+            }
+            default: break;
+        }
+    }
     return ImGui::GetIO().WantCaptureKeyboard;
 }
 

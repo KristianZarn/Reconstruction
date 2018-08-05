@@ -103,15 +103,15 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
-    //                                 reconstruction_path);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
+                                    reconstruction_path);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach localization plugin
-    LocalizationPlugin localization_plugin(images_path,
-                                           reconstruction_plugin.get_reconstruction_builder());
-    viewer.plugins.push_back(&localization_plugin);
+    // LocalizationPlugin localization_plugin(images_path,
+    //                                        reconstruction_plugin.get_reconstruction_builder());
+    // viewer.plugins.push_back(&localization_plugin);
 
     // Start viewer
     viewer.launch();

@@ -279,7 +279,60 @@ namespace theia {
         }
     }
 
-    bool RealtimeReconstructionBuilder::LocalizeImage(const theia::FloatImage& image, CalibratedAbsolutePose& pose) {
+    bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
+                       CalibratedAbsolutePose& pose) {
+
+        // TODO: remove after debug
+        std::cout << "Global matching." << std::endl;
+
+        // Global localization (match with all images)
+        std::vector<theia::ViewId> views_to_match = reconstruction_->ViewIds();
+        bool success = LocalizeImage(image, views_to_match, pose);
+        return success;
+    }
+
+    bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
+                       const CalibratedAbsolutePose& prev_pose,
+                       CalibratedAbsolutePose& pose) {
+
+        // Compute distances to estimated views
+        std::vector<std::pair<ViewId, double>> distances;
+        std::unordered_set<ViewId> view_candidates;
+        GetEstimatedViewsFromReconstruction(*reconstruction_, &view_candidates);
+        distances.reserve(view_candidates.size());
+
+        // TODO: check if view_candidates.size() > 1
+
+        for (const auto& view_id : view_candidates) {
+            const View * view = reconstruction_->View(view_id);
+            double distance = (prev_pose.position - view->Camera().GetPosition()).norm();
+            distances.emplace_back(std::make_pair(view_id, distance));
+        }
+
+        // Get view with shortest distance
+        std::pair<ViewId, double> min_distance = distances[0];
+        for (const auto& distance : distances) {
+            if (distance.second < min_distance.second) {
+                min_distance = distance;
+            }
+        }
+
+        // TODO: remove after debug
+        std::cout << "Matching with view id: " << min_distance.first << std::endl;
+
+        // Call localization
+        std::vector<ViewId> views_to_match = {min_distance.first};
+        bool success = LocalizeImage(image, views_to_match, pose);
+        return success;
+    }
+
+    bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
+                                                      const std::vector<ViewId>& views_to_match,
+                                                      CalibratedAbsolutePose& pose) {
+        if (views_to_match.empty()) {
+            return false;
+        }
+
         // Feature extraction
         std::vector<Keypoint> image_keypoints;
         std::vector<Eigen::VectorXf> image_descriptors;
@@ -291,42 +344,50 @@ namespace theia {
         features_camera.descriptors = image_descriptors;
         HashedImage hashed_camera = feature_matcher_->cascade_hasher_->CreateHashedSiftDescriptors(image_descriptors);
 
-        // Get features of last added view
-        std::vector<theia::ViewId> view_ids = reconstruction_->ViewIds();
-        theia::ViewId match_view_id = *std::max_element(view_ids.begin(), view_ids.end());
-        std::string match_view_name = reconstruction_->View(match_view_id)->Name();
+        const Camera& camera = reconstruction_->View(views_to_match[0])->Camera();
 
-        const KeypointsAndDescriptors& features_match = feature_matcher_->keypoints_and_descriptors_[match_view_name];
-        HashedImage& hashed_match = feature_matcher_->hashed_images_[features_match.image_name];
+        std::unordered_map<Feature, FeatureCorrespondence2D3D> pose_match_map;
+        for (const auto& match_view_id : views_to_match) {
 
-        // Compute matches
-        std::vector<IndexedFeatureMatch> putative_matches;
-        const double lowes_ratio = feature_matcher_->options_.lowes_ratio;
-        feature_matcher_->cascade_hasher_->MatchImages(hashed_camera, features_camera.descriptors,
-                                                       hashed_match, features_match.descriptors,
-                                                       lowes_ratio, &putative_matches);
+            // Get features of matching view
+            std::string match_view_name = reconstruction_->View(match_view_id)->Name();
+            const KeypointsAndDescriptors& features_match = feature_matcher_->keypoints_and_descriptors_[match_view_name];
+            HashedImage& hashed_match = feature_matcher_->hashed_images_[features_match.image_name];
 
-        // Get normalized 2D 3D matches
-        const Camera& camera = reconstruction_->View(match_view_id)->Camera();
-        std::vector<FeatureCorrespondence2D3D> pose_match;
-        for (const auto& match_correspondence : putative_matches) {
-            const Keypoint& keypoint_camera = features_camera.keypoints[match_correspondence.feature1_ind];
-            const Keypoint& keypoint_match = features_match.keypoints[match_correspondence.feature2_ind];
+            // Compute matches
+            std::vector<IndexedFeatureMatch> putative_matches;
+            const double lowes_ratio = feature_matcher_->options_.lowes_ratio;
+            feature_matcher_->cascade_hasher_->MatchImages(hashed_camera, features_camera.descriptors,
+                                                           hashed_match, features_match.descriptors,
+                                                           lowes_ratio, &putative_matches);
 
-            Feature feature_camera(keypoint_camera.x(), keypoint_camera.y());
-            Feature feature_match(keypoint_match.x(), keypoint_match.y());
+            // TODO: DEBUG
+            // output statistics
 
-            const auto feature_match_tmp = std::make_pair(match_view_id, feature_match);
-            TrackId track_id = image_feature_to_track_id_[feature_match_tmp];
-            const Track* track = reconstruction_->Track(track_id);
-            if (!track->IsEstimated()) {
-                continue;
+            // Get normalized 2D 3D matches
+            for (const auto& match_correspondence : putative_matches) {
+                const Keypoint& keypoint_camera = features_camera.keypoints[match_correspondence.feature1_ind];
+                const Keypoint& keypoint_match = features_match.keypoints[match_correspondence.feature2_ind];
+
+                Feature feature_camera(keypoint_camera.x(), keypoint_camera.y());
+                Feature feature_match(keypoint_match.x(), keypoint_match.y());
+
+                const auto feature_match_tmp = std::make_pair(match_view_id, feature_match);
+                TrackId track_id = image_feature_to_track_id_[feature_match_tmp];
+                const Track* track = reconstruction_->Track(track_id);
+                if (!track->IsEstimated()) {
+                    continue;
+                }
+
+                FeatureCorrespondence2D3D pose_correspondence;
+                pose_correspondence.feature = camera.PixelToNormalizedCoordinates(feature_camera).hnormalized();
+                pose_correspondence.world_point = track->Point().hnormalized();
+                pose_match_map[feature_camera] = pose_correspondence;
             }
-
-            FeatureCorrespondence2D3D pose_correspondence;
-            pose_correspondence.feature = camera.PixelToNormalizedCoordinates(feature_camera).hnormalized();
-            pose_correspondence.world_point = track->Point().hnormalized();
-            pose_match.emplace_back(pose_correspondence);
+        }
+        std::vector<FeatureCorrespondence2D3D> pose_match;
+        for (const auto& correspondence : pose_match_map) {
+            pose_match.push_back(correspondence.second);
         }
 
         // Return if number of putative matches is too small

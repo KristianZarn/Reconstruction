@@ -48,10 +48,14 @@ private:
     // Reconstruction
     std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
 
+    // Localization
+    std::future<bool> localization_future_;
+    bool localization_success_;
+    theia::CalibratedAbsolutePose prev_camera_pose_;
+
     // Camera
     RGBImage* camera_frame_;
-    // std::unique_ptr<float[]> camera_frame_data_;
-    // theia::FloatImage camera_frame_theia_;
+    std::vector<float> camera_frame_data_;
     Eigen::MatrixXd camera_vertices_;
     Eigen::Matrix4d camera_transformation_;
 
@@ -60,9 +64,10 @@ private:
 
     // Callback functions
     bool localize_image_callback();
-    bool localize_current_frame_callback();
+    void toggle_localization_callback(bool active);
 
     // Helpers
+    bool localize_current_frame();
     void set_camera();
     void transform_camera();
     void show_camera(bool visible);
