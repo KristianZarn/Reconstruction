@@ -21,6 +21,11 @@ int main(int argc, char *argv[]) {
     std::string reconstruction_path =
             "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/webcam_reconstruction/";
 
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put1_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put1_reconstruction/";
+
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
 
@@ -86,10 +91,10 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&localization_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
-    //                                 reconstruction_path);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
+                                    reconstruction_path);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

@@ -59,8 +59,9 @@ public:
         // Specify the heuristic used when deciding where to place a new patch
         // (0 - best fit, 3 - good speed, 100 - best speed)
         unsigned int patch_packing_heuristic = 1;
-        // Color used for faces not covered by any image
-        uint32_t empty_color = 0x00FF7F27;
+        // Color used for faces not covered by any image (r, g, b, a)
+        // uint32_t empty_color = 0x00FF7F27;
+        float empty_color[3] = {0xFF / (255.0f), 0x7F / (255.0f), 0x27 / 255.0f};
 
         // Refine mesh
         // How many times to scale down the images before mesh refinement

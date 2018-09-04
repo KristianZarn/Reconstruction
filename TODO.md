@@ -15,8 +15,8 @@
 - update next_image_idx if reconstruction fails
 
 # DENSE:
-- undistort images
-- densify point cloud ?
+- **undistort images**
+- densify point cloud (bi blo zelo fino)
 - **limit texture resolution**
     - TextureMesh ima samo resolution level možnost
     - texture packing (ni pomoči ?)
@@ -25,31 +25,24 @@
 # EDIT:
 - (low) fix crash when mesh cannot be loaded
 - (low) fix color on selection
-- (low) update uv's on delete
+- (low) posodobi uv koordinate po odstranjevanju točk/trikotnikov
 - polnjenje lukenj (po odstanjevanju ravnine npr.)
 - isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # LOCALIZATION:
 - bolj pametno iskanje ujemanj (vocabulary tree, ali kaj drugega)
-    - ideja: vocabulary tree samo pri lokalizaciji iz nič, drugače pa iskanje ujemanj z najbližjo sliko
-    - za začetek lahko matching z vsemi slikami namesto vocabulary tree
-- Localize image:
-    - match with given views
-    - match with all views
 
 # NEXT BEST VIEW:
 - todo
 
 # OTHER:
 - hide/show all možnost
-- prikaz zajetih slik
+- (low) prikaz zajetih slik
+    - prikaz še ostalih stvari, kot v COLMAP
 - **sprobi zhenhuje dataset z TheiaSFM in OpenMVG**
 - **pogled na sceno iz kamere (pri lokalizaciji)**
-
---------------------------------------------------
-# PRIORITY:
-- undistort images (for mvs)
-- velikost textrure
-- uv koordinate po odstranjevanju točk/trikotnikov ?
-- lasten reconstruction estimator
-- "pametno" iskanje ujemanj pri lokalizaciji
+- **kamera v ločeni niti**
+- **zajemanje slik preko telefona**
+- fix show/hide cameras
+- crash when removing view and then extend / localize (neki od tega)
+- extend with all images

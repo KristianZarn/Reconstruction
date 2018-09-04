@@ -61,6 +61,46 @@ bool ReconstructionPlugin::post_draw() {
 
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
+    // Input output
+    ImGui::Text("Input / Output:");
+    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+    ImGui::Spacing();
+    if (ImGui::Button("Save point cloud", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename = std::string(parameters_.filename_buffer) + ".ply";
+        reconstruction_builder_->WritePly(reconstruction_path_ + filename);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
+    }
+    if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_->Save(reconstruction_path_ + filename_mvs);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+        mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+    }
+    if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_->Load(reconstruction_path_ + filename_mvs);
+        set_mesh();
+        show_mesh(true);
+        show_point_cloud(false);
+        center_object_callback();
+        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+    }
+    std::ostringstream os;
+    os << "Mesh info:"
+       << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
+       << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
+    ImGui::TextUnformatted(os.str().c_str());
+    ImGui::Spacing();
+
     // Sparse reconstruction
     ImGui::Text("Sparse reconstruction:");
     if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
@@ -99,6 +139,7 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
         texture_mesh_callback();
     }
+    ImGui::ColorEdit3("Empty texture color", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
     ImGui::Spacing();
 
     // Display options
@@ -132,46 +173,6 @@ bool ReconstructionPlugin::post_draw() {
     }
     ImGui::Spacing();
 
-    // Input output
-    ImGui::Text("Input / Output:");
-    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
-    ImGui::Spacing();
-    if (ImGui::Button("Save point cloud", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
-
-        std::string filename = std::string(parameters_.filename_buffer) + ".ply";
-        reconstruction_builder_->WritePly(reconstruction_path_ + filename);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
-    }
-    if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
-
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_->Save(reconstruction_path_ + filename_mvs);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-
-        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-        mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
-    }
-    if (ImGui::Button("Load mesh", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
-
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_->Load(reconstruction_path_ + filename_mvs);
-        set_mesh();
-        show_mesh(true);
-        show_point_cloud(false);
-        center_object_callback();
-        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-    }
-    std::ostringstream os;
-    os << "Mesh info:"
-       << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
-       << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
-    ImGui::TextUnformatted(os.str().c_str());
-    ImGui::Spacing();
-
     // Debug info
     // std::ostringstream debug;
     // debug << "View: \n" << viewer->core.view << std::endl;
@@ -181,6 +182,19 @@ bool ReconstructionPlugin::post_draw() {
     // Eigen::Quaternionf quat = viewer->core.trackball_angle;
     // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
     // ImGui::TextUnformatted(os.str().c_str());
+    if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+        log_stream_ << "Debug button pressed" << std::endl;
+
+        // Clean the mesh
+        mvs_scene_->mesh.Clean(1.0, 0.0, false, 100, 0, false);
+
+        // Recompute array of vertices incident to each vertex
+        mvs_scene_->mesh.ListIncidenteFaces();
+
+        set_mesh();
+        show_mesh(true);
+        show_point_cloud(false);
+    }
     ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
 
     ImGui::End();
@@ -424,6 +438,11 @@ void ReconstructionPlugin::texture_mesh_callback() {
         log_stream_ << "Texturing mesh ..." << std::endl;
         auto time_begin = std::chrono::steady_clock::now();
 
+        Pixel8U empty_color(
+                static_cast<uint8_t>(parameters_.empty_color[0] * 255.0f),
+                static_cast<uint8_t>(parameters_.empty_color[1] * 255.0f),
+                static_cast<uint8_t>(parameters_.empty_color[2] * 255.0f));
+
         mvs_scene_->TextureMesh(parameters_.texture_resolution_level,
                                 parameters_.min_resolution,
                                 parameters_.texture_outlier_treshold,
@@ -432,7 +451,7 @@ void ReconstructionPlugin::texture_mesh_callback() {
                                 parameters_.local_seam_leveling,
                                 parameters_.texture_size_multiple,
                                 parameters_.patch_packing_heuristic,
-                                Pixel8U(parameters_.empty_color));
+                                empty_color);
 
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -653,6 +672,10 @@ void ReconstructionPlugin::show_mesh(bool visible) {
     parameters_.show_mesh = visible;
     viewer->selected_data_index = VIEWER_DATA_MESH;
     viewer->data().show_faces = visible;
+    if (!visible) {
+        parameters_.show_wireframe = visible;
+        viewer->data().show_lines = parameters_.show_wireframe;
+    }
 }
 
 // Mouse IO

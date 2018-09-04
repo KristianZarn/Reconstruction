@@ -106,15 +106,15 @@ bool LocalizationPlugin::localize_image_callback() {
 
     // Localize image
     log_stream_ << "Localizing image ..." << std::endl;
-    auto time_begin = std::chrono::steady_clock::now();
+    // auto time_begin = std::chrono::steady_clock::now();
 
     theia::CalibratedAbsolutePose camera_pose;
     std::vector<theia::ViewId> views_to_match = {0, 1};
     bool success = reconstruction_builder_->LocalizeImage(image, views_to_match, camera_pose);
 
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Localize time: " << time_elapsed.count() << " s" << std::endl;
+    // auto time_end = std::chrono::steady_clock::now();
+    // std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    // log_stream_ << "Localize time: " << time_elapsed.count() << " s" << std::endl;
 
     if (success) {
         log_stream_ << "Localization successful." << std::endl;
@@ -141,8 +141,8 @@ void LocalizationPlugin::toggle_localization_callback(bool active) {
 }
 
 bool LocalizationPlugin::localize_current_frame() {
-    log_stream_ << "Localizing image ..." << std::endl;
-    auto time_begin = std::chrono::steady_clock::now();
+    // log_stream_ << "Localizing image ..." << std::endl;
+    // auto time_begin = std::chrono::steady_clock::now();
 
     // Read image
     camera_frame_data_.reserve(camera_frame_->size);
@@ -174,9 +174,9 @@ bool LocalizationPlugin::localize_current_frame() {
         camera_transformation_ = (translate * rotate * scale).matrix();
     }
 
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Localize time: " << time_elapsed.count() << " s" << std::endl;
+    // auto time_end = std::chrono::steady_clock::now();
+    // std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    // log_stream_ << "Localize time: " << time_elapsed.count() << " s" << std::endl;
 
     return success;
 }

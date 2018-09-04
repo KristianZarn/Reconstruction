@@ -270,6 +270,8 @@ namespace theia {
 
             // Update image_feature_to_track_id because tracks were removed
             UpdateImageFeatureToTrackId();
+
+            // TODO: Reestimate tracks
         }
     }
 
@@ -283,7 +285,7 @@ namespace theia {
                        CalibratedAbsolutePose& pose) {
 
         // TODO: remove after debug
-        std::cout << "Global matching." << std::endl;
+        // std::cout << "Global matching." << std::endl;
 
         // Global localization (match with all images)
         std::vector<theia::ViewId> views_to_match = reconstruction_->ViewIds();
@@ -318,7 +320,7 @@ namespace theia {
         }
 
         // TODO: remove after debug
-        std::cout << "Matching with view id: " << min_distance.first << std::endl;
+        // std::cout << "Matching with view id: " << min_distance.first << std::endl;
 
         // Call localization
         std::vector<ViewId> views_to_match = {min_distance.first};

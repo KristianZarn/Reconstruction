@@ -39,6 +39,7 @@ public:
         // Modify
         int decimate_target = 10000;
         int texture_size = 2048;
+        int fill_hole_size = 100;
     };
 
     EditMeshPlugin(Parameters parameters,
@@ -97,6 +98,7 @@ private:
     void remove_selection_callback();
     void fit_plane_callback();
     void decimate_callback();
+    void fill_holes_callback();
 
     // Helpers
     void set_mesh(const MVS::Scene& mvs_scene);

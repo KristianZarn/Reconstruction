@@ -48,7 +48,18 @@ bool EditMeshPlugin::post_draw() {
     ImGui::Text("Input / Output:");
     ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
     ImGui::Spacing();
-    if (ImGui::Button("Load mesh", ImVec2(-1, 0))) {
+    if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
+        log_stream_ << std::endl;
+
+        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
+        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+    }
+    if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
         log_stream_ << std::endl;
 
         std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
@@ -59,17 +70,6 @@ bool EditMeshPlugin::post_draw() {
         set_bounding_box();
         set_plane();
         log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-    }
-    if (ImGui::Button("Save mesh", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
-
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-
-        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
     }
     if (ImGui::Button("Reset mesh", ImVec2(-1, 0))) {
         reset_mesh_callback();
@@ -177,6 +177,13 @@ bool EditMeshPlugin::post_draw() {
     ImGui::SameLine();
     if (ImGui::Button("Resize texture", ImVec2(-1, 0))) {
         // TODO: resize texture
+    }
+    ImGui::PushItemWidth(150.0f);
+    ImGui::InputInt("##fill", &parameters_.fill_hole_size);
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+    if (ImGui::Button("Fill holes", ImVec2(-1, 0))) {
+        fill_holes_callback();
     }
 
     // Debug
@@ -482,6 +489,17 @@ void EditMeshPlugin::decimate_callback() {
     }
 }
 
+void EditMeshPlugin::fill_holes_callback() {
+    // Clean the mesh
+    mvs_scene_.mesh.Clean(1.0, 0.0, false, parameters_.fill_hole_size, 0, false);
+
+    // Recompute array of vertices incident to each vertex
+    mvs_scene_.mesh.ListIncidenteFaces();
+
+    set_mesh(mvs_scene_);
+    show_mesh(true);
+}
+
 void EditMeshPlugin::color_selection() {
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     Eigen::MatrixXd colors(viewer->data().F.rows(), 3);
@@ -569,6 +587,10 @@ void EditMeshPlugin::show_mesh(bool visible) {
     parameters_.show_mesh = visible;
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     viewer->data().show_faces = visible;
+    if (!visible) {
+        parameters_.show_wireframe = visible;
+        viewer->data().show_lines = parameters_.show_wireframe;
+    }
 }
 
 void EditMeshPlugin::set_bounding_box() {

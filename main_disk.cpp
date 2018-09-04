@@ -23,10 +23,10 @@ int main(int argc, char *argv[]) {
     // std::string reconstruction_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_reconstruction/";
 
-    std::string images_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_resized_images/";
-    std::string reconstruction_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_resized_reconstruction/";
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_resized_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/vrc_resized_reconstruction/";
 
     // std::string images_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/fountain_images/";
@@ -43,11 +43,70 @@ int main(int argc, char *argv[]) {
     // std::string reconstruction_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/temple_reconstruction/";
 
+    // ----------------------- VIPAVA ------------------------
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/amfora_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/amfora_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/brenta_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/brenta_reconstruction/";
+
+    std::string images_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_images/";
+    std::string reconstruction_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/ceber_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/ceber_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/orodje_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/orodje_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/presa_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/presa_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put1_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put1_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put2_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put2_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put3_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put3_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_reconstruction/";
+
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/sod_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/sod_reconstruction/";
+
     std::string calibration_file = reconstruction_path + "prior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
+    // Eigen::Vector4f background_color(1.0, 1.0, 1.0, 1.0);
+    // viewer.core.background_color = background_color;
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
     viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
@@ -88,7 +147,7 @@ int main(int argc, char *argv[]) {
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
     std::shared_ptr<std::vector<std::string>> image_names = std::make_unique<std::vector<std::string>>();
-    for (int i = 0; i < 50; i++) {
+    for (int i = 0; i < 100; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names->emplace_back("frame" + ss.str() + ".png");
