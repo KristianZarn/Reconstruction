@@ -41,166 +41,173 @@ bool EditMeshPlugin::post_draw() {
     // Setup window
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowPos(ImVec2(300.0f, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(350.0f, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    ImGui::Text("Input / Output:");
-    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
-    ImGui::Spacing();
-    if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
+    if (ImGui::TreeNode("Input / Output")) {
+        ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::Spacing();
+        if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
+            log_stream_ << std::endl;
 
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_.Save(reconstruction_path_ + filename_mvs);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+            mvs_scene_.Save(reconstruction_path_ + filename_mvs);
+            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
 
-        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-        mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
-    }
-    if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
+            std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+            mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
+            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+        }
+        if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
+            log_stream_ << std::endl;
 
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_.Load(reconstruction_path_ + filename_mvs);
-        set_mesh(mvs_scene_);
-        center_object_callback();
-        show_mesh(true);
-        set_bounding_box();
-        set_plane();
-        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+            mvs_scene_.Load(reconstruction_path_ + filename_mvs);
+            set_mesh(mvs_scene_);
+            center_object_callback();
+            show_mesh(true);
+            set_bounding_box();
+            set_plane();
+            log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+        }
+        if (ImGui::Button("Reset mesh", ImVec2(-1, 0))) {
+            reset_mesh_callback();
+        }
+        std::ostringstream os;
+        os << "Mesh info:"
+           << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
+           << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
+        ImGui::TextUnformatted(os.str().c_str());
+        ImGui::TreePop();
     }
-    if (ImGui::Button("Reset mesh", ImVec2(-1, 0))) {
-        reset_mesh_callback();
-    }
-    std::ostringstream os;
-    os << "Mesh info:"
-       << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
-       << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
-    ImGui::TextUnformatted(os.str().c_str());
-    ImGui::Spacing();
 
     // Display options
-    ImGui::Text("Display options:");
-    if (ImGui::Button("Center object", ImVec2(-1, 0))) {
-        center_object_callback();
+    if (ImGui::TreeNode("Display options")) {
+        if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+            center_object_callback();
+        }
+        if (ImGui::Checkbox("Show mesh", &parameters_.show_mesh)) {
+            show_mesh(parameters_.show_mesh);
+        }
+        if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+            viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+            viewer->data().show_texture = parameters_.show_texture;
+        }
+        if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+            viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+            viewer->data().show_lines = parameters_.show_wireframe;
+        }
+        ImGui::TreePop();
     }
-    if (ImGui::Checkbox("Show mesh", &parameters_.show_mesh)) {
-        show_mesh(parameters_.show_mesh);
-    }
-    if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
-        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-        viewer->data().show_texture = parameters_.show_texture;
-    }
-    if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
-        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-        viewer->data().show_lines = parameters_.show_wireframe;
-    }
-    ImGui::Spacing();
 
     // Selection
-    ImGui::Text("Selection:");
-    if (ImGui::RadioButton("Pick faces [s]", parameters_.selection_mode == SelectionMode::PICK)) {
-        parameters_.selection_mode = SelectionMode::PICK;
-    }
-    if (ImGui::RadioButton("Bounding box", parameters_.selection_mode == SelectionMode::BOX)) {
-        parameters_.selection_mode = SelectionMode::BOX;
-    }
-    if (ImGui::RadioButton("Plane", parameters_.selection_mode == SelectionMode::PLANE)) {
-        parameters_.selection_mode = SelectionMode::PLANE;
-    }
-    show_bounding_box(parameters_.selection_mode == SelectionMode::BOX);
-    show_plane(parameters_.selection_mode == SelectionMode::PLANE);
-    ImGui::Spacing();
-
-    // Gizmo setup
-    ImGuiIO& io = ImGui::GetIO();
-    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    Eigen::Affine3f scale_base_zoom(Eigen::Scaling(1.0f / viewer->core.camera_base_zoom));
-    Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
-    Eigen::Matrix4f view = scale_base_zoom * scale_zoom * viewer->core.view;
-
-    // Selection: Bounding box
-    if (parameters_.selection_mode == SelectionMode::BOX) {
-        ImGui::Text("Bounding box options:");
-        gizmo_options();
-        if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
-            select_inside_callback();
+    if (ImGui::TreeNode("Selection")) {
+        if (ImGui::RadioButton("Pick faces [s]", parameters_.selection_mode == SelectionMode::PICK)) {
+            parameters_.selection_mode = SelectionMode::PICK;
         }
-        // Show gizmo
-        ImGuizmo::Manipulate(view.data(),
-                             viewer->core.proj.data(),
-                             parameters_.gizmo_operation,
-                             parameters_.gizmo_mode,
-                             bounding_box_gizmo_.data());
-        transform_bounding_box();
-    }
-
-    // Selection: Plane
-    if (parameters_.selection_mode == SelectionMode::PLANE) {
-        ImGui::Text("Plane options:");
-        gizmo_options();
-        if (ImGui::Button("Select below", ImVec2(-1, 0))) {
-            select_faces_below_callback();
+        if (ImGui::RadioButton("Bounding box", parameters_.selection_mode == SelectionMode::BOX)) {
+            parameters_.selection_mode = SelectionMode::BOX;
         }
-        // Show gizmo
-        ImGuizmo::Manipulate(view.data(),
-                             viewer->core.proj.data(),
-                             parameters_.gizmo_operation,
-                             parameters_.gizmo_mode,
-                             plane_gizmo_.data());
-        transform_plane();
+        if (ImGui::RadioButton("Plane", parameters_.selection_mode == SelectionMode::PLANE)) {
+            parameters_.selection_mode = SelectionMode::PLANE;
+        }
+        show_bounding_box(parameters_.selection_mode == SelectionMode::BOX);
+        show_plane(parameters_.selection_mode == SelectionMode::PLANE);
+
+        // Gizmo setup
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        Eigen::Affine3f scale_base_zoom(Eigen::Scaling(1.0f / viewer->core.camera_base_zoom));
+        Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
+        Eigen::Matrix4f view = scale_base_zoom * scale_zoom * viewer->core.view;
+
+        // Selection: Bounding box
+        if (parameters_.selection_mode == SelectionMode::BOX) {
+            ImGui::Text("Bounding box options:");
+            gizmo_options();
+            if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
+                select_inside_callback();
+            }
+            // Show gizmo
+            ImGuizmo::Manipulate(view.data(),
+                                 viewer->core.proj.data(),
+                                 parameters_.gizmo_operation,
+                                 parameters_.gizmo_mode,
+                                 bounding_box_gizmo_.data());
+            transform_bounding_box();
+        }
+
+        // Selection: Plane
+        if (parameters_.selection_mode == SelectionMode::PLANE) {
+            ImGui::Text("Plane options:");
+            gizmo_options();
+            if (ImGui::Button("Select below", ImVec2(-1, 0))) {
+                select_faces_below_callback();
+            }
+            // Show gizmo
+            ImGuizmo::Manipulate(view.data(),
+                                 viewer->core.proj.data(),
+                                 parameters_.gizmo_operation,
+                                 parameters_.gizmo_mode,
+                                 plane_gizmo_.data());
+            transform_plane();
+        }
+        ImGui::TreePop();
     }
 
     // Modify
-    ImGui::Text("Modify:");
-    if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
-        invert_selection_callback();
-    }
-    if (ImGui::Button("Remove selection", ImVec2(-1, 0))) {
-        remove_selection_callback();
-    }
-    if (ImGui::Button("Fit plane to selection", ImVec2(-1, 0))) {
-        fit_plane_callback();
-    }
-    ImGui::PushItemWidth(150.0f);
-    ImGui::InputInt("##decimate", &parameters_.decimate_target);
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (ImGui::Button("Decimate", ImVec2(-1, 0))) {
-        decimate_callback();
-    }
-    ImGui::PushItemWidth(150.0f);
-    ImGui::InputInt("##resize", &parameters_.texture_size);
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (ImGui::Button("Resize texture", ImVec2(-1, 0))) {
-        // TODO: resize texture
-    }
-    ImGui::PushItemWidth(150.0f);
-    ImGui::InputInt("##fill", &parameters_.fill_hole_size);
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (ImGui::Button("Fill holes", ImVec2(-1, 0))) {
-        fill_holes_callback();
+    if (ImGui::TreeNode("Modify")) {
+        if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
+            invert_selection_callback();
+        }
+        if (ImGui::Button("Remove selection", ImVec2(-1, 0))) {
+            remove_selection_callback();
+        }
+        if (ImGui::Button("Fit plane to selection", ImVec2(-1, 0))) {
+            fit_plane_callback();
+        }
+        ImGui::PushItemWidth(150.0f);
+        ImGui::InputInt("##decimate", &parameters_.decimate_target);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        if (ImGui::Button("Decimate", ImVec2(-1, 0))) {
+            decimate_callback();
+        }
+        ImGui::PushItemWidth(150.0f);
+        ImGui::InputInt("##resize", &parameters_.texture_size);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        if (ImGui::Button("Resize texture", ImVec2(-1, 0))) {
+            // TODO: resize texture
+        }
+        ImGui::PushItemWidth(150.0f);
+        ImGui::InputInt("##fill", &parameters_.fill_hole_size);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        if (ImGui::Button("Fill holes", ImVec2(-1, 0))) {
+            fill_holes_callback();
+        }
+        ImGui::TreePop();
     }
 
     // Debug
-    ImGui::Spacing();
-    if (ImGui::Button("Debug", ImVec2(-1, 0))) {
-        std::cout << "Debug button" << std::endl;
-        // std::ostringstream debug;
-        // ImGui::TextUnformatted(debug.str().c_str());
-        viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-        log_stream_ << "Vertices: " << viewer->data().V.rows() << std::endl;
-        log_stream_ << "Faces: " << viewer->data().F.rows() << std::endl;
-        log_stream_ << "V_uv: " << viewer->data().V_uv.rows() << " "
-                    << mvs_scene_.mesh.faceTexcoords.size() << std::endl;
-        log_stream_ << "F_uv: " << viewer->data().F_uv.rows() << std::endl;
+    if (ImGui::TreeNode("Debug")) {
+        if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+            std::cout << "Debug button" << std::endl;
+            // std::ostringstream debug;
+            // ImGui::TextUnformatted(debug.str().c_str());
+            viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
+            log_stream_ << "Vertices: " << viewer->data().V.rows() << std::endl;
+            log_stream_ << "Faces: " << viewer->data().F.rows() << std::endl;
+            log_stream_ << "V_uv: " << viewer->data().V_uv.rows() << " "
+                        << mvs_scene_.mesh.faceTexcoords.size() << std::endl;
+            log_stream_ << "F_uv: " << viewer->data().F_uv.rows() << std::endl;
 
-        log_stream_ << "test: V_uv == 3 * faces" << std::endl;
-        log_stream_ << "test: F_uv == faces" << std::endl;
+            log_stream_ << "test: V_uv == 3 * faces" << std::endl;
+            log_stream_ << "test: F_uv == faces" << std::endl;
+        }
+        ImGui::TreePop();
     }
 
     ImGui::End();

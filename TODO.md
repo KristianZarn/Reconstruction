@@ -26,7 +26,6 @@
 - (low) fix crash when mesh cannot be loaded
 - (low) fix color on selection
 - (low) posodobi uv koordinate po odstranjevanju točk/trikotnikov
-- polnjenje lukenj (po odstanjevanju ravnine npr.)
 - isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # LOCALIZATION:
@@ -36,13 +35,12 @@
 - todo
 
 # OTHER:
-- hide/show all možnost
 - (low) prikaz zajetih slik
     - prikaz še ostalih stvari, kot v COLMAP
 - **sprobi zhenhuje dataset z TheiaSFM in OpenMVG**
-- **pogled na sceno iz kamere (pri lokalizaciji)**
+- pogled na sceno iz kamere (pri lokalizaciji)
 - **kamera v ločeni niti**
-- **zajemanje slik preko telefona**
+- zajemanje slik preko telefona: optimizacija (branje iz diska)
 - fix show/hide cameras
 - crash when removing view and then extend / localize (neki od tega)
 - extend with all images

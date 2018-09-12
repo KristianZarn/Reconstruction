@@ -35,7 +35,7 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
 
-    // First mesh is for cameras
+    // Append mesh for cameras
     viewer->append_mesh();
     VIEWER_DATA_CAMERAS = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
@@ -55,147 +55,153 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     // Setup window
-    float window_width = 300.0f;
-    ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
+    float window_width = 350.0f;
+    ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
-
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    ImGui::Text("Input / Output:");
-    ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
-    ImGui::Spacing();
-    if (ImGui::Button("Save point cloud", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
+    if (ImGui::TreeNode("Input / Output")) {
+        ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+        ImGui::Spacing();
+        if (ImGui::Button("Save point cloud (ply)", ImVec2(-1, 0))) {
+            log_stream_ << std::endl;
 
-        std::string filename = std::string(parameters_.filename_buffer) + ".ply";
-        reconstruction_builder_->WritePly(reconstruction_path_ + filename);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
+            std::string filename = std::string(parameters_.filename_buffer) + ".ply";
+            reconstruction_builder_->WritePly(reconstruction_path_ + filename);
+            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
+        }
+        if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
+            log_stream_ << std::endl;
+
+            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+            mvs_scene_->Save(reconstruction_path_ + filename_mvs);
+            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+            std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+            mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
+            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+        }
+        if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
+            log_stream_ << std::endl;
+
+            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+            mvs_scene_->Load(reconstruction_path_ + filename_mvs);
+            set_mesh();
+            show_mesh(true);
+            show_point_cloud(false);
+            center_object_callback();
+            log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+        }
+        std::ostringstream os;
+        os << "Mesh info:"
+           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
+           << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
+        ImGui::TextUnformatted(os.str().c_str());
+        ImGui::TreePop();
     }
-    if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
 
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_->Save(reconstruction_path_ + filename_mvs);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-
-        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-        mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
-        log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
-    }
-    if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
-        log_stream_ << std::endl;
-
-        std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-        mvs_scene_->Load(reconstruction_path_ + filename_mvs);
-        set_mesh();
-        show_mesh(true);
-        show_point_cloud(false);
-        center_object_callback();
-        log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-    }
-    std::ostringstream os;
-    os << "Mesh info:"
-       << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
-       << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
-    ImGui::TextUnformatted(os.str().c_str());
-    ImGui::Spacing();
 
     // Sparse reconstruction
-    ImGui::Text("Sparse reconstruction:");
-    if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
-        initialize_callback();
-    }
-    if (ImGui::Button("Extend [e]", ImVec2(-1, 0))) {
-        extend_callback();
-    }
-    ImGui::Spacing();
+    if (ImGui::TreeNode("Sparse reconstruction")) {
+        ImGui::Text("Build reconstruction");
+        if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
+            initialize_callback();
+        }
+        if (ImGui::Button("Extend [e]", ImVec2(-1, 0))) {
+            extend_callback();
+        }
+        ImGui::Spacing();
 
-    // Edit views
-    ImGui::Text("Edit reconstruction:");
-    ImGui::PushItemWidth(100.0f);
-    ImGui::InputInt("##remove", &parameters_.view_to_delete);
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
-    if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
-        remove_view_callback(parameters_.view_to_delete);
+        ImGui::Text("Edit reconstruction");
+        ImGui::PushItemWidth(100.0f);
+        ImGui::InputInt("##remove", &parameters_.view_to_delete);
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
+            remove_view_callback(parameters_.view_to_delete);
+        }
+        if (ImGui::Button("Remove last view [b]", ImVec2(-1, 0))) {
+            remove_last_view_callback();
+        }
+        if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
+            reset_reconstruction_callback();
+        }
+        ImGui::TreePop();
     }
-    if (ImGui::Button("Remove last view [b]", ImVec2(-1, 0))) {
-        remove_last_view_callback();
-    }
-    if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
-        reset_reconstruction_callback();
-    }
-    ImGui::Spacing();
 
     // Dense reconstruction
-    ImGui::Text("Dense reconstruction:");
-    if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
-        reconstruct_mesh_callback();
+    if (ImGui::TreeNode("Dense reconstruction")) {
+        if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
+            reconstruct_mesh_callback();
+        }
+        if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
+            refine_mesh_callback();
+        }
+        if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
+            texture_mesh_callback();
+        }
+        ImGui::ColorEdit3("Empty texture color", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
+        ImGui::TreePop();
     }
-    if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
-        refine_mesh_callback();
-    }
-    if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
-        texture_mesh_callback();
-    }
-    ImGui::ColorEdit3("Empty texture color", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
-    ImGui::Spacing();
 
     // Display options
-    ImGui::Text("Display options:");
-    if (ImGui::Button("Center object", ImVec2(-1, 0))) {
-        center_object_callback();
-    }
-    ImGui::Checkbox("Show labels", &parameters_.show_labels);
-    if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
-        show_cameras(parameters_.show_cameras);
-    }
-    if (ImGui::Checkbox("Show point cloud [2]", &parameters_.show_point_cloud)) {
-        show_point_cloud(parameters_.show_point_cloud);
-    }
-    if (ImGui::Checkbox("Show mesh [3]", &parameters_.show_mesh)) {
-        show_mesh(parameters_.show_mesh);
-    }
-    if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
-        viewer->selected_data_index = VIEWER_DATA_MESH;
-        viewer->data().show_texture = parameters_.show_texture;
-    }
-    if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
-        viewer->selected_data_index = VIEWER_DATA_MESH;
-        viewer->data().show_lines = parameters_.show_wireframe;
-    }
-    ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
-    for (auto& viewer_data : viewer->data_list) {
-        if (viewer_data.point_size != parameters_.point_size) {
-            viewer_data.point_size = parameters_.point_size;
+    if (ImGui::TreeNode("Display options")) {
+        if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+            center_object_callback();
         }
+        if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
+            show_cameras(parameters_.show_cameras);
+        }
+        if (ImGui::Checkbox("Show point cloud [2]", &parameters_.show_point_cloud)) {
+            show_point_cloud(parameters_.show_point_cloud);
+        }
+        if (ImGui::Checkbox("Show mesh [3]", &parameters_.show_mesh)) {
+            show_mesh(parameters_.show_mesh);
+        }
+        if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            viewer->data().show_texture = parameters_.show_texture;
+        }
+        if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            viewer->data().show_lines = parameters_.show_wireframe;
+        }
+        ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
+        for (auto& viewer_data : viewer->data_list) {
+            if (viewer_data.point_size != parameters_.point_size) {
+                viewer_data.point_size = parameters_.point_size;
+            }
+        }
+        ImGui::TreePop();
     }
-    ImGui::Spacing();
 
-    // Debug info
-    // std::ostringstream debug;
-    // debug << "View: \n" << viewer->core.view << std::endl;
-    // debug << "Norm: \n" << viewer->core.norm << std::endl;
-    // debug << "Proj: \n" << viewer->core.proj << std::endl;
+    if (ImGui::TreeNode("Debug")) {
+        // Debug info
+        // std::ostringstream debug;
+        // debug << "View: \n" << viewer->core.view << std::endl;
+        // debug << "Norm: \n" << viewer->core.norm << std::endl;
+        // debug << "Proj: \n" << viewer->core.proj << std::endl;
 
-    // Eigen::Quaternionf quat = viewer->core.trackball_angle;
-    // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
-    // ImGui::TextUnformatted(os.str().c_str());
-    if (ImGui::Button("Debug", ImVec2(-1, 0))) {
-        log_stream_ << "Debug button pressed" << std::endl;
+        // Eigen::Quaternionf quat = viewer->core.trackball_angle;
+        // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
+        // ImGui::TextUnformatted(os.str().c_str());
+        if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+            log_stream_ << "Debug button pressed" << std::endl;
 
-        // Clean the mesh
-        mvs_scene_->mesh.Clean(1.0, 0.0, false, 100, 0, false);
+            // Clean the mesh
+            mvs_scene_->mesh.Clean(1.0, 0.0, false, 100, 0, false);
 
-        // Recompute array of vertices incident to each vertex
-        mvs_scene_->mesh.ListIncidenteFaces();
+            // Recompute array of vertices incident to each vertex
+            mvs_scene_->mesh.ListIncidenteFaces();
 
-        set_mesh();
-        show_mesh(true);
-        show_point_cloud(false);
+            set_mesh();
+            show_mesh(true);
+            show_point_cloud(false);
+        }
+        ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
+        ImGui::TreePop();
     }
-    ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
 
     ImGui::End();
     return false;
@@ -555,9 +561,12 @@ void ReconstructionPlugin::set_cameras() {
 }
 
 void ReconstructionPlugin::show_cameras(bool visible) {
+    parameters_.show_labels = visible;
     parameters_.show_cameras = visible;
     viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().show_overlay = visible;
+    viewer->data().show_faces = visible;
+    viewer->data().show_lines = visible;
 }
 
 void ReconstructionPlugin::set_point_cloud() {

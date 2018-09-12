@@ -55,10 +55,10 @@ int main(int argc, char *argv[]) {
     // std::string reconstruction_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/brenta_reconstruction/";
 
-    std::string images_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_images/";
-    std::string reconstruction_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_reconstruction/";
+    // std::string images_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_images/";
+    // std::string reconstruction_path =
+    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/pletenka_reconstruction/";
 
     // std::string images_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/ceber_images/";
@@ -90,10 +90,10 @@ int main(int argc, char *argv[]) {
     // std::string reconstruction_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put3_reconstruction/";
 
-    // std::string images_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_images/";
-    // std::string reconstruction_path =
-    //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_reconstruction/";
+    std::string images_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_images/";
+    std::string reconstruction_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/put4_reconstruction/";
 
     // std::string images_path =
     //         "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/vipava/sod_images/";
@@ -105,8 +105,6 @@ int main(int argc, char *argv[]) {
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
-    // Eigen::Vector4f background_color(1.0, 1.0, 1.0, 1.0);
-    // viewer.core.background_color = background_color;
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
     viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;

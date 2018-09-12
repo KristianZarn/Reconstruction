@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 # Basic libraries needed by others
 find_package(X11 REQUIRED)
 find_package(Threads REQUIRED)
+find_package(CURL REQUIRED)
 find_package(OpenMP REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
@@ -16,7 +17,7 @@ find_path(LIBIGL_INCLUDE_DIR igl/readOBJ.h
         PATH_SUFFIXES include)
 
 find_path(LIBIGL_LIBS_DIR libigl_core.a
-        PATHS $ENV{HOME}/Sources/libigl/optionaldata
+        PATHS $ENV{HOME}/Sources/libigl/optional
         PATH_SUFFIXES build)
 
 add_library(igl::core STATIC IMPORTED)
@@ -66,7 +67,8 @@ set(SOURCE_FILES
     src/reconstruction/RealtimeReconstructionBuilder.cpp
     src/reconstruction/RealtimeFeatureMatcher.cpp
     src/reconstruction/PopSiftDescriptorExtractor.cpp
-    src/plugins/CameraPlugin.cpp
+    src/plugins/WebcamPlugin.cpp
+    src/plugins/IPCameraPlugin.cpp
     src/plugins/ReconstructionPlugin.cpp
     src/plugins/EditMeshPlugin.cpp
     src/plugins/LocalizationPlugin.cpp)
@@ -83,7 +85,8 @@ set(INCLUDE_DIRS
     ${LIBIGL_INCLUDE_DIR}
     ${THEIA_INCLUDE_DIRS}
     ${OpenMVS_INCLUDE_DIRS}
-    ${CUDA_INCLUDE_DIRS})
+    ${CUDA_INCLUDE_DIRS}
+    ${CURL_INCLUDE_DIRS})
 
 set(LIBRARIES
     igl::png
@@ -102,7 +105,8 @@ set(LIBRARIES
     PopSift::popsift
     ${Boost_LIBRARIES}
     ${OpenMVS_LIBRARIES}
-    ${CUDA_LIBRARIES})
+    ${CUDA_LIBRARIES}
+    ${CURL_LIBRARIES})
 
 add_executable(realtime_reconstruction_disk main_disk.cpp ${SOURCE_FILES})
 target_compile_definitions(realtime_reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY)
@@ -113,3 +117,8 @@ add_executable(realtime_reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
 target_compile_definitions(realtime_reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY)
 target_include_directories(realtime_reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(realtime_reconstruction_webcam ${LIBRARIES})
+
+add_executable(realtime_reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
+target_compile_definitions(realtime_reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY)
+target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})

@@ -8,9 +8,9 @@
 
 #include "webcam/webcam.h"
 
-class CameraPlugin : public igl::opengl::glfw::ViewerPlugin {
+class WebcamPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
-    CameraPlugin(std::string device, int width, int height, std::string output_path);
+    WebcamPlugin(std::string device, int width, int height, std::string images_path);
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
 
