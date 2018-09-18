@@ -13,6 +13,7 @@
 - implementiraj AC-RANSAC ?
 - remove unestimated views (button)
 - update next_image_idx if reconstruction fails
+- shrani/naloži redko rekonstrukcijo
 
 # DENSE:
 - **undistort images**
@@ -37,10 +38,7 @@
 # OTHER:
 - (low) prikaz zajetih slik
     - prikaz še ostalih stvari, kot v COLMAP
-- **sprobi zhenhuje dataset z TheiaSFM in OpenMVG**
 - pogled na sceno iz kamere (pri lokalizaciji)
 - **kamera v ločeni niti**
-- zajemanje slik preko telefona: optimizacija (branje iz diska)
-- fix show/hide cameras
 - crash when removing view and then extend / localize (neki od tega)
 - extend with all images

@@ -21,6 +21,7 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
     options.min_track_length = 2;
     options.max_track_length = 50;
 
+    options.matching_options.rng = options.rng;
     options.matching_options.num_threads = 4;
     options.matching_options.min_num_feature_matches = 30;
     options.matching_options.lowes_ratio = 0.8;

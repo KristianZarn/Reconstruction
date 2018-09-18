@@ -34,33 +34,28 @@ namespace theia {
         reconstruction_estimator_.reset(ReconstructionEstimator::Create(options_.reconstruction_estimator_options));
     }
 
-    ReconstructionEstimatorSummary RealtimeReconstructionBuilder::InitializeReconstruction(
+    bool RealtimeReconstructionBuilder::InitializeReconstruction(
             const std::string &image1_fullpath,
             const std::string &image2_fullpath) {
 
-        ReconstructionEstimatorSummary summary;
-
         // Check if initialized
         if (IsInitialized()) {
-            summary.success = false;
-            summary.message = "Reconstruction is already initialized.";
-            return summary;
+            reconstruction_message_ = "Initialize error: Reconstruction is already initialized.";
+            return false;
         }
 
         // Read the images
         if (!theia::FileExists(image1_fullpath)) {
-            summary.success = false;
-            summary.message = "Image: " + image1_fullpath + " does not exist\n";
-            return summary;
+            reconstruction_message_ = "Initialize error: Image " + image1_fullpath + " does not exist\n";
+            return false;
         }
         std::string image1_filename;
         GetFilenameFromFilepath(image1_fullpath, true, &image1_filename);
         FloatImage image1(image1_fullpath);
 
         if (!theia::FileExists(image2_fullpath)) {
-            summary.success = false;
-            summary.message = "Image: " + image2_fullpath + " does not exist\n";
-            return summary;
+            reconstruction_message_ = "Initialize error: Image " + image2_fullpath + " does not exist\n";
+            return false;
         }
         std::string image2_filename;
         GetFilenameFromFilepath(image2_fullpath, true, &image2_filename);
@@ -111,45 +106,38 @@ namespace theia {
                 track.emplace_back(image2_feature);
 
                 TrackId track_id = reconstruction_->AddTrack(track);
-                image_feature_to_track_id_.insert( {image1_feature, track_id} );
-                image_feature_to_track_id_.insert( {image2_feature, track_id} );
             }
         } else {
-            summary.success = false;
-            summary.message = "No matches found.";
+            reconstruction_message_ = "Initialize error: No matches found.";
             ResetReconstruction();
-            return summary;
+            return false;
         }
 
         // Build reconstruction
-        summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
+        reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
         // Check if both views were estimated successfully
         if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
-            summary.success = false;
-            summary.message = "Views were not estimated.";
+            reconstruction_message_ = "Initialize error: Views were not estimated.";
             ResetReconstruction();
+            return false;
         }
-        return summary;
+
+        return true;
     }
 
-    ReconstructionEstimatorSummary RealtimeReconstructionBuilder::ExtendReconstruction(
-            const std::string& image_fullpath) {
-
-        ReconstructionEstimatorSummary summary;
+    bool RealtimeReconstructionBuilder::ExtendReconstruction(const std::string& image_fullpath) {
 
         // Check if initialized
         if (!IsInitialized()) {
-            summary.success = false;
-            summary.message = "Reconstruction is not initialized.";
-            return summary;
+            reconstruction_message_ = "Extend error: Reconstruction is not initialized.";
+            return false;
         }
 
         // Read the image
         if (!theia::FileExists(image_fullpath)) {
-            summary.success = false;
-            summary.message = "Image: " + image_fullpath + " does not exist\n";
-            return summary;
+            reconstruction_message_ = "Extend error: Image " + image_fullpath + " does not exist\n";
+            return false;
         }
         std::string image_filename;
         GetFilenameFromFilepath(image_fullpath, true, &image_filename);
@@ -172,113 +160,110 @@ namespace theia {
         std::vector<ImagePairMatch> matches;
         feature_matcher_->MatchImages(&matches, pairs_to_match);
 
-        // Add to reconstruction
-        ViewId view_id = reconstruction_->AddView(image_filename, 0);
-
-        // Set intrinsics prior
-        View* view = reconstruction_->MutableView(view_id);
-        *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
-
         // Add matches to view graph
         if (!matches.empty()) {
+
+            // Add new view to reconstruction
+            ViewId view_id = reconstruction_->AddView(image_filename, 0);
+
+            // Set intrinsics prior
+            View* view = reconstruction_->MutableView(view_id);
+            *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+
             for (const auto& match : matches) {
                 ViewId view1_id = reconstruction_->ViewIdFromName(match.image1);
                 ViewId view2_id = reconstruction_->ViewIdFromName(match.image2);
+                assert(view1_id < view2_id);
+                assert(view_id == view2_id);
                 view_graph_->AddEdge(view1_id, view2_id, match.twoview_info);
 
                 // Add tracks and observations to reconstruction
                 for (const auto& correspondence : match.correspondences) {
-                    const auto image1_feature = std::make_pair(view1_id, correspondence.feature1);
-                    const auto image2_feature = std::make_pair(view2_id, correspondence.feature2);
 
-                    // Check if feature from the second view is not yet added
-                    if (!image_feature_to_track_id_.count(image2_feature)) {
+                    // Check if correspondence is already reconstructed
+                    const View* view1 = reconstruction_->View(view1_id);
+                    const TrackId* track_id_ptr = view1->GetTrackId(correspondence.feature1);
+                    if (track_id_ptr == nullptr) {
 
-                        // Check if feature from the first view is already added
-                        if (image_feature_to_track_id_.count(image1_feature)) {
+                        // Add new track to reconstruction
+                        std::vector<std::pair<ViewId, Feature>> new_track;
+                        new_track.emplace_back(std::make_pair(view1_id, correspondence.feature1));
+                        new_track.emplace_back(std::make_pair(view2_id, correspondence.feature2));
+                        reconstruction_->AddTrack(new_track);
+                    } else {
 
-                            // Insert feature from second view
-                            TrackId track_id = image_feature_to_track_id_[image1_feature];
+                        // Observation of the track may be already added from the previous match
+                        TrackId existing_track_id = *track_id_ptr;
+                        const View* view2 = reconstruction_->View(view2_id);
+                        if (view2->GetFeature(existing_track_id) == nullptr) {
 
-                            // Because of outliers track may already contain the view_id we want to add,
-                            // so before adding, check if view is already in track (or view has feature in track)
-                            if (view->GetFeature(track_id) == nullptr) {
-                                reconstruction_->AddObservation(view2_id, track_id, correspondence.feature2);
-                                image_feature_to_track_id_.insert( {image2_feature, track_id} );
-                            }
-                        } else {
-
-                            // Build track
-                            std::vector<std::pair<ViewId, Feature>> track;
-                            track.emplace_back(image1_feature);
-                            track.emplace_back(image2_feature);
-
-                            TrackId track_id = reconstruction_->AddTrack(track);
-                            image_feature_to_track_id_.insert( {image1_feature, track_id} );
-                            image_feature_to_track_id_.insert( {image2_feature, track_id} );
+                            // Add observation of existing track
+                            reconstruction_->AddObservation(view2_id, existing_track_id, correspondence.feature2);
                         }
                     }
                 }
             }
         } else {
-            summary.success = false;
-            summary.message = "No matches found.";
-            return summary;
+            reconstruction_message_ = "Extend error: No matches found.";
+            return false;
         }
 
         // Build reconstruction
-        summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
-        UpdateImageFeatureToTrackId();
+        reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
         // Check if view was added successfully
         if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
-            summary.success = false;
-            summary.message = "View could not be added.";
+            reconstruction_message_ = "Extend error: View could not be estimated.";
+            return false;
         }
-        return summary;
+
+        return true;
     }
 
-    void RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
+    bool RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
+            bool success;
+
             // Remove from matcher
             feature_matcher_->RemoveImage(reconstruction_->View(view_id)->Name());
 
-            // Remove from reconstruction
-            reconstruction_->RemoveView(view_id);
-
-            // Remove tracks smaller than min_track_length
-            for (const auto& track_id : reconstruction_->TrackIds()) {
-                const Track* track = reconstruction_->Track(track_id);
-                if (track->NumViews() < options_.min_track_length) {
-                    reconstruction_->RemoveTrack(track_id);
-                }
-            }
-
             // Remove view from view_graph
-            view_graph_->RemoveView(view_id);
+            success = view_graph_->RemoveView(view_id);
+            if (!success) return false;
 
-            // Remove from image_feature_to_track_id map
-            for(auto it = image_feature_to_track_id_.begin(); it != image_feature_to_track_id_.end(); ) {
-                std::pair<ViewId, Feature> key = it->first;
-                if(key.first == view_id) {
-                    it = image_feature_to_track_id_.erase(it);
-                } else {
-                    it++;
-                }
-            }
+            // Remove from reconstruction
+            success = reconstruction_->RemoveView(view_id);
+            if (!success) return false;
 
-            // Update image_feature_to_track_id because tracks were removed
-            UpdateImageFeatureToTrackId();
-
-            // TODO: Reestimate tracks
+            // Reestimate tracks
+            reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
+            return true;
+        } else {
+            reconstruction_message_ = "Remove view error: View id " + std::to_string(view_id) + " does not exist.";
+            return false;
         }
     }
 
-    void RealtimeReconstructionBuilder::ResetReconstruction() {
-        for (const auto& view_id :reconstruction_->ViewIds()) {
-            RemoveView(view_id);
+    bool RealtimeReconstructionBuilder::RemoveUnestimatedViews() {
+        bool success = true;
+        for (const auto& view_id : reconstruction_->ViewIds()) {
+            const class View* view = reconstruction_->View(view_id);
+            if (!view->IsEstimated()) {
+                bool result = RemoveView(view_id);
+                success = success & result;
+            }
         }
+        return success;
+    }
+
+    bool RealtimeReconstructionBuilder::ResetReconstruction() {
+        bool success = true;
+        for (const auto& view_id : reconstruction_->ViewIds()) {
+            bool result = RemoveView(view_id);
+            success = success & result;
+        }
+        return success;
     }
 
     bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
@@ -303,7 +288,7 @@ namespace theia {
         GetEstimatedViewsFromReconstruction(*reconstruction_, &view_candidates);
         distances.reserve(view_candidates.size());
 
-        // TODO: check if view_candidates.size() > 1
+        assert(!view_candidates.empty());
 
         for (const auto& view_id : view_candidates) {
             const View * view = reconstruction_->View(view_id);
@@ -331,9 +316,7 @@ namespace theia {
     bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
                                                       const std::vector<ViewId>& views_to_match,
                                                       CalibratedAbsolutePose& pose) {
-        if (views_to_match.empty()) {
-            return false;
-        }
+        assert(!views_to_match.empty());
 
         // Feature extraction
         std::vector<Keypoint> image_keypoints;
@@ -363,8 +346,7 @@ namespace theia {
                                                            hashed_match, features_match.descriptors,
                                                            lowes_ratio, &putative_matches);
 
-            // TODO: DEBUG
-            // output statistics
+            // TODO: output statistics for debugging
 
             // Get normalized 2D 3D matches
             for (const auto& match_correspondence : putative_matches) {
@@ -374,17 +356,19 @@ namespace theia {
                 Feature feature_camera(keypoint_camera.x(), keypoint_camera.y());
                 Feature feature_match(keypoint_match.x(), keypoint_match.y());
 
-                const auto feature_match_tmp = std::make_pair(match_view_id, feature_match);
-                TrackId track_id = image_feature_to_track_id_[feature_match_tmp];
-                const Track* track = reconstruction_->Track(track_id);
-                if (!track->IsEstimated()) {
-                    continue;
-                }
+                const View* match_view = reconstruction_->View(match_view_id);
+                const TrackId* track_id_ptr = match_view->GetTrackId(feature_match);
 
-                FeatureCorrespondence2D3D pose_correspondence;
-                pose_correspondence.feature = camera.PixelToNormalizedCoordinates(feature_camera).hnormalized();
-                pose_correspondence.world_point = track->Point().hnormalized();
-                pose_match_map[feature_camera] = pose_correspondence;
+                if (track_id_ptr != nullptr) {
+                    const Track* track = reconstruction_->Track(*track_id_ptr);
+
+                    if (track->IsEstimated()) {
+                        FeatureCorrespondence2D3D pose_correspondence;
+                        pose_correspondence.feature = camera.PixelToNormalizedCoordinates(feature_camera).hnormalized();
+                        pose_correspondence.world_point = track->Point().hnormalized();
+                        pose_match_map[feature_camera] = pose_correspondence;
+                    }
+                }
             }
         }
         std::vector<FeatureCorrespondence2D3D> pose_match;
@@ -416,27 +400,26 @@ namespace theia {
         return ransac_summary.inliers.size() >= options_.matching_options.min_num_feature_matches;
     }
 
-    const Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {
-        return *reconstruction_;
-    }
-
     bool RealtimeReconstructionBuilder::IsInitialized() {
-        return (reconstruction_->NumViews() > 0);
+        std::unordered_set<ViewId> estimated_views;
+        GetEstimatedViewsFromReconstruction(*reconstruction_, &estimated_views);
+        return (estimated_views.size() >= 2);
     }
 
-    void RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {
+    bool RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {
+        // TODO: write custom function
         theia::ColorizeReconstruction(images_path, options_.num_threads, reconstruction_.get());
+        return true;
     }
 
-    void RealtimeReconstructionBuilder::WritePly(const std::string& output_fullpath) {
-        theia::WritePlyFile(output_fullpath, *reconstruction_, 2);
+    bool RealtimeReconstructionBuilder::WritePly(const std::string& output_fullpath) {
+        return theia::WritePlyFile(output_fullpath, *reconstruction_, 2);
     }
 
     void RealtimeReconstructionBuilder::PrintStatistics(std::ostream &stream,
                                                         bool print_images,
                                                         bool print_reconstruction,
-                                                        bool print_view_graph,
-                                                        bool print_feature_track_map) {
+                                                        bool print_view_graph) {
         if (print_images) {
             stream << "Images: ";
             for (const auto& view_id : reconstruction_->ViewIds()) {
@@ -463,23 +446,14 @@ namespace theia {
             }
             stream << "\n";
         }
-        if (print_feature_track_map) {
-            stream << "Feature to track id map: ";
-            stream << "\n\tNum elements = " << image_feature_to_track_id_.size() << "\n";
-        }
     }
 
-    void RealtimeReconstructionBuilder::UpdateImageFeatureToTrackId() {
-        // Remove from image_feature_to_track_id if track_id is not in reconstruction
-        for(auto it = image_feature_to_track_id_.begin(); it != image_feature_to_track_id_.end(); ) {
-            TrackId value = it->second;
-            const Track* track = reconstruction_->Track(value);
-            if(track == nullptr) {
-                it = image_feature_to_track_id_.erase(it);
-            } else {
-                it++;
-            }
-        }
+    const Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {
+        return *reconstruction_;
+    }
+
+    std::string RealtimeReconstructionBuilder::GetMessage() {
+        return reconstruction_message_;
     }
 
 } // namespace theia

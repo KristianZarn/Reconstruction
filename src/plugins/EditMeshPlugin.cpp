@@ -45,7 +45,7 @@ bool EditMeshPlugin::post_draw() {
     ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    if (ImGui::TreeNode("Input / Output")) {
+    if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
         if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
@@ -83,7 +83,7 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Display options
-    if (ImGui::TreeNode("Display options")) {
+    if (ImGui::TreeNodeEx("Display options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Center object", ImVec2(-1, 0))) {
             center_object_callback();
         }
@@ -102,7 +102,7 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Selection
-    if (ImGui::TreeNode("Selection")) {
+    if (ImGui::TreeNodeEx("Selection", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::RadioButton("Pick faces [s]", parameters_.selection_mode == SelectionMode::PICK)) {
             parameters_.selection_mode = SelectionMode::PICK;
         }
@@ -157,7 +157,7 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Modify
-    if (ImGui::TreeNode("Modify")) {
+    if (ImGui::TreeNodeEx("Modify", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
             invert_selection_callback();
         }
@@ -192,7 +192,7 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Debug
-    if (ImGui::TreeNode("Debug")) {
+    if (ImGui::TreeNodeEx("Debug")) {
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             std::cout << "Debug button" << std::endl;
             // std::ostringstream debug;

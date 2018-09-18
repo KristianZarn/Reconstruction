@@ -61,7 +61,7 @@ bool ReconstructionPlugin::post_draw() {
     ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    if (ImGui::TreeNode("Input / Output")) {
+    if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
         if (ImGui::Button("Save point cloud (ply)", ImVec2(-1, 0))) {
@@ -103,7 +103,7 @@ bool ReconstructionPlugin::post_draw() {
 
 
     // Sparse reconstruction
-    if (ImGui::TreeNode("Sparse reconstruction")) {
+    if (ImGui::TreeNodeEx("Sparse reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Text("Build reconstruction");
         if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
             initialize_callback();
@@ -131,7 +131,7 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     // Dense reconstruction
-    if (ImGui::TreeNode("Dense reconstruction")) {
+    if (ImGui::TreeNodeEx("Dense reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
             reconstruct_mesh_callback();
         }
@@ -146,7 +146,7 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     // Display options
-    if (ImGui::TreeNode("Display options")) {
+    if (ImGui::TreeNodeEx("Display options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Center object", ImVec2(-1, 0))) {
             center_object_callback();
         }
@@ -176,7 +176,7 @@ bool ReconstructionPlugin::post_draw() {
         ImGui::TreePop();
     }
 
-    if (ImGui::TreeNode("Debug")) {
+    if (ImGui::TreeNodeEx("Debug")) {
         // Debug info
         // std::ostringstream debug;
         // debug << "View: \n" << viewer->core.view << std::endl;
@@ -235,20 +235,19 @@ void ReconstructionPlugin::initialize_callback() {
     log_stream_ << "Initializing reconstruction ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
-    theia::ReconstructionEstimatorSummary summary =
-            reconstruction_builder_->InitializeReconstruction(image1, image2);
+    bool success = reconstruction_builder_->InitializeReconstruction(image1, image2);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
     log_stream_ << "Initialization time: " << time_elapsed.count() << " s" << std::endl;
 
     // Reconstruction summary
-    if (summary.success) {
+    if (success) {
         log_stream_ << "Initialization successful: \n";
         reconstruction_builder_->ColorizeReconstruction(images_path_);
     } else {
         log_stream_ << "Initialization failed: \n";
-        log_stream_ << "\tMessage = " << summary.message << "\n\n";
+        log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
     reconstruction_builder_->PrintStatistics(log_stream_);
     set_cameras();
@@ -277,19 +276,19 @@ void ReconstructionPlugin::extend_callback() {
     log_stream_ << "Extending reconstruction ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
-    theia::ReconstructionEstimatorSummary summary = reconstruction_builder_->ExtendReconstruction(image);
+    bool success = reconstruction_builder_->ExtendReconstruction(image);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
     log_stream_ << "Extend time: " << time_elapsed.count() << " s" << std::endl;
 
     // Reconstruction summary
-    if (summary.success) {
+    if (success) {
         log_stream_ << "Extend successful: \n";
         reconstruction_builder_->ColorizeReconstruction(images_path_);
     } else {
         log_stream_ << "Extend failed: \n";
-        log_stream_ << "\tMessage = " << summary.message << "\n\n";
+        log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
     reconstruction_builder_->PrintStatistics(log_stream_);
     set_cameras();

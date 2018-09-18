@@ -58,20 +58,19 @@ namespace theia {
                                       const CameraIntrinsicsPrior& intrinsics_prior);
 
         // Initialize reconstruction with two images
-        ReconstructionEstimatorSummary InitializeReconstruction(const std::string& image1_fullpath,
-                                                                const std::string& image2_fullpath);
+        bool InitializeReconstruction(const std::string& image1_fullpath, const std::string& image2_fullpath);
 
         // Extend the reconstruction with additional image
-        ReconstructionEstimatorSummary ExtendReconstruction(const std::string& image_fullpath);
+        bool ExtendReconstruction(const std::string& image_fullpath);
 
         // Remove view from reconstruction by id
-        void RemoveView(ViewId view_id);
+        bool RemoveView(ViewId view_id);
 
         // Remove all unestimated views from reconstruction
-        void RemoveUnestimatedViews();
+        bool RemoveUnestimatedViews();
 
         // Reset reconstruction by removing all views
-        void ResetReconstruction();
+        bool ResetReconstruction();
 
         // Global localization
         bool LocalizeImage(const FloatImage& image,
@@ -87,42 +86,40 @@ namespace theia {
                            const std::vector<ViewId>& views_to_match,
                            CalibratedAbsolutePose& pose);
 
-        // Get constant reference to reconstruction
-        const Reconstruction& GetReconstruction();
-
         // Check if reconstruction is initialized
         bool IsInitialized();
 
         // Colorize reconstruction
-        void ColorizeReconstruction(const std::string& images_path);
+        bool ColorizeReconstruction(const std::string& images_path);
 
         // Output point cloud to ply file
-        void WritePly(const std::string& output_fullpath);
+        bool WritePly(const std::string& output_fullpath);
 
         // Print reconstruction statistics
         void PrintStatistics(std::ostream& stream,
                              bool print_images = true,
                              bool print_reconstruction = true,
-                             bool print_view_graph = true,
-                             bool print_feature_track_map = true);
+                             bool print_view_graph = true);
+
+        // Get constant reference to reconstruction
+        const Reconstruction& GetReconstruction();
+
+        // Get message
+        std::string GetMessage();
 
     private:
         Options options_;
         CameraIntrinsicsPrior intrinsics_prior_;
+        std::string reconstruction_message_;
 
         // Feature extraction and matching
         std::unique_ptr<DescriptorExtractor> descriptor_extractor_;
         std::unique_ptr<RealtimeFeatureMatcher> feature_matcher_;
 
-        std::unordered_map<std::pair<ViewId, Feature>, TrackId> image_feature_to_track_id_;
-
         // SfM objects
         std::unique_ptr<ViewGraph> view_graph_;
         std::unique_ptr<Reconstruction> reconstruction_;
         std::unique_ptr<ReconstructionEstimator> reconstruction_estimator_;
-
-        // Helper functions
-        void UpdateImageFeatureToTrackId();
     };
 
 } // namespace theia
