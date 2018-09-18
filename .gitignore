@@ -1,5 +1,6 @@
 # Ignore IDE files
 .idea/
+.vscode/
 
 # Ignore build files
 cmake-build-debug/
@@ -7,4 +8,4 @@ cmake-build-release/
 
 # Ignore dataset
 dataset/
-vipava/
+dataset_vipava/

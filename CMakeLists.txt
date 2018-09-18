@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(realtime_reconstruction_theia)
+project(realtime_reconstruction)
 
 set(CMAKE_CXX_STANDARD 17)
 

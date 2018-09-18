@@ -14,7 +14,7 @@
 int main(int argc, char *argv[]) {
 
     std::string project_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/temple/";
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
 
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
