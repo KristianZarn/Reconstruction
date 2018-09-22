@@ -1,0 +1,602 @@
+Indexing image [1/63] in 2.340s
+Querying for image frame000.png [1/63] in 2.158s
+  image_id=1, image_name=frame000.png, score=0.000000
+Indexing image [2/63] in 2.197s
+Querying for image frame001.png [2/63] in 2.084s
+  image_id=2, image_name=frame001.png, score=0.510868
+  image_id=1, image_name=frame000.png, score=0.098281
+Indexing image [3/63] in 2.102s
+Querying for image frame002.png [3/63] in 2.010s
+  image_id=3, image_name=frame002.png, score=0.480111
+  image_id=2, image_name=frame001.png, score=0.082755
+  image_id=1, image_name=frame000.png, score=0.069931
+Indexing image [4/63] in 2.021s
+Querying for image frame003.png [4/63] in 1.940s
+  image_id=4, image_name=frame003.png, score=0.467717
+  image_id=3, image_name=frame002.png, score=0.079574
+  image_id=2, image_name=frame001.png, score=0.062789
+  image_id=1, image_name=frame000.png, score=0.056718
+Indexing image [5/63] in 1.904s
+Querying for image frame004.png [5/63] in 1.833s
+  image_id=5, image_name=frame004.png, score=0.457295
+  image_id=4, image_name=frame003.png, score=0.080852
+  image_id=3, image_name=frame002.png, score=0.056317
+  image_id=1, image_name=frame000.png, score=0.049996
+  image_id=2, image_name=frame001.png, score=0.047110
+Indexing image [6/63] in 1.863s
+Querying for image frame005.png [6/63] in 1.845s
+  image_id=6, image_name=frame005.png, score=0.449152
+  image_id=5, image_name=frame004.png, score=0.079645
+  image_id=4, image_name=frame003.png, score=0.056082
+  image_id=1, image_name=frame000.png, score=0.046547
+  image_id=3, image_name=frame002.png, score=0.042617
+  image_id=2, image_name=frame001.png, score=0.040636
+Indexing image [7/63] in 1.796s
+Querying for image frame006.png [7/63] in 1.809s
+  image_id=7, image_name=frame006.png, score=0.443316
+  image_id=6, image_name=frame005.png, score=0.081671
+  image_id=5, image_name=frame004.png, score=0.049912
+  image_id=4, image_name=frame003.png, score=0.043472
+  image_id=1, image_name=frame000.png, score=0.042520
+  image_id=3, image_name=frame002.png, score=0.039876
+  image_id=2, image_name=frame001.png, score=0.039274
+Indexing image [8/63] in 2.043s
+Querying for image frame007.png [8/63] in 2.003s
+  image_id=8, image_name=frame007.png, score=0.446364
+  image_id=7, image_name=frame006.png, score=0.080642
+  image_id=6, image_name=frame005.png, score=0.054287
+  image_id=1, image_name=frame000.png, score=0.042905
+  image_id=5, image_name=frame004.png, score=0.042676
+  image_id=4, image_name=frame003.png, score=0.041820
+  image_id=3, image_name=frame002.png, score=0.039246
+  image_id=2, image_name=frame001.png, score=0.039082
+Indexing image [9/63] in 1.988s
+Querying for image frame008.png [9/63] in 1.956s
+  image_id=9, image_name=frame008.png, score=0.440617
+  image_id=8, image_name=frame007.png, score=0.094059
+  image_id=7, image_name=frame006.png, score=0.056011
+  image_id=6, image_name=frame005.png, score=0.042132
+  image_id=1, image_name=frame000.png, score=0.039980
+  image_id=4, image_name=frame003.png, score=0.039629
+  image_id=3, image_name=frame002.png, score=0.037371
+  image_id=5, image_name=frame004.png, score=0.036436
+Indexing image [10/63] in 1.831s
+Querying for image frame009.png [10/63] in 1.757s
+  image_id=10, image_name=frame009.png, score=0.437445
+  image_id=9, image_name=frame008.png, score=0.091884
+  image_id=8, image_name=frame007.png, score=0.056095
+  image_id=7, image_name=frame006.png, score=0.039715
+  image_id=3, image_name=frame002.png, score=0.036722
+  image_id=2, image_name=frame001.png, score=0.036046
+  image_id=5, image_name=frame004.png, score=0.035914
+  image_id=1, image_name=frame000.png, score=0.035757
+Indexing image [11/63] in 1.730s
+Querying for image frame010.png [11/63] in 1.791s
+  image_id=11, image_name=frame010.png, score=0.444238
+  image_id=10, image_name=frame009.png, score=0.077683
+  image_id=9, image_name=frame008.png, score=0.054448
+  image_id=8, image_name=frame007.png, score=0.041274
+  image_id=1, image_name=frame000.png, score=0.035432
+  image_id=6, image_name=frame005.png, score=0.035341
+  image_id=7, image_name=frame006.png, score=0.035248
+  image_id=3, image_name=frame002.png, score=0.034289
+Indexing image [12/63] in 1.762s
+Querying for image frame011.png [12/63] in 1.726s
+  image_id=12, image_name=frame011.png, score=0.432955
+  image_id=11, image_name=frame010.png, score=0.077336
+  image_id=10, image_name=frame009.png, score=0.050213
+  image_id=9, image_name=frame008.png, score=0.038610
+  image_id=8, image_name=frame007.png, score=0.035580
+  image_id=1, image_name=frame000.png, score=0.035313
+  image_id=7, image_name=frame006.png, score=0.033213
+  image_id=3, image_name=frame002.png, score=0.032332
+Indexing image [13/63] in 1.960s
+Querying for image frame012.png [13/63] in 1.934s
+  image_id=13, image_name=frame012.png, score=0.433485
+  image_id=12, image_name=frame011.png, score=0.073783
+  image_id=11, image_name=frame010.png, score=0.046974
+  image_id=10, image_name=frame009.png, score=0.040412
+  image_id=9, image_name=frame008.png, score=0.038414
+  image_id=8, image_name=frame007.png, score=0.037450
+  image_id=1, image_name=frame000.png, score=0.035131
+  image_id=2, image_name=frame001.png, score=0.034384
+Indexing image [14/63] in 2.157s
+Querying for image frame013.png [14/63] in 2.047s
+  image_id=14, image_name=frame013.png, score=0.432254
+  image_id=13, image_name=frame012.png, score=0.075076
+  image_id=12, image_name=frame011.png, score=0.041799
+  image_id=11, image_name=frame010.png, score=0.039431
+  image_id=9, image_name=frame008.png, score=0.038142
+  image_id=10, image_name=frame009.png, score=0.037013
+  image_id=8, image_name=frame007.png, score=0.035016
+  image_id=2, image_name=frame001.png, score=0.034613
+Indexing image [15/63] in 2.259s
+Querying for image frame014.png [15/63] in 2.297s
+  image_id=15, image_name=frame014.png, score=0.435408
+  image_id=14, image_name=frame013.png, score=0.071087
+  image_id=13, image_name=frame012.png, score=0.046106
+  image_id=10, image_name=frame009.png, score=0.040366
+  image_id=11, image_name=frame010.png, score=0.037208
+  image_id=9, image_name=frame008.png, score=0.035889
+  image_id=2, image_name=frame001.png, score=0.034969
+  image_id=12, image_name=frame011.png, score=0.034905
+Indexing image [16/63] in 2.337s
+Querying for image frame015.png [16/63] in 2.477s
+  image_id=16, image_name=frame015.png, score=0.432227
+  image_id=15, image_name=frame014.png, score=0.086465
+  image_id=14, image_name=frame013.png, score=0.047204
+  image_id=12, image_name=frame011.png, score=0.039326
+  image_id=13, image_name=frame012.png, score=0.039305
+  image_id=11, image_name=frame010.png, score=0.038507
+  image_id=1, image_name=frame000.png, score=0.036954
+  image_id=10, image_name=frame009.png, score=0.035367
+Indexing image [17/63] in 3.510s
+Querying for image frame016.png [17/63] in 2.347s
+  image_id=17, image_name=frame016.png, score=0.425701
+  image_id=16, image_name=frame015.png, score=0.109372
+  image_id=15, image_name=frame014.png, score=0.066849
+  image_id=14, image_name=frame013.png, score=0.040865
+  image_id=13, image_name=frame012.png, score=0.035875
+  image_id=11, image_name=frame010.png, score=0.035597
+  image_id=1, image_name=frame000.png, score=0.035072
+  image_id=9, image_name=frame008.png, score=0.034743
+Indexing image [18/63] in 2.229s
+Querying for image frame017.png [18/63] in 2.097s
+  image_id=18, image_name=frame017.png, score=0.418277
+  image_id=17, image_name=frame016.png, score=0.094216
+  image_id=16, image_name=frame015.png, score=0.072664
+  image_id=15, image_name=frame014.png, score=0.050999
+  image_id=11, image_name=frame010.png, score=0.035310
+  image_id=14, image_name=frame013.png, score=0.034760
+  image_id=8, image_name=frame007.png, score=0.033773
+  image_id=13, image_name=frame012.png, score=0.033540
+Indexing image [19/63] in 1.711s
+Querying for image frame018.png [19/63] in 2.051s
+  image_id=19, image_name=frame018.png, score=0.440386
+  image_id=17, image_name=frame016.png, score=0.040623
+  image_id=18, image_name=frame017.png, score=0.037689
+  image_id=16, image_name=frame015.png, score=0.037216
+  image_id=15, image_name=frame014.png, score=0.034402
+  image_id=14, image_name=frame013.png, score=0.033921
+  image_id=13, image_name=frame012.png, score=0.032546
+  image_id=10, image_name=frame009.png, score=0.028872
+Indexing image [20/63] in 1.692s
+Querying for image frame019.png [20/63] in 1.469s
+  image_id=20, image_name=frame019.png, score=0.431785
+  image_id=19, image_name=frame018.png, score=0.079033
+  image_id=16, image_name=frame015.png, score=0.035012
+  image_id=15, image_name=frame014.png, score=0.033975
+  image_id=18, image_name=frame017.png, score=0.033342
+  image_id=17, image_name=frame016.png, score=0.032742
+  image_id=13, image_name=frame012.png, score=0.031118
+  image_id=14, image_name=frame013.png, score=0.029695
+Indexing image [21/63] in 1.406s
+Querying for image frame020.png [21/63] in 1.391s
+  image_id=21, image_name=frame020.png, score=0.418963
+  image_id=20, image_name=frame019.png, score=0.089548
+  image_id=19, image_name=frame018.png, score=0.037783
+  image_id=18, image_name=frame017.png, score=0.033072
+  image_id=17, image_name=frame016.png, score=0.032681
+  image_id=16, image_name=frame015.png, score=0.031625
+  image_id=15, image_name=frame014.png, score=0.030350
+  image_id=9, image_name=frame008.png, score=0.028981
+Indexing image [22/63] in 1.107s
+Querying for image frame021.png [22/63] in 1.082s
+  image_id=22, image_name=frame021.png, score=0.435137
+  image_id=21, image_name=frame020.png, score=0.062480
+  image_id=20, image_name=frame019.png, score=0.038141
+  image_id=19, image_name=frame018.png, score=0.032820
+  image_id=17, image_name=frame016.png, score=0.026703
+  image_id=16, image_name=frame015.png, score=0.026494
+  image_id=1, image_name=frame000.png, score=0.024765
+  image_id=18, image_name=frame017.png, score=0.024353
+Indexing image [23/63] in 1.265s
+Querying for image frame022.png [23/63] in 1.308s
+  image_id=23, image_name=frame022.png, score=0.425569
+  image_id=22, image_name=frame021.png, score=0.091227
+  image_id=20, image_name=frame019.png, score=0.040790
+  image_id=19, image_name=frame018.png, score=0.039932
+  image_id=21, image_name=frame020.png, score=0.037977
+  image_id=17, image_name=frame016.png, score=0.028385
+  image_id=15, image_name=frame014.png, score=0.027659
+  image_id=18, image_name=frame017.png, score=0.025883
+Indexing image [24/63] in 1.225s
+Querying for image frame023.png [24/63] in 1.271s
+  image_id=24, image_name=frame023.png, score=0.428985
+  image_id=23, image_name=frame022.png, score=0.088329
+  image_id=22, image_name=frame021.png, score=0.044720
+  image_id=20, image_name=frame019.png, score=0.040504
+  image_id=19, image_name=frame018.png, score=0.037895
+  image_id=21, image_name=frame020.png, score=0.033560
+  image_id=9, image_name=frame008.png, score=0.028328
+  image_id=16, image_name=frame015.png, score=0.027806
+Indexing image [25/63] in 1.321s
+Querying for image frame024.png [25/63] in 1.317s
+  image_id=25, image_name=frame024.png, score=0.422191
+  image_id=24, image_name=frame023.png, score=0.105779
+  image_id=23, image_name=frame022.png, score=0.056870
+  image_id=20, image_name=frame019.png, score=0.037942
+  image_id=19, image_name=frame018.png, score=0.034629
+  image_id=22, image_name=frame021.png, score=0.034091
+  image_id=21, image_name=frame020.png, score=0.033156
+  image_id=16, image_name=frame015.png, score=0.028129
+Indexing image [26/63] in 1.471s
+Querying for image frame025.png [26/63] in 1.501s
+  image_id=26, image_name=frame025.png, score=0.415584
+  image_id=25, image_name=frame024.png, score=0.084004
+  image_id=24, image_name=frame023.png, score=0.050468
+  image_id=20, image_name=frame019.png, score=0.031447
+  image_id=21, image_name=frame020.png, score=0.031153
+  image_id=17, image_name=frame016.png, score=0.030568
+  image_id=22, image_name=frame021.png, score=0.029179
+  image_id=23, image_name=frame022.png, score=0.028819
+Indexing image [27/63] in 1.530s
+Querying for image frame026.png [27/63] in 1.431s
+  image_id=27, image_name=frame026.png, score=0.426038
+  image_id=26, image_name=frame025.png, score=0.078927
+  image_id=25, image_name=frame024.png, score=0.045084
+  image_id=24, image_name=frame023.png, score=0.039134
+  image_id=1, image_name=frame000.png, score=0.029430
+  image_id=16, image_name=frame015.png, score=0.028420
+  image_id=9, image_name=frame008.png, score=0.028062
+  image_id=17, image_name=frame016.png, score=0.027918
+Indexing image [28/63] in 1.445s
+Querying for image frame027.png [28/63] in 1.443s
+  image_id=28, image_name=frame027.png, score=0.416235
+  image_id=27, image_name=frame026.png, score=0.079689
+  image_id=26, image_name=frame025.png, score=0.054060
+  image_id=25, image_name=frame024.png, score=0.034865
+  image_id=20, image_name=frame019.png, score=0.028820
+  image_id=1, image_name=frame000.png, score=0.028618
+  image_id=3, image_name=frame002.png, score=0.028427
+  image_id=17, image_name=frame016.png, score=0.028220
+Indexing image [29/63] in 1.473s
+Querying for image frame028.png [29/63] in 1.485s
+  image_id=29, image_name=frame028.png, score=0.425779
+  image_id=28, image_name=frame027.png, score=0.098897
+  image_id=27, image_name=frame026.png, score=0.068127
+  image_id=26, image_name=frame025.png, score=0.041830
+  image_id=25, image_name=frame024.png, score=0.031151
+  image_id=24, image_name=frame023.png, score=0.030110
+  image_id=23, image_name=frame022.png, score=0.029753
+  image_id=22, image_name=frame021.png, score=0.029279
+Indexing image [30/63] in 1.391s
+Querying for image frame029.png [30/63] in 1.409s
+  image_id=30, image_name=frame029.png, score=0.420877
+  image_id=28, image_name=frame027.png, score=0.050223
+  image_id=29, image_name=frame028.png, score=0.045868
+  image_id=27, image_name=frame026.png, score=0.044975
+  image_id=26, image_name=frame025.png, score=0.036542
+  image_id=24, image_name=frame023.png, score=0.034391
+  image_id=25, image_name=frame024.png, score=0.033494
+  image_id=1, image_name=frame000.png, score=0.030807
+Indexing image [31/63] in 1.558s
+Querying for image frame030.png [31/63] in 1.563s
+  image_id=31, image_name=frame030.png, score=0.417806
+  image_id=30, image_name=frame029.png, score=0.098784
+  image_id=28, image_name=frame027.png, score=0.045258
+  image_id=29, image_name=frame028.png, score=0.042442
+  image_id=27, image_name=frame026.png, score=0.041707
+  image_id=26, image_name=frame025.png, score=0.038320
+  image_id=25, image_name=frame024.png, score=0.033904
+  image_id=9, image_name=frame008.png, score=0.031685
+Indexing image [32/63] in 1.717s
+Querying for image frame031.png [32/63] in 1.712s
+  image_id=32, image_name=frame031.png, score=0.420815
+  image_id=31, image_name=frame030.png, score=0.078231
+  image_id=30, image_name=frame029.png, score=0.061035
+  image_id=28, image_name=frame027.png, score=0.040121
+  image_id=27, image_name=frame026.png, score=0.039515
+  image_id=29, image_name=frame028.png, score=0.037606
+  image_id=26, image_name=frame025.png, score=0.034821
+  image_id=1, image_name=frame000.png, score=0.031145
+Indexing image [33/63] in 1.781s
+Querying for image frame032.png [33/63] in 1.783s
+  image_id=33, image_name=frame032.png, score=0.414281
+  image_id=32, image_name=frame031.png, score=0.089240
+  image_id=31, image_name=frame030.png, score=0.047536
+  image_id=30, image_name=frame029.png, score=0.041354
+  image_id=28, image_name=frame027.png, score=0.035559
+  image_id=29, image_name=frame028.png, score=0.031713
+  image_id=4, image_name=frame003.png, score=0.031490
+  image_id=27, image_name=frame026.png, score=0.030955
+Indexing image [34/63] in 1.757s
+Querying for image frame033.png [34/63] in 1.771s
+  image_id=34, image_name=frame033.png, score=0.411886
+  image_id=33, image_name=frame032.png, score=0.081195
+  image_id=32, image_name=frame031.png, score=0.052993
+  image_id=31, image_name=frame030.png, score=0.038892
+  image_id=30, image_name=frame029.png, score=0.036129
+  image_id=28, image_name=frame027.png, score=0.031662
+  image_id=1, image_name=frame000.png, score=0.031247
+  image_id=16, image_name=frame015.png, score=0.030847
+Indexing image [35/63] in 1.752s
+Querying for image frame034.png [35/63] in 1.759s
+  image_id=35, image_name=frame034.png, score=0.416574
+  image_id=34, image_name=frame033.png, score=0.064073
+  image_id=33, image_name=frame032.png, score=0.048381
+  image_id=32, image_name=frame031.png, score=0.040717
+  image_id=31, image_name=frame030.png, score=0.035180
+  image_id=30, image_name=frame029.png, score=0.034136
+  image_id=1, image_name=frame000.png, score=0.032451
+  image_id=2, image_name=frame001.png, score=0.031665
+Indexing image [36/63] in 1.762s
+Querying for image frame035.png [36/63] in 1.775s
+  image_id=36, image_name=frame035.png, score=0.416257
+  image_id=35, image_name=frame034.png, score=0.074993
+  image_id=34, image_name=frame033.png, score=0.040852
+  image_id=33, image_name=frame032.png, score=0.039002
+  image_id=32, image_name=frame031.png, score=0.036204
+  image_id=1, image_name=frame000.png, score=0.032562
+  image_id=3, image_name=frame002.png, score=0.030500
+  image_id=10, image_name=frame009.png, score=0.030126
+Indexing image [37/63] in 1.796s
+Querying for image frame036.png [37/63] in 1.819s
+  image_id=37, image_name=frame036.png, score=0.408627
+  image_id=36, image_name=frame035.png, score=0.070923
+  image_id=35, image_name=frame034.png, score=0.049042
+  image_id=34, image_name=frame033.png, score=0.036506
+  image_id=33, image_name=frame032.png, score=0.035902
+  image_id=4, image_name=frame003.png, score=0.031416
+  image_id=32, image_name=frame031.png, score=0.030641
+  image_id=2, image_name=frame001.png, score=0.030603
+Indexing image [38/63] in 1.848s
+Querying for image frame037.png [38/63] in 1.879s
+  image_id=38, image_name=frame037.png, score=0.410022
+  image_id=37, image_name=frame036.png, score=0.066233
+  image_id=36, image_name=frame035.png, score=0.043242
+  image_id=35, image_name=frame034.png, score=0.035890
+  image_id=33, image_name=frame032.png, score=0.033720
+  image_id=34, image_name=frame033.png, score=0.032631
+  image_id=17, image_name=frame016.png, score=0.031917
+  image_id=1, image_name=frame000.png, score=0.031552
+Indexing image [39/63] in 1.918s
+Querying for image frame038.png [39/63] in 1.933s
+  image_id=39, image_name=frame038.png, score=0.416961
+  image_id=38, image_name=frame037.png, score=0.067193
+  image_id=37, image_name=frame036.png, score=0.038310
+  image_id=36, image_name=frame035.png, score=0.035402
+  image_id=35, image_name=frame034.png, score=0.032871
+  image_id=2, image_name=frame001.png, score=0.032579
+  image_id=3, image_name=frame002.png, score=0.032064
+  image_id=1, image_name=frame000.png, score=0.031724
+Indexing image [40/63] in 2.027s
+Querying for image frame039.png [40/63] in 2.051s
+  image_id=40, image_name=frame039.png, score=0.424805
+  image_id=39, image_name=frame038.png, score=0.056074
+  image_id=38, image_name=frame037.png, score=0.039486
+  image_id=35, image_name=frame034.png, score=0.033933
+  image_id=2, image_name=frame001.png, score=0.033805
+  image_id=36, image_name=frame035.png, score=0.033042
+  image_id=37, image_name=frame036.png, score=0.033008
+  image_id=1, image_name=frame000.png, score=0.032256
+Indexing image [41/63] in 2.046s
+Querying for image frame040.png [41/63] in 2.065s
+  image_id=41, image_name=frame040.png, score=0.421068
+  image_id=40, image_name=frame039.png, score=0.052809
+  image_id=39, image_name=frame038.png, score=0.039643
+  image_id=38, image_name=frame037.png, score=0.034974
+  image_id=1, image_name=frame000.png, score=0.034882
+  image_id=4, image_name=frame003.png, score=0.033699
+  image_id=36, image_name=frame035.png, score=0.033510
+  image_id=2, image_name=frame001.png, score=0.033172
+Indexing image [42/63] in 2.051s
+Querying for image frame041.png [42/63] in 2.097s
+  image_id=42, image_name=frame041.png, score=0.418968
+  image_id=41, image_name=frame040.png, score=0.052659
+  image_id=40, image_name=frame039.png, score=0.036325
+  image_id=1, image_name=frame000.png, score=0.034173
+  image_id=4, image_name=frame003.png, score=0.033267
+  image_id=38, image_name=frame037.png, score=0.032597
+  image_id=2, image_name=frame001.png, score=0.032586
+  image_id=39, image_name=frame038.png, score=0.032478
+Indexing image [43/63] in 2.080s
+Querying for image frame042.png [43/63] in 2.125s
+  image_id=43, image_name=frame042.png, score=0.419885
+  image_id=42, image_name=frame041.png, score=0.057627
+  image_id=41, image_name=frame040.png, score=0.036355
+  image_id=40, image_name=frame039.png, score=0.033202
+  image_id=39, image_name=frame038.png, score=0.032774
+  image_id=3, image_name=frame002.png, score=0.032369
+  image_id=1, image_name=frame000.png, score=0.032109
+  image_id=2, image_name=frame001.png, score=0.031453
+Indexing image [44/63] in 2.058s
+Querying for image frame043.png [44/63] in 2.121s
+  image_id=44, image_name=frame043.png, score=0.426906
+  image_id=43, image_name=frame042.png, score=0.054078
+  image_id=42, image_name=frame041.png, score=0.038451
+  image_id=2, image_name=frame001.png, score=0.034532
+  image_id=41, image_name=frame040.png, score=0.034196
+  image_id=3, image_name=frame002.png, score=0.033731
+  image_id=1, image_name=frame000.png, score=0.032969
+  image_id=4, image_name=frame003.png, score=0.032523
+Indexing image [45/63] in 2.067s
+Querying for image frame044.png [45/63] in 2.118s
+  image_id=45, image_name=frame044.png, score=0.433345
+  image_id=44, image_name=frame043.png, score=0.058884
+  image_id=43, image_name=frame042.png, score=0.037439
+  image_id=42, image_name=frame041.png, score=0.033659
+  image_id=1, image_name=frame000.png, score=0.033456
+  image_id=41, image_name=frame040.png, score=0.033203
+  image_id=3, image_name=frame002.png, score=0.032711
+  image_id=2, image_name=frame001.png, score=0.032503
+Indexing image [46/63] in 2.277s
+Querying for image frame045.png [46/63] in 2.350s
+  image_id=46, image_name=frame045.png, score=0.420191
+  image_id=45, image_name=frame044.png, score=0.057276
+  image_id=44, image_name=frame043.png, score=0.041734
+  image_id=2, image_name=frame001.png, score=0.037402
+  image_id=1, image_name=frame000.png, score=0.036873
+  image_id=4, image_name=frame003.png, score=0.035589
+  image_id=41, image_name=frame040.png, score=0.034970
+  image_id=43, image_name=frame042.png, score=0.034434
+Indexing image [47/63] in 2.140s
+Querying for image frame046.png [47/63] in 2.232s
+  image_id=47, image_name=frame046.png, score=0.415196
+  image_id=46, image_name=frame045.png, score=0.064595
+  image_id=45, image_name=frame044.png, score=0.042753
+  image_id=44, image_name=frame043.png, score=0.036720
+  image_id=1, image_name=frame000.png, score=0.035495
+  image_id=2, image_name=frame001.png, score=0.035071
+  image_id=42, image_name=frame041.png, score=0.033556
+  image_id=5, image_name=frame004.png, score=0.033449
+Indexing image [48/63] in 2.158s
+Querying for image frame047.png [48/63] in 2.254s
+  image_id=48, image_name=frame047.png, score=0.419092
+  image_id=47, image_name=frame046.png, score=0.061195
+  image_id=46, image_name=frame045.png, score=0.043175
+  image_id=45, image_name=frame044.png, score=0.038558
+  image_id=2, image_name=frame001.png, score=0.036540
+  image_id=44, image_name=frame043.png, score=0.035932
+  image_id=3, image_name=frame002.png, score=0.035186
+  image_id=1, image_name=frame000.png, score=0.035101
+Indexing image [49/63] in 2.231s
+Querying for image frame048.png [49/63] in 2.355s
+  image_id=49, image_name=frame048.png, score=0.412783
+  image_id=48, image_name=frame047.png, score=0.064176
+  image_id=1, image_name=frame000.png, score=0.045663
+  image_id=47, image_name=frame046.png, score=0.045184
+  image_id=46, image_name=frame045.png, score=0.040707
+  image_id=2, image_name=frame001.png, score=0.037017
+  image_id=4, image_name=frame003.png, score=0.035652
+  image_id=44, image_name=frame043.png, score=0.034823
+Indexing image [50/63] in 2.357s
+Querying for image frame049.png [50/63] in 2.548s
+  image_id=50, image_name=frame049.png, score=0.409058
+  image_id=49, image_name=frame048.png, score=0.068825
+  image_id=1, image_name=frame000.png, score=0.067444
+  image_id=2, image_name=frame001.png, score=0.044324
+  image_id=48, image_name=frame047.png, score=0.040438
+  image_id=3, image_name=frame002.png, score=0.039426
+  image_id=4, image_name=frame003.png, score=0.039030
+  image_id=46, image_name=frame045.png, score=0.038106
+Indexing image [51/63] in 2.546s
+Querying for image frame050.png [51/63] in 2.812s
+  image_id=51, image_name=frame050.png, score=0.409984
+  image_id=1, image_name=frame000.png, score=0.110880
+  image_id=50, image_name=frame049.png, score=0.078396
+  image_id=2, image_name=frame001.png, score=0.063361
+  image_id=49, image_name=frame048.png, score=0.045832
+  image_id=3, image_name=frame002.png, score=0.045356
+  image_id=4, image_name=frame003.png, score=0.042148
+  image_id=5, image_name=frame004.png, score=0.038686
+Indexing image [52/63] in 2.351s
+Querying for image frame051.png [52/63] in 2.579s
+  image_id=52, image_name=frame051.png, score=0.400299
+  image_id=2, image_name=frame001.png, score=0.110816
+  image_id=3, image_name=frame002.png, score=0.071521
+  image_id=51, image_name=frame050.png, score=0.070141
+  image_id=1, image_name=frame000.png, score=0.067036
+  image_id=4, image_name=frame003.png, score=0.054212
+  image_id=50, image_name=frame049.png, score=0.046259
+  image_id=5, image_name=frame004.png, score=0.040186
+Indexing image [53/63] in 1.789s
+Querying for image frame052.png [53/63] in 1.825s
+  image_id=53, image_name=frame052.png, score=0.409407
+  image_id=31, image_name=frame030.png, score=0.045767
+  image_id=32, image_name=frame031.png, score=0.045409
+  image_id=30, image_name=frame029.png, score=0.044339
+  image_id=33, image_name=frame032.png, score=0.037996
+  image_id=27, image_name=frame026.png, score=0.031275
+  image_id=34, image_name=frame033.png, score=0.031081
+  image_id=35, image_name=frame034.png, score=0.030144
+Indexing image [54/63] in 1.762s
+Querying for image frame053.png [54/63] in 1.804s
+  image_id=54, image_name=frame053.png, score=0.413019
+  image_id=53, image_name=frame052.png, score=0.090556
+  image_id=32, image_name=frame031.png, score=0.044700
+  image_id=33, image_name=frame032.png, score=0.040167
+  image_id=31, image_name=frame030.png, score=0.039502
+  image_id=30, image_name=frame029.png, score=0.035573
+  image_id=35, image_name=frame034.png, score=0.032533
+  image_id=36, image_name=frame035.png, score=0.031191
+Indexing image [55/63] in 1.979s
+Querying for image frame054.png [55/63] in 2.043s
+  image_id=55, image_name=frame054.png, score=0.410385
+  image_id=54, image_name=frame053.png, score=0.064536
+  image_id=53, image_name=frame052.png, score=0.043327
+  image_id=33, image_name=frame032.png, score=0.043235
+  image_id=34, image_name=frame033.png, score=0.042397
+  image_id=32, image_name=frame031.png, score=0.037831
+  image_id=35, image_name=frame034.png, score=0.036859
+  image_id=36, image_name=frame035.png, score=0.033237
+Indexing image [56/63] in 1.738s
+Querying for image frame055.png [56/63] in 1.767s
+  image_id=56, image_name=frame055.png, score=0.402819
+  image_id=55, image_name=frame054.png, score=0.098036
+  image_id=54, image_name=frame053.png, score=0.055052
+  image_id=53, image_name=frame052.png, score=0.039173
+  image_id=33, image_name=frame032.png, score=0.036473
+  image_id=35, image_name=frame034.png, score=0.035174
+  image_id=32, image_name=frame031.png, score=0.033546
+  image_id=34, image_name=frame033.png, score=0.032843
+Indexing image [57/63] in 1.655s
+Querying for image frame056.png [57/63] in 1.659s
+  image_id=57, image_name=frame056.png, score=0.403652
+  image_id=56, image_name=frame055.png, score=0.082792
+  image_id=55, image_name=frame054.png, score=0.063395
+  image_id=54, image_name=frame053.png, score=0.043982
+  image_id=53, image_name=frame052.png, score=0.034911
+  image_id=34, image_name=frame033.png, score=0.031575
+  image_id=33, image_name=frame032.png, score=0.030847
+  image_id=32, image_name=frame031.png, score=0.029753
+Indexing image [58/63] in 1.775s
+Querying for image frame057.png [58/63] in 1.783s
+  image_id=58, image_name=frame057.png, score=0.412508
+  image_id=56, image_name=frame055.png, score=0.083857
+  image_id=55, image_name=frame054.png, score=0.074427
+  image_id=57, image_name=frame056.png, score=0.061113
+  image_id=54, image_name=frame053.png, score=0.041407
+  image_id=35, image_name=frame034.png, score=0.037582
+  image_id=34, image_name=frame033.png, score=0.036454
+  image_id=53, image_name=frame052.png, score=0.034552
+Indexing image [59/63] in 1.881s
+Querying for image frame058.png [59/63] in 1.898s
+  image_id=59, image_name=frame058.png, score=0.402651
+  image_id=58, image_name=frame057.png, score=0.062579
+  image_id=56, image_name=frame055.png, score=0.044552
+  image_id=55, image_name=frame054.png, score=0.042165
+  image_id=36, image_name=frame035.png, score=0.039487
+  image_id=35, image_name=frame034.png, score=0.037949
+  image_id=37, image_name=frame036.png, score=0.035862
+  image_id=57, image_name=frame056.png, score=0.035373
+Indexing image [60/63] in 2.032s
+Querying for image frame059.png [60/63] in 2.114s
+  image_id=60, image_name=frame059.png, score=0.409866
+  image_id=59, image_name=frame058.png, score=0.067503
+  image_id=58, image_name=frame057.png, score=0.042287
+  image_id=37, image_name=frame036.png, score=0.041850
+  image_id=36, image_name=frame035.png, score=0.039970
+  image_id=38, image_name=frame037.png, score=0.039308
+  image_id=55, image_name=frame054.png, score=0.037345
+  image_id=56, image_name=frame055.png, score=0.035808
+Indexing image [61/63] in 2.251s
+Querying for image frame060.png [61/63] in 2.375s
+  image_id=61, image_name=frame060.png, score=0.413599
+  image_id=60, image_name=frame059.png, score=0.057033
+  image_id=38, image_name=frame037.png, score=0.049219
+  image_id=37, image_name=frame036.png, score=0.042686
+  image_id=59, image_name=frame058.png, score=0.042526
+  image_id=36, image_name=frame035.png, score=0.036313
+  image_id=55, image_name=frame054.png, score=0.035777
+  image_id=58, image_name=frame057.png, score=0.035570
+Indexing image [62/63] in 2.118s
+Querying for image frame061.png [62/63] in 2.215s
+  image_id=62, image_name=frame061.png, score=0.403631
+  image_id=61, image_name=frame060.png, score=0.059628
+  image_id=60, image_name=frame059.png, score=0.044573
+  image_id=38, image_name=frame037.png, score=0.040388
+  image_id=59, image_name=frame058.png, score=0.039992
+  image_id=39, image_name=frame038.png, score=0.037762
+  image_id=55, image_name=frame054.png, score=0.033760
+  image_id=50, image_name=frame049.png, score=0.032233
+Indexing image [63/63] in 2.051s
+Querying for image frame062.png [63/63] in 2.140s
+  image_id=63, image_name=frame062.png, score=0.398809
+  image_id=62, image_name=frame061.png, score=0.069232
+  image_id=61, image_name=frame060.png, score=0.044028
+  image_id=59, image_name=frame058.png, score=0.039220
+  image_id=60, image_name=frame059.png, score=0.038428
+  image_id=39, image_name=frame038.png, score=0.037113
+  image_id=38, image_name=frame037.png, score=0.034442
+  image_id=58, image_name=frame057.png, score=0.034407

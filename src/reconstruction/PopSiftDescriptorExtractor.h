@@ -10,32 +10,22 @@
 #include <popsift/popsift.h>
 
 namespace theia {
-    class PopSiftDescriptorExtractor : public DescriptorExtractor {
+    class PopSiftDescriptorExtractor {
     public:
         explicit PopSiftDescriptorExtractor(const popsift::Config& options);
-        ~PopSiftDescriptorExtractor() override;
-
-        // This method should be called before using any of the descriptor extractors.
-        bool Initialize() override;
-
-        // Computes a descriptor at a single keypoint.
-        bool ComputeDescriptor(const FloatImage& image,
-                               const Keypoint& keypoint,
-                               Eigen::VectorXf* descriptor) override;
-
-        // Compute multiple descriptors for keypoints from a single image.
-        bool ComputeDescriptors(const FloatImage& image,
-                                std::vector<Keypoint>* keypoints,
-                                std::vector<Eigen::VectorXf>* descriptors) override;
+        ~PopSiftDescriptorExtractor();
 
         // Detect keypoints using the Sift keypoint detector and extracts them at the same time.
         bool DetectAndExtractDescriptors(
                 const FloatImage& image,
                 std::vector<Keypoint>* keypoints,
-                std::vector<Eigen::VectorXf>* descriptors) override;
+                std::vector<Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>>* descriptors);
 
     private:
         PopSift popsift_;
+
+        Eigen::Matrix<uint8_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+        FeatureDescriptorsToUnsignedByte(const Eigen::MatrixXf &descriptors);
     };
 }
 

@@ -37,6 +37,11 @@ set_property(TARGET imgui PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libimgui
 # Theia
 find_package(Theia REQUIRED)
 
+# COLMAP
+find_package(COLMAP REQUIRED)
+list(REMOVE_ITEM COLMAP_LIBRARIES flann)
+link_directories(${COLMAP_LINK_DIRS})
+
 # OpenMVS and dependencies
 find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
@@ -55,6 +60,7 @@ set(SOURCE_FILES
         src/reconstruction/RealtimeReconstructionBuilder.cpp
         src/reconstruction/RealtimeFeatureMatcher.cpp
         src/reconstruction/PopSiftDescriptorExtractor.cpp
+        src/reconstruction/ImageRetrieval.cpp
         src/plugins/WebcamPlugin.cpp
         src/plugins/IPCameraPlugin.cpp
         src/plugins/ReconstructionPlugin.cpp
@@ -71,6 +77,7 @@ set(INCLUDE_DIRS
         ${LIBIGL_PATH}/external/glfw/include
         ${LIBIGL_INCLUDE_DIR}
         ${THEIA_INCLUDE_DIRS}
+        ${COLMAP_INCLUDE_DIRS}
         ${OpenMVS_INCLUDE_DIRS}
         ${CUDA_INCLUDE_DIRS}
         ${CURL_INCLUDE_DIRS})
@@ -90,6 +97,7 @@ set(EXTERNAL_LIBRARIES
         Threads::Threads
         ${THEIA_LIBRARIES}
         PopSift::popsift
+        ${COLMAP_LIBRARIES}
         ${Boost_LIBRARIES}
         ${OpenMVS_LIBRARIES}
         ${CUDA_LIBRARIES}
@@ -118,3 +126,29 @@ add_executable(realtime_reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FIL
 target_compile_definitions(realtime_reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY)
 target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
+
+add_executable(retrieval_seq main_retrieval_seq.cpp)
+target_include_directories(retrieval_seq PUBLIC
+        ${COLMAP_INCLUDE_DIRS}
+        ${THEIA_INCLUDE_DIRS})
+target_link_libraries(retrieval_seq
+        ${COLMAP_LIBRARIES}
+        ${THEIA_LIBRARIES}
+        OpenMP::OpenMP_CXX)
+
+add_executable(retrieval_test
+        main_retrieval_test.cpp
+        src/reconstruction/ImageRetrieval.cpp
+        src/reconstruction/PopSiftDescriptorExtractor.cpp
+        src/reconstruction/SiftGpuDescriptorExtractor.cpp)
+target_include_directories(retrieval_test PUBLIC
+        ${CMAKE_SOURCE_DIR}/src
+        ${COLMAP_INCLUDE_DIRS}
+        ${THEIA_INCLUDE_DIRS}
+        ${CUDA_INCLUDE_DIRS})
+target_link_libraries(retrieval_test
+        ${COLMAP_LIBRARIES}
+        ${THEIA_LIBRARIES}
+        ${CUDA_LIBRARIES}
+        PopSift::popsift
+        OpenMP::OpenMP_CXX)
