@@ -25,17 +25,17 @@ int main(int argc, char** argv) {
     }
 
     // Prepare objects
-    popsift::Config sift_options;
-    sift_options.setMode(popsift::Config::VLFeat);
-    sift_options.setNormMode(popsift::Config::NormMode::RootSift);
-    sift_options.setOctaves(4);
-    sift_options.setLevels(3);
-    sift_options.setEdgeLimit(10.0f);
-    sift_options.setThreshold(0.08f);
-    theia::PopSiftDescriptorExtractor descriptor_extractor(sift_options);
+    // popsift::Config sift_options;
+    // sift_options.setMode(popsift::Config::VLFeat);
+    // sift_options.setNormMode(popsift::Config::NormMode::RootSift);
+    // sift_options.setOctaves(4);
+    // sift_options.setLevels(3);
+    // sift_options.setEdgeLimit(10.0f);
+    // sift_options.setThreshold(0.08f);
+    // theia::PopSiftDescriptorExtractor descriptor_extractor(sift_options);
 
-    // colmap::SiftExtractionOptions sift_options;
-    // theia::SiftGpuDescriptorExtractor descriptor_extractor(sift_options);
+    colmap::SiftExtractionOptions sift_options;
+    theia::SiftGpuDescriptorExtractor descriptor_extractor(sift_options);
 
     ImageRetrieval::Options image_retrieval_options;
     image_retrieval_options.vocab_tree_path =
@@ -52,10 +52,15 @@ int main(int argc, char** argv) {
         // Extract features
         theia::FloatImage image(image_fullpath);
         std::vector<theia::Keypoint> keypoints;
-        std::vector<Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>> descriptors;
+        std::vector<Eigen::VectorXf> descriptors;
+
+        timer.Restart();
+        std::cout << colmap::StringPrintf("Extracting features [%d/%d]", i + 1, image_names.size()) << std::flush;
 
         descriptor_extractor.DetectAndExtractDescriptors(
                 image, &keypoints, &descriptors);
+
+        std::cout << colmap::StringPrintf(" in %.3fs", timer.ElapsedSeconds()) << std::endl;
 
         // Debug
         // std::cout << "keypoint: " << keypoints[0].x() << ", " << keypoints[0].y() << std::endl;

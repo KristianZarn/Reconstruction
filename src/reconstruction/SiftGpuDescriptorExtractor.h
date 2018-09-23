@@ -17,11 +17,11 @@ namespace theia {
     public:
         explicit SiftGpuDescriptorExtractor(const colmap::SiftExtractionOptions &options);
 
-        // Detect keypoints using the Sift keypoint detector and extracts them at the same time.
+        // Detect keypoints using the Sift keypoint detector and extracts descriptors.
         bool DetectAndExtractDescriptors(
                 const FloatImage &image,
                 std::vector<Keypoint> *keypoints,
-                std::vector<Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>> *descriptors);
+                std::vector<Eigen::VectorXf> *descriptors);
 
     private:
         colmap::SiftExtractionOptions options_;

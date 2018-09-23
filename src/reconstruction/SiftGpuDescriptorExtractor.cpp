@@ -2,6 +2,7 @@
 
 #include <colmap/util/bitmap.h>
 #include <colmap/util/timer.h>
+#include <colmap/util/opengl_utils.h>
 #include <colmap/feature/utils.h>
 
 namespace theia {
@@ -16,43 +17,44 @@ namespace theia {
     bool SiftGpuDescriptorExtractor::DetectAndExtractDescriptors(
             const FloatImage &img,
             std::vector<Keypoint> *keypoints,
-            std::vector<Eigen::Matrix<uint8_t, Eigen::Dynamic, 1>> *descriptors) {
+            std::vector<Eigen::VectorXf> *descriptors) {
 
         // Convert image to appropriate format
         FloatImage gray_img = img.AsGrayscaleImage();
-
-        colmap::Bitmap bitmap;
-        bitmap.Allocate(gray_img.Width(), gray_img.Height(), false);
-        for (int x = 0; x < gray_img.Width(); x++) {
-            for (int y = 0; y < gray_img.Height(); y++) {
-                float intensity_float = gray_img.GetXY(x, y, 0);
-                auto intensity_uint8 = static_cast<uint8_t>(intensity_float * 255);
-                bitmap.SetPixel(x, y, colmap::BitmapColor<uint8_t>(intensity_uint8));
-            }
-        }
+        gray_img.ScalePixels(255.0f);
 
         // Extract features
-        colmap::FeatureKeypoints colmap_keypoints;
-        colmap::FeatureDescriptors colmap_descriptors;
-        bool success = colmap::ExtractSiftFeaturesGPU(
-                options_, bitmap, &sift_gpu_, &colmap_keypoints, &colmap_descriptors);
+        const int result = sift_gpu_.RunSIFT(gray_img.Width(), gray_img.Height(),
+                                             gray_img.Data(), GL_LUMINANCE, GL_FLOAT);
 
-        // colmap::ExtractTopScaleFeatures(&colmap_keypoints, &colmap_descriptors, options_.max_num_features);
+        // Download the extracted keypoints and descriptors
+        const auto num_features = static_cast<size_t>(sift_gpu_.GetFeatureNum());
 
-        // Convert to Theia format
-        auto num_features = colmap_keypoints.size();
-        for (int i = 0; i < num_features; i++) {
-            Keypoint keypoint(colmap_keypoints[i].x,
-                              colmap_keypoints[i].y,
-                              Keypoint::KeypointType::SIFT);
+        std::vector<SiftKeypoint> keypoints_siftgpu(num_features);
+        Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+                descriptors_siftgpu(num_features, 128);
 
-            keypoint.set_scale(colmap_keypoints[i].ComputeScale());
-            keypoint.set_orientation(colmap_keypoints[i].ComputeOrientation());
+        sift_gpu_.GetFeatureVector(keypoints_siftgpu.data(), descriptors_siftgpu.data());
 
-            keypoints->push_back(keypoint);
-            descriptors->emplace_back(colmap_descriptors.row(i));
+        // Normalize the descriptors
+        if (options_.normalization == colmap::SiftExtractionOptions::Normalization::L2) {
+            descriptors_siftgpu = colmap::L2NormalizeFeatureDescriptors(descriptors_siftgpu);
+        } else if (options_.normalization == colmap::SiftExtractionOptions::Normalization::L1_ROOT) {
+            descriptors_siftgpu = colmap::L1RootNormalizeFeatureDescriptors(descriptors_siftgpu);
         }
 
-        return success;
+        // Convert to Theia format
+        for (int i = 0; i < num_features; i++) {
+            Keypoint keypoint(keypoints_siftgpu[i].x,
+                              keypoints_siftgpu[i].y,
+                              Keypoint::KeypointType::SIFT);
+            keypoint.set_scale(keypoints_siftgpu[i].s);
+            keypoint.set_orientation(keypoints_siftgpu[i].o);
+
+            keypoints->push_back(keypoint);
+            descriptors->emplace_back(descriptors_siftgpu.row(i));
+        }
+
+        return (result == 1);
     }
 }
