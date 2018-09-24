@@ -11,11 +11,6 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
     options.num_threads = 4;
 
     // Feature detection options
-    options.descriptor_extractor_options.setMode(popsift::Config::VLFeat);
-    // options.descriptor_extractor_options.setThreshold(0.04f);
-    options.descriptor_extractor_options.setThreshold(0.0f);
-    // options.descriptor_extractor_options.setDownsampling(2);
-    // options.descriptor_extractor_options.setOctaves(5);
 
     // Matching options
     options.min_track_length = 2;

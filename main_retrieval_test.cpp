@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
     // sift_options.setThreshold(0.08f);
     // theia::PopSiftDescriptorExtractor descriptor_extractor(sift_options);
 
-    colmap::SiftExtractionOptions sift_options;
+    theia::SiftGpuDescriptorExtractor::Options sift_options;
     theia::SiftGpuDescriptorExtractor descriptor_extractor(sift_options);
 
     ImageRetrieval::Options image_retrieval_options;

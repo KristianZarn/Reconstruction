@@ -47,10 +47,6 @@ find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
 find_package(OpenMVS REQUIRED)
 
-# PopSift
-find_package(PopSift REQUIRED)
-find_package(Boost 1.53.0 REQUIRED COMPONENTS program_options system filesystem)
-
 # SUBDIRECTORIES
 add_subdirectory(libraries)
 
@@ -59,7 +55,7 @@ set(SOURCE_FILES
         src/helpers.cpp
         src/reconstruction/RealtimeReconstructionBuilder.cpp
         src/reconstruction/RealtimeFeatureMatcher.cpp
-        src/reconstruction/PopSiftDescriptorExtractor.cpp
+        src/reconstruction/SiftGpuDescriptorExtractor.cpp
         src/reconstruction/ImageRetrieval.cpp
         src/plugins/WebcamPlugin.cpp
         src/plugins/IPCameraPlugin.cpp
@@ -96,9 +92,7 @@ set(EXTERNAL_LIBRARIES
         ${X11_LIBRARIES}
         Threads::Threads
         ${THEIA_LIBRARIES}
-        PopSift::popsift
         ${COLMAP_LIBRARIES}
-        ${Boost_LIBRARIES}
         ${OpenMVS_LIBRARIES}
         ${CUDA_LIBRARIES}
         ${CURL_LIBRARIES}
@@ -136,19 +130,73 @@ target_link_libraries(retrieval_seq
         ${THEIA_LIBRARIES}
         OpenMP::OpenMP_CXX)
 
-add_executable(retrieval_test
-        main_retrieval_test.cpp
-        src/reconstruction/ImageRetrieval.cpp
-        src/reconstruction/PopSiftDescriptorExtractor.cpp
-        src/reconstruction/SiftGpuDescriptorExtractor.cpp)
-target_include_directories(retrieval_test PUBLIC
-        ${CMAKE_SOURCE_DIR}/src
-        ${COLMAP_INCLUDE_DIRS}
-        ${THEIA_INCLUDE_DIRS}
-        ${CUDA_INCLUDE_DIRS})
-target_link_libraries(retrieval_test
-        ${COLMAP_LIBRARIES}
-        ${THEIA_LIBRARIES}
-        ${CUDA_LIBRARIES}
-        PopSift::popsift
-        OpenMP::OpenMP_CXX)
+#add_executable(retrieval_test
+#        main_retrieval_test.cpp
+#        src/reconstruction/ImageRetrieval.cpp
+#        src/reconstruction/SiftGpuDescriptorExtractor.cpp)
+#target_include_directories(retrieval_test PUBLIC
+#        ${CMAKE_SOURCE_DIR}/src
+#        ${COLMAP_INCLUDE_DIRS}
+#        ${THEIA_INCLUDE_DIRS}
+#        ${CUDA_INCLUDE_DIRS})
+#target_link_libraries(retrieval_test
+#        ${COLMAP_LIBRARIES}
+#        ${THEIA_LIBRARIES}
+#        ${CUDA_LIBRARIES}
+#        OpenMP::OpenMP_CXX)
+
+add_executable(retrieval_test main_retrieval_test.cpp ${SOURCE_FILES})
+target_compile_definitions(retrieval_test PRIVATE -DIGL_STATIC_LIBRARY)
+target_include_directories(retrieval_test PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(retrieval_test ${LIBRARIES})
+
+#add_executable(retrieval_test
+#        main_retrieval_test.cpp
+#        src/reconstruction/SiftGpuDescriptorExtractor.cpp
+#        src/reconstruction/ImageRetrieval.cpp
+#        src/helpers.cpp
+#        src/reconstruction/RealtimeReconstructionBuilder.cpp
+#        src/reconstruction/RealtimeFeatureMatcher.cpp
+#        src/plugins/WebcamPlugin.cpp
+#        src/plugins/IPCameraPlugin.cpp
+#        src/plugins/ReconstructionPlugin.cpp
+#        src/plugins/EditMeshPlugin.cpp
+#        src/plugins/LocalizationPlugin.cpp
+#)
+#target_include_directories(retrieval_test PUBLIC
+#        ${CMAKE_SOURCE_DIR}/libraries
+#        ${CMAKE_SOURCE_DIR}/src
+#        ${LIBIGL_PATH}/external/imgui
+#        ${LIBIGL_PATH}/external/stb_image
+#        ${LIBIGL_PATH}/optional/build/stb_image
+#        ${LIBIGL_PATH}/external/glad/include
+#        ${LIBIGL_PATH}/external/glfw/include
+#        ${LIBIGL_INCLUDE_DIR}
+#        ${THEIA_INCLUDE_DIRS}
+#        ${COLMAP_INCLUDE_DIRS}
+#        ${OpenMVS_INCLUDE_DIRS}
+#        ${CUDA_INCLUDE_DIRS}
+#        ${CURL_INCLUDE_DIRS}
+#)
+#target_link_libraries(retrieval_test
+#        igl::png
+#        igl::stb_image
+#        igl::opengl_glfw_imgui
+#        igl::opengl_glfw
+#        igl::opengl
+#        igl::core
+#        imgui
+#        glfw3
+#        glad
+#        ${CMAKE_DL_LIBS}
+#        ${X11_LIBRARIES}
+#        Threads::Threads
+#        ${THEIA_LIBRARIES}
+#        ${COLMAP_LIBRARIES}
+#        ${OpenMVS_LIBRARIES}
+#        ${CUDA_LIBRARIES}
+#        ${CURL_LIBRARIES}
+#        OpenMP::OpenMP_CXX
+#        webcam
+#        ImGuizmo
+#)

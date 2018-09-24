@@ -11,7 +11,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <igl/project.h>
-#include "theia/sfm/reconstruction.h"
+#include <theia/sfm/reconstruction.h>
 #include <theia/sfm/reconstruction_estimator.h>
 #include <theia/sfm/reconstruction_estimator_utils.h>
 #include <theia/io/reconstruction_reader.h>

@@ -4,6 +4,7 @@
 #include <string>
 #include <ostream>
 #include <chrono>
+#include <future>
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>

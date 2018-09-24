@@ -18,9 +18,9 @@
 #include <theia/sfm/reconstruction_builder.h>
 #include <theia/sfm/estimators/estimate_calibrated_absolute_pose.h>
 
+#include "SiftGpuDescriptorExtractor.h"
+#include "ImageRetrieval.h"
 #include "RealtimeFeatureMatcher.h"
-// #include "CudaSiftDescriptorExtractor.h"
-#include "PopSiftDescriptorExtractor.h"
 
 namespace theia {
 
@@ -44,8 +44,7 @@ namespace theia {
             int max_track_length = 50;
 
             // Options for descriptor extractor
-            // CudaSiftDescriptorExtractor::Options descriptor_extractor_options;
-            popsift::Config descriptor_extractor_options;
+            SiftGpuDescriptorExtractor::Options descriptor_extractor_options;
 
             // Options for computing matches between images.
             RealtimeFeatureMatcher::Options matching_options;
@@ -113,7 +112,8 @@ namespace theia {
         std::string reconstruction_message_;
 
         // Feature extraction and matching
-        std::unique_ptr<DescriptorExtractor> descriptor_extractor_;
+        std::unique_ptr<SiftGpuDescriptorExtractor> descriptor_extractor_;
+        std::unique_ptr<ImageRetrieval> image_retrieval_;
         std::unique_ptr<RealtimeFeatureMatcher> feature_matcher_;
 
         // SfM objects

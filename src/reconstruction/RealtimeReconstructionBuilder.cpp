@@ -19,11 +19,7 @@ namespace theia {
             : options_(options), intrinsics_prior_(intrinsics_prior) {
 
         // Initialize descriptor extractor
-        // SiftParameters sift_params;
-        // descriptor_extractor_ = std::make_unique<SiftDescriptorExtractor>(sift_params);
-        // descriptor_extractor_ = std::make_unique<CudaSiftDescriptorExtractor>(options_.descriptor_extractor_options);
-        descriptor_extractor_ = std::make_unique<PopSiftDescriptorExtractor>(options_.descriptor_extractor_options);
-        descriptor_extractor_->Initialize();
+        descriptor_extractor_ = std::make_unique<SiftGpuDescriptorExtractor>(options_.descriptor_extractor_options);
 
         // Initialize matcher
         feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, intrinsics_prior_);
