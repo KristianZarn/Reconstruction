@@ -9,8 +9,6 @@
 #include <theia/matching/create_feature_matcher.h>
 #include <theia/matching/feature_matcher_options.h>
 #include <theia/sfm/types.h>
-#include <theia/sfm/track.h>
-#include <theia/sfm/track_builder.h>
 #include <theia/sfm/reconstruction.h>
 #include <theia/sfm/view_graph/view_graph.h>
 #include <theia/sfm/reconstruction_estimator.h>

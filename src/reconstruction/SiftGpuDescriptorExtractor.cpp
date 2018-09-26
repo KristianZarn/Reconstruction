@@ -1,7 +1,9 @@
 #include "SiftGpuDescriptorExtractor.h"
 
+#include <mutex>
+#include <GL/gl.h>
+
 #include <colmap/util/timer.h>
-#include <colmap/util/opengl_utils.h>
 #include <colmap/util/misc.h>
 #include <colmap/feature/utils.h>
 

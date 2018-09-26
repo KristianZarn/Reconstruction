@@ -1,13 +1,16 @@
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #include <theia/image/image.h>
 #include <theia/image/descriptor/descriptor_extractor.h>
 
-#include <colmap/feature/sift.h>
+#include <colmap/util/timer.h>
+#include <colmap/util/string.h>
+#include <colmap/retrieval/utils.h>
 
 #include "reconstruction/ImageRetrieval.h"
-#include "reconstruction/PopSiftDescriptorExtractor.h"
 #include "reconstruction/SiftGpuDescriptorExtractor.h"
 
 int main(int argc, char** argv) {
@@ -23,16 +26,6 @@ int main(int argc, char** argv) {
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names.emplace_back("frame" + ss.str() + ".png");
     }
-
-    // Prepare objects
-    // popsift::Config sift_options;
-    // sift_options.setMode(popsift::Config::VLFeat);
-    // sift_options.setNormMode(popsift::Config::NormMode::RootSift);
-    // sift_options.setOctaves(4);
-    // sift_options.setLevels(3);
-    // sift_options.setEdgeLimit(10.0f);
-    // sift_options.setThreshold(0.08f);
-    // theia::PopSiftDescriptorExtractor descriptor_extractor(sift_options);
 
     theia::SiftGpuDescriptorExtractor::Options sift_options;
     theia::SiftGpuDescriptorExtractor descriptor_extractor(sift_options);

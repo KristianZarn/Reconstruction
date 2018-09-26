@@ -5,6 +5,7 @@
 #include <theia/sfm/types.h>
 
 #include <colmap/feature/types.h>
+#include <colmap/retrieval/utils.h>
 #include <colmap/retrieval/visual_index.h>
 
 class ImageRetrieval {

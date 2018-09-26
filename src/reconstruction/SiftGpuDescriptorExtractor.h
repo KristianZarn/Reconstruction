@@ -7,7 +7,6 @@
 #include <theia/image/keypoint_detector/keypoint.h>
 
 #include <SiftGPU/SiftGPU.h>
-// #include <colmap/feature/sift.h>
 
 namespace theia {
 

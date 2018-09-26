@@ -9,3 +9,6 @@ cmake-build-release/
 # Ignore dataset
 dataset/
 dataset_vipava/
+
+# Ignore backup files
+_bak/
