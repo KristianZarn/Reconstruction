@@ -122,7 +122,7 @@ target_link_libraries(realtime_reconstruction_disk ${LIBRARIES})
 #target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
 #target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
 
-add_executable(retrieval_seq main_retrieval_seq.cpp)
+add_executable(retrieval_seq main_retrieval_ref.cpp)
 target_include_directories(retrieval_seq PUBLIC
         ${COLMAP_INCLUDE_DIRS}
         ${THEIA_INCLUDE_DIRS})

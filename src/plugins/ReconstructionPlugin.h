@@ -162,6 +162,7 @@ private:
     // Callback functions
     void initialize_callback();
     void extend_callback();
+    void extend_all_callback();
     void remove_view_callback(int view_id);
     void remove_last_view_callback();
     void reset_reconstruction_callback();

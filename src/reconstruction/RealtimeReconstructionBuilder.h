@@ -44,6 +44,8 @@ namespace theia {
             // Options for descriptor extractor
             SiftGpuDescriptorExtractor::Options descriptor_extractor_options;
 
+            ImageRetrieval::Options image_retrieval_options;
+
             // Options for computing matches between images.
             RealtimeFeatureMatcher::Options matching_options;
 

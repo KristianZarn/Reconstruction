@@ -111,6 +111,9 @@ bool ReconstructionPlugin::post_draw() {
         if (ImGui::Button("Extend [e]", ImVec2(-1, 0))) {
             extend_callback();
         }
+        if (ImGui::Button("Extend with all", ImVec2(-1, 0))) {
+            extend_all_callback();
+        }
         ImGui::Spacing();
 
         ImGui::Text("Edit reconstruction");
@@ -249,7 +252,7 @@ void ReconstructionPlugin::initialize_callback() {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
-    reconstruction_builder_->PrintStatistics(log_stream_);
+    reconstruction_builder_->PrintStatistics(log_stream_, false, true, false);
     set_cameras();
     show_cameras(true);
     set_point_cloud();
@@ -290,12 +293,18 @@ void ReconstructionPlugin::extend_callback() {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
-    reconstruction_builder_->PrintStatistics(log_stream_);
+    reconstruction_builder_->PrintStatistics(log_stream_, false, true, false);
     set_cameras();
     show_cameras(true);
     set_point_cloud();
     show_point_cloud(true);
     show_mesh(false);
+}
+
+void ReconstructionPlugin::extend_all_callback() {
+    while (parameters_.next_image_idx < image_names_->size()) {
+        extend_callback();
+    }
 }
 
 void ReconstructionPlugin::remove_view_callback(int view_id) {

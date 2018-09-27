@@ -1,0 +1,486 @@
+/home/kristian/Documents/reconstruction_code/realtime_reconstruction/cmake-build-debug/realtime_reconstruction_disk
+
+Initializing reconstruction ...
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I0926 23:11:21.411569  6613 estimate_track.cc:182] 2651 tracks were estimated of 2651 possible tracks. 0 triangulations failed due to bad triangulation angles and 0 triangulations failed with too high reprojection errors.
+I0926 23:11:21.412359  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:21.412814  6613 incremental_reconstruction_estimator.cc:510] Selected 2651 tracks to optimize.
+I0926 23:11:21.894593  6613 set_outlier_tracks_to_unestimated.cc:128] 0 points were removed because of bad reprojection errors. 137 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:21.894688  6613 incremental_reconstruction_estimator.cc:607] 137 outlier points were removed.
+Initialization time: 5.02739 s
+Initialization successful:
+Reconstruction:
+	Num views = 2
+	Num estimated views = 2
+	Num tracks = 2651
+	Num estimated tracks = 2514
+
+Extending reconstruction ...
+I0926 23:11:27.913286  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:27.913396  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+I0926 23:11:27.942020  6613 estimate_track.cc:182] 1685 tracks were estimated of 1943 possible tracks. 255 triangulations failed due to bad triangulation angles and 3 triangulations failed with too high reprojection errors.
+I0926 23:11:27.942286  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:27.942893  6613 incremental_reconstruction_estimator.cc:510] Selected 4196 tracks to optimize.
+I0926 23:11:28.114790  6613 set_outlier_tracks_to_unestimated.cc:128] 1 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:28.114892  6613 incremental_reconstruction_estimator.cc:607] 1 outlier points were removed.
+Extend time: 3.23895 s
+Extend successful:
+Reconstruction:
+	Num views = 3
+	Num estimated views = 3
+	Num tracks = 4454
+	Num estimated tracks = 4195
+
+Extending reconstruction ...
+I0926 23:11:32.460765  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:32.460861  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:11:32.489660  6613 estimate_track.cc:182] 1807 tracks were estimated of 2228 possible tracks. 419 triangulations failed due to bad triangulation angles and 2 triangulations failed with too high reprojection errors.
+I0926 23:11:32.490042  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:32.491008  6613 incremental_reconstruction_estimator.cc:510] Selected 6000 tracks to optimize.
+I0926 23:11:32.739842  6613 set_outlier_tracks_to_unestimated.cc:128] 6 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:32.739861  6613 incremental_reconstruction_estimator.cc:607] 6 outlier points were removed.
+Extend time: 3.46496 s
+Extend successful:
+Reconstruction:
+	Num views = 4
+	Num estimated views = 4
+	Num tracks = 6421
+	Num estimated tracks = 5994
+
+Extending reconstruction ...
+I0926 23:11:37.102412  6613 set_outlier_tracks_to_unestimated.cc:128] 5 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:37.102432  6613 incremental_reconstruction_estimator.cc:607] 5 outlier points were removed.
+I0926 23:11:37.130164  6613 estimate_track.cc:182] 1754 tracks were estimated of 2322 possible tracks. 562 triangulations failed due to bad triangulation angles and 6 triangulations failed with too high reprojection errors.
+I0926 23:11:37.130547  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:37.131713  6613 incremental_reconstruction_estimator.cc:510] Selected 7743 tracks to optimize.
+I0926 23:11:37.352993  6613 set_outlier_tracks_to_unestimated.cc:128] 13 points were removed because of bad reprojection errors. 2 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:37.353013  6613 incremental_reconstruction_estimator.cc:607] 15 outlier points were removed.
+Extend time: 3.65666 s
+Extend successful:
+Reconstruction:
+	Num views = 5
+	Num estimated views = 5
+	Num tracks = 8311
+	Num estimated tracks = 7728
+
+Extending reconstruction ...
+I0926 23:11:42.396064  6613 set_outlier_tracks_to_unestimated.cc:128] 5 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:42.396085  6613 incremental_reconstruction_estimator.cc:607] 5 outlier points were removed.
+I0926 23:11:42.423619  6613 estimate_track.cc:182] 1648 tracks were estimated of 2290 possible tracks. 634 triangulations failed due to bad triangulation angles and 8 triangulations failed with too high reprojection errors.
+I0926 23:11:42.424093  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:42.425552  6613 incremental_reconstruction_estimator.cc:510] Selected 9371 tracks to optimize.
+I0926 23:11:42.736958  6613 set_outlier_tracks_to_unestimated.cc:128] 20 points were removed because of bad reprojection errors. 1 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:42.736985  6613 incremental_reconstruction_estimator.cc:607] 21 outlier points were removed.
+Extend time: 3.94591 s
+Extend successful:
+Reconstruction:
+	Num views = 6
+	Num estimated views = 6
+	Num tracks = 10013
+	Num estimated tracks = 9350
+
+Extending reconstruction ...
+I0926 23:11:47.340880  6613 set_outlier_tracks_to_unestimated.cc:128] 1 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:47.340901  6613 incremental_reconstruction_estimator.cc:607] 1 outlier points were removed.
+I0926 23:11:47.371852  6613 estimate_track.cc:182] 1855 tracks were estimated of 2682 possible tracks. 817 triangulations failed due to bad triangulation angles and 10 triangulations failed with too high reprojection errors.
+I0926 23:11:47.372397  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:47.374465  6613 incremental_reconstruction_estimator.cc:510] Selected 11204 tracks to optimize.
+I0926 23:11:47.721853  6613 set_outlier_tracks_to_unestimated.cc:128] 25 points were removed because of bad reprojection errors. 5 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:47.721900  6613 incremental_reconstruction_estimator.cc:607] 30 outlier points were removed.
+Extend time: 3.94348 s
+Extend successful:
+Reconstruction:
+	Num views = 7
+	Num estimated views = 7
+	Num tracks = 12031
+	Num estimated tracks = 11174
+
+Extending reconstruction ...
+I0926 23:11:52.648237  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:52.648341  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+I0926 23:11:52.678126  6613 estimate_track.cc:182] 1788 tracks were estimated of 2889 possible tracks. 1088 triangulations failed due to bad triangulation angles and 13 triangulations failed with too high reprojection errors.
+I0926 23:11:52.678730  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:52.681051  6613 incremental_reconstruction_estimator.cc:510] Selected 12959 tracks to optimize.
+I0926 23:11:53.026453  6613 set_outlier_tracks_to_unestimated.cc:128] 30 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:53.026473  6613 incremental_reconstruction_estimator.cc:607] 30 outlier points were removed.
+Extend time: 4.05827 s
+Extend successful:
+Reconstruction:
+	Num views = 8
+	Num estimated views = 8
+	Num tracks = 14060
+	Num estimated tracks = 12929
+
+Extending reconstruction ...
+I0926 23:11:57.966395  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:57.966524  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:11:57.992774  6613 estimate_track.cc:182] 1543 tracks were estimated of 2693 possible tracks. 1136 triangulations failed due to bad triangulation angles and 14 triangulations failed with too high reprojection errors.
+I0926 23:11:57.993763  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:11:57.996551  6613 incremental_reconstruction_estimator.cc:510] Selected 14470 tracks to optimize.
+I0926 23:11:58.464116  6613 set_outlier_tracks_to_unestimated.cc:128] 32 points were removed because of bad reprojection errors. 22 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:11:58.464135  6613 incremental_reconstruction_estimator.cc:607] 54 outlier points were removed.
+Extend time: 4.10353 s
+Extend successful:
+Reconstruction:
+	Num views = 9
+	Num estimated views = 9
+	Num tracks = 15620
+	Num estimated tracks = 14416
+
+Extending reconstruction ...
+I0926 23:12:03.546241  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:03.546340  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:12:03.577258  6613 estimate_track.cc:182] 1775 tracks were estimated of 3153 possible tracks. 1361 triangulations failed due to bad triangulation angles and 17 triangulations failed with too high reprojection errors.
+I0926 23:12:03.577934  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:03.581375  6613 incremental_reconstruction_estimator.cc:510] Selected 16189 tracks to optimize.
+I0926 23:12:04.227663  6613 set_outlier_tracks_to_unestimated.cc:128] 35 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:04.227692  6613 incremental_reconstruction_estimator.cc:607] 35 outlier points were removed.
+Extend time: 4.35139 s
+Extend successful:
+Reconstruction:
+	Num views = 10
+	Num estimated views = 10
+	Num tracks = 17567
+	Num estimated tracks = 16154
+
+Extending reconstruction ...
+I0926 23:12:10.428489  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:10.428617  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:12:10.458899  6613 estimate_track.cc:182] 1822 tracks were estimated of 3233 possible tracks. 1392 triangulations failed due to bad triangulation angles and 19 triangulations failed with too high reprojection errors.
+I0926 23:12:10.459622  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:10.462970  6613 incremental_reconstruction_estimator.cc:510] Selected 17974 tracks to optimize.
+I0926 23:12:11.069048  6613 set_outlier_tracks_to_unestimated.cc:128] 35 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:11.069087  6613 incremental_reconstruction_estimator.cc:607] 35 outlier points were removed.
+Extend time: 4.22443 s
+Extend successful:
+Reconstruction:
+	Num views = 11
+	Num estimated views = 11
+	Num tracks = 19385
+	Num estimated tracks = 17939
+
+Extending reconstruction ...
+I0926 23:12:15.425714  6613 set_outlier_tracks_to_unestimated.cc:128] 4 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:15.425837  6613 incremental_reconstruction_estimator.cc:607] 4 outlier points were removed.
+I0926 23:12:15.465832  6613 estimate_track.cc:182] 1807 tracks were estimated of 3348 possible tracks. 1519 triangulations failed due to bad triangulation angles and 22 triangulations failed with too high reprojection errors.
+I0926 23:12:15.466836  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:15.471267  6613 incremental_reconstruction_estimator.cc:510] Selected 19742 tracks to optimize.
+I0926 23:12:16.073935  6613 set_outlier_tracks_to_unestimated.cc:128] 37 points were removed because of bad reprojection errors. 3 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:16.073953  6613 incremental_reconstruction_estimator.cc:607] 40 outlier points were removed.
+Extend time: 4.59517 s
+Extend successful:
+Reconstruction:
+	Num views = 12
+	Num estimated views = 12
+	Num tracks = 21283
+	Num estimated tracks = 19702
+
+Extending reconstruction ...
+I0926 23:12:20.563921  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:20.564049  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+I0926 23:12:20.596300  6613 estimate_track.cc:182] 1883 tracks were estimated of 3573 possible tracks. 1666 triangulations failed due to bad triangulation angles and 24 triangulations failed with too high reprojection errors.
+I0926 23:12:20.597232  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:20.601411  6613 incremental_reconstruction_estimator.cc:510] Selected 21582 tracks to optimize.
+I0926 23:12:21.418825  6613 set_outlier_tracks_to_unestimated.cc:128] 43 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:21.418844  6613 incremental_reconstruction_estimator.cc:607] 43 outlier points were removed.
+Extend time: 4.84532 s
+Extend successful:
+Reconstruction:
+	Num views = 13
+	Num estimated views = 13
+	Num tracks = 23272
+	Num estimated tracks = 21539
+
+Extending reconstruction ...
+I0926 23:12:25.733479  6613 set_outlier_tracks_to_unestimated.cc:128] 4 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:25.733573  6613 incremental_reconstruction_estimator.cc:607] 4 outlier points were removed.
+I0926 23:12:25.761857  6613 estimate_track.cc:182] 1710 tracks were estimated of 3654 possible tracks. 1915 triangulations failed due to bad triangulation angles and 29 triangulations failed with too high reprojection errors.
+I0926 23:12:25.762802  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:25.767302  6613 incremental_reconstruction_estimator.cc:510] Selected 23245 tracks to optimize.
+I0926 23:12:26.580425  6613 set_outlier_tracks_to_unestimated.cc:128] 48 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:26.580443  6613 incremental_reconstruction_estimator.cc:607] 48 outlier points were removed.
+Extend time: 4.64717 s
+Extend successful:
+Reconstruction:
+	Num views = 14
+	Num estimated views = 14
+	Num tracks = 25189
+	Num estimated tracks = 23197
+
+Extending reconstruction ...
+I0926 23:12:30.954941  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:30.955051  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+I0926 23:12:30.987028  6613 estimate_track.cc:182] 2032 tracks were estimated of 4297 possible tracks. 2232 triangulations failed due to bad triangulation angles and 33 triangulations failed with too high reprojection errors.
+I0926 23:12:30.988107  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:30.993677  6613 incremental_reconstruction_estimator.cc:510] Selected 25226 tracks to optimize.
+I0926 23:12:31.863243  6613 set_outlier_tracks_to_unestimated.cc:128] 50 points were removed because of bad reprojection errors. 9 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:31.863263  6613 incremental_reconstruction_estimator.cc:607] 59 outlier points were removed.
+Extend time: 4.7198 s
+Extend successful:
+Reconstruction:
+	Num views = 15
+	Num estimated views = 15
+	Num tracks = 27491
+	Num estimated tracks = 25167
+
+Extending reconstruction ...
+I0926 23:12:36.357467  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:36.357573  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:12:36.390916  6613 estimate_track.cc:182] 1921 tracks were estimated of 4414 possible tracks. 2458 triangulations failed due to bad triangulation angles and 35 triangulations failed with too high reprojection errors.
+I0926 23:12:36.391929  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:36.398316  6613 incremental_reconstruction_estimator.cc:510] Selected 27086 tracks to optimize.
+I0926 23:12:37.333422  6613 set_outlier_tracks_to_unestimated.cc:128] 51 points were removed because of bad reprojection errors. 50 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:37.333441  6613 incremental_reconstruction_estimator.cc:607] 101 outlier points were removed.
+Extend time: 4.90739 s
+Extend successful:
+Reconstruction:
+	Num views = 16
+	Num estimated views = 16
+	Num tracks = 29579
+	Num estimated tracks = 26985
+
+Extending reconstruction ...
+I0926 23:12:41.953490  6613 set_outlier_tracks_to_unestimated.cc:128] 5 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:41.953601  6613 incremental_reconstruction_estimator.cc:607] 5 outlier points were removed.
+I0926 23:12:41.985528  6613 estimate_track.cc:182] 1759 tracks were estimated of 4463 possible tracks. 2661 triangulations failed due to bad triangulation angles and 43 triangulations failed with too high reprojection errors.
+I0926 23:12:41.986755  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:41.993115  6613 incremental_reconstruction_estimator.cc:510] Selected 28739 tracks to optimize.
+I0926 23:12:43.008215  6613 set_outlier_tracks_to_unestimated.cc:128] 57 points were removed because of bad reprojection errors. 7 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:43.008235  6613 incremental_reconstruction_estimator.cc:607] 64 outlier points were removed.
+Extend time: 5.06981 s
+Extend successful:
+Reconstruction:
+	Num views = 17
+	Num estimated views = 17
+	Num tracks = 31443
+	Num estimated tracks = 28675
+
+Extending reconstruction ...
+I0926 23:12:47.645135  6613 set_outlier_tracks_to_unestimated.cc:128] 4 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:47.645252  6613 incremental_reconstruction_estimator.cc:607] 4 outlier points were removed.
+I0926 23:12:47.681377  6613 estimate_track.cc:182] 2029 tracks were estimated of 4918 possible tracks. 2840 triangulations failed due to bad triangulation angles and 49 triangulations failed with too high reprojection errors.
+I0926 23:12:47.682740  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:47.689786  6613 incremental_reconstruction_estimator.cc:510] Selected 30700 tracks to optimize.
+I0926 23:12:48.786582  6613 set_outlier_tracks_to_unestimated.cc:128] 59 points were removed because of bad reprojection errors. 6 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:48.786600  6613 incremental_reconstruction_estimator.cc:607] 65 outlier points were removed.
+Extend time: 5.11158 s
+Extend successful:
+Reconstruction:
+	Num views = 18
+	Num estimated views = 18
+	Num tracks = 33589
+	Num estimated tracks = 30635
+
+Extending reconstruction ...
+I0926 23:12:53.499894  6613 set_outlier_tracks_to_unestimated.cc:128] 4 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:53.500002  6613 incremental_reconstruction_estimator.cc:607] 4 outlier points were removed.
+I0926 23:12:53.535012  6613 estimate_track.cc:182] 1796 tracks were estimated of 4687 possible tracks. 2837 triangulations failed due to bad triangulation angles and 54 triangulations failed with too high reprojection errors.
+I0926 23:12:53.536365  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:53.542887  6613 incremental_reconstruction_estimator.cc:510] Selected 32427 tracks to optimize.
+I0926 23:12:54.722088  6613 set_outlier_tracks_to_unestimated.cc:128] 59 points were removed because of bad reprojection errors. 9 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:54.722118  6613 incremental_reconstruction_estimator.cc:607] 68 outlier points were removed.
+Extend time: 5.25192 s
+Extend successful:
+Reconstruction:
+	Num views = 19
+	Num estimated views = 19
+	Num tracks = 35318
+	Num estimated tracks = 32359
+
+Extending reconstruction ...
+I0926 23:12:59.391685  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:12:59.391798  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:12:59.429420  6613 estimate_track.cc:182] 2096 tracks were estimated of 4914 possible tracks. 2762 triangulations failed due to bad triangulation angles and 56 triangulations failed with too high reprojection errors.
+I0926 23:12:59.431115  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:12:59.439092  6613 incremental_reconstruction_estimator.cc:510] Selected 34453 tracks to optimize.
+I0926 23:13:00.689851  6613 set_outlier_tracks_to_unestimated.cc:128] 60 points were removed because of bad reprojection errors. 24 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:00.689872  6613 incremental_reconstruction_estimator.cc:607] 84 outlier points were removed.
+Extend time: 5.23857 s
+Extend successful:
+Reconstruction:
+	Num views = 20
+	Num estimated views = 20
+	Num tracks = 37271
+	Num estimated tracks = 34369
+
+Extending reconstruction ...
+I0926 23:13:05.692343  6613 incremental_reconstruction_estimator.cc:607] 0 outlier points were removed.
+I0926 23:13:05.723486  6613 estimate_track.cc:182] 1463 tracks were estimated of 4322 possible tracks. 2803 triangulations failed due to bad triangulation angles and 56 triangulations failed with too high reprojection errors.
+I0926 23:13:05.724833  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:13:05.732769  6613 incremental_reconstruction_estimator.cc:510] Selected 35832 tracks to optimize.
+I0926 23:13:07.108496  6613 set_outlier_tracks_to_unestimated.cc:128] 60 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:07.108518  6613 incremental_reconstruction_estimator.cc:607] 60 outlier points were removed.
+Extend time: 5.50625 s
+Extend successful:
+Reconstruction:
+	Num views = 21
+	Num estimated views = 21
+	Num tracks = 38691
+	Num estimated tracks = 35772
+
+Extending reconstruction ...
+I0926 23:13:11.157423  6613 set_outlier_tracks_to_unestimated.cc:128] 1 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:11.157527  6613 incremental_reconstruction_estimator.cc:607] 1 outlier points were removed.
+I0926 23:13:11.180183  6613 estimate_track.cc:182] 1161 tracks were estimated of 1180 possible tracks. 19 triangulations failed due to bad triangulation angles and 0 triangulations failed with too high reprojection errors.
+I0926 23:13:11.180444  6613 incremental_reconstruction_estimator.cc:536] Running partial bundle adjustment on 20 views.
+I0926 23:13:11.192003  6613 incremental_reconstruction_estimator.cc:583] Selected 38596 tracks to optimize.
+I0926 23:13:12.693490  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:12.693511  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+Extend time: 4.67272 s
+Extend successful:
+Reconstruction:
+	Num views = 22
+	Num estimated views = 22
+	Num tracks = 39863
+	Num estimated tracks = 36929
+
+Extending reconstruction ...
+I0926 23:13:16.863261  6613 incremental_reconstruction_estimator.cc:607] 0 outlier points were removed.
+I0926 23:13:16.892889  6613 estimate_track.cc:182] 1139 tracks were estimated of 4009 possible tracks. 2814 triangulations failed due to bad triangulation angles and 56 triangulations failed with too high reprojection errors.
+I0926 23:13:16.894394  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:13:16.902220  6613 incremental_reconstruction_estimator.cc:510] Selected 38068 tracks to optimize.
+I0926 23:13:18.238076  6613 set_outlier_tracks_to_unestimated.cc:128] 62 points were removed because of bad reprojection errors. 2 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:18.238096  6613 incremental_reconstruction_estimator.cc:607] 64 outlier points were removed.
+Extend time: 4.52372 s
+Extend successful:
+Reconstruction:
+	Num views = 23
+	Num estimated views = 23
+	Num tracks = 40938
+	Num estimated tracks = 38004
+
+Extending reconstruction ...
+I0926 23:13:22.466414  6613 set_outlier_tracks_to_unestimated.cc:128] 4 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:22.466512  6613 incremental_reconstruction_estimator.cc:607] 4 outlier points were removed.
+I0926 23:13:22.493566  6613 estimate_track.cc:182] 1053 tracks were estimated of 1076 possible tracks. 21 triangulations failed due to bad triangulation angles and 2 triangulations failed with too high reprojection errors.
+I0926 23:13:22.493789  6613 incremental_reconstruction_estimator.cc:536] Running partial bundle adjustment on 20 views.
+I0926 23:13:22.505892  6613 incremental_reconstruction_estimator.cc:583] Selected 37877 tracks to optimize.
+I0926 23:13:24.020161  6613 set_outlier_tracks_to_unestimated.cc:128] 5 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:24.020181  6613 incremental_reconstruction_estimator.cc:607] 5 outlier points were removed.
+Extend time: 4.78671 s
+Extend successful:
+Reconstruction:
+	Num views = 24
+	Num estimated views = 24
+	Num tracks = 41979
+	Num estimated tracks = 39048
+
+Extending reconstruction ...
+I0926 23:13:27.846086  6613 set_outlier_tracks_to_unestimated.cc:128] 1 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:27.846176  6613 incremental_reconstruction_estimator.cc:607] 1 outlier points were removed.
+I0926 23:13:27.876449  6613 estimate_track.cc:182] 1160 tracks were estimated of 3980 possible tracks. 2758 triangulations failed due to bad triangulation angles and 62 triangulations failed with too high reprojection errors.
+I0926 23:13:27.877981  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:13:27.886993  6613 incremental_reconstruction_estimator.cc:510] Selected 40207 tracks to optimize.
+I0926 23:13:29.369297  6613 set_outlier_tracks_to_unestimated.cc:128] 67 points were removed because of bad reprojection errors. 24 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:29.369318  6613 incremental_reconstruction_estimator.cc:607] 91 outlier points were removed.
+Extend time: 4.44817 s
+Extend successful:
+Reconstruction:
+	Num views = 25
+	Num estimated views = 25
+	Num tracks = 43027
+	Num estimated tracks = 40116
+
+Extending reconstruction ...
+I0926 23:13:33.996358  6613 incremental_reconstruction_estimator.cc:607] 0 outlier points were removed.
+I0926 23:13:34.022969  6613 estimate_track.cc:182] 1384 tracks were estimated of 1518 possible tracks. 131 triangulations failed due to bad triangulation angles and 3 triangulations failed with too high reprojection errors.
+I0926 23:13:34.023260  6613 incremental_reconstruction_estimator.cc:536] Running partial bundle adjustment on 20 views.
+I0926 23:13:34.035543  6613 incremental_reconstruction_estimator.cc:583] Selected 36955 tracks to optimize.
+I0926 23:13:35.139816  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 4 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:35.139835  6613 incremental_reconstruction_estimator.cc:607] 6 outlier points were removed.
+Extend time: 4.83681 s
+Extend successful:
+Reconstruction:
+	Num views = 26
+	Num estimated views = 26
+	Num tracks = 44542
+	Num estimated tracks = 41494
+
+Extending reconstruction ...
+I0926 23:13:39.884441  6613 set_outlier_tracks_to_unestimated.cc:128] 1 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:39.884558  6613 incremental_reconstruction_estimator.cc:607] 1 outlier points were removed.
+I0926 23:13:39.926882  6613 estimate_track.cc:182] 2017 tracks were estimated of 5003 possible tracks. 2923 triangulations failed due to bad triangulation angles and 63 triangulations failed with too high reprojection errors.
+I0926 23:13:39.928931  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:13:39.937554  6613 incremental_reconstruction_estimator.cc:510] Selected 43510 tracks to optimize.
+I0926 23:13:41.243618  6613 set_outlier_tracks_to_unestimated.cc:128] 72 points were removed because of bad reprojection errors. 6 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:41.243638  6613 incremental_reconstruction_estimator.cc:607] 78 outlier points were removed.
+Extend time: 4.98419 s
+Extend successful:
+Reconstruction:
+	Num views = 27
+	Num estimated views = 27
+	Num tracks = 46496
+	Num estimated tracks = 43432
+
+Extending reconstruction ...
+I0926 23:13:45.807279  6613 set_outlier_tracks_to_unestimated.cc:128] 3 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:45.807380  6613 incremental_reconstruction_estimator.cc:607] 3 outlier points were removed.
+I0926 23:13:45.837492  6613 estimate_track.cc:182] 1838 tracks were estimated of 1879 possible tracks. 36 triangulations failed due to bad triangulation angles and 5 triangulations failed with too high reprojection errors.
+I0926 23:13:45.837822  6613 incremental_reconstruction_estimator.cc:536] Running partial bundle adjustment on 20 views.
+I0926 23:13:45.849105  6613 incremental_reconstruction_estimator.cc:583] Selected 37101 tracks to optimize.
+I0926 23:13:47.128626  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:47.128648  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+Extend time: 4.90248 s
+Extend successful:
+Reconstruction:
+	Num views = 28
+	Num estimated views = 28
+	Num tracks = 48359
+	Num estimated tracks = 45265
+
+Extending reconstruction ...
+I0926 23:13:51.612205  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:51.612329  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:13:51.651605  6613 estimate_track.cc:182] 1596 tracks were estimated of 4672 possible tracks. 3007 triangulations failed due to bad triangulation angles and 69 triangulations failed with too high reprojection errors.
+I0926 23:13:51.653337  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:13:51.663177  6613 incremental_reconstruction_estimator.cc:510] Selected 46859 tracks to optimize.
+I0926 23:13:53.300091  6613 set_outlier_tracks_to_unestimated.cc:128] 76 points were removed because of bad reprojection errors. 23 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:53.300108  6613 incremental_reconstruction_estimator.cc:607] 99 outlier points were removed.
+Extend time: 5.14475 s
+Extend successful:
+Reconstruction:
+	Num views = 29
+	Num estimated views = 29
+	Num tracks = 49935
+	Num estimated tracks = 46760
+
+Extending reconstruction ...
+I0926 23:13:57.841049  6613 set_outlier_tracks_to_unestimated.cc:128] 2 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:57.841140  6613 incremental_reconstruction_estimator.cc:607] 2 outlier points were removed.
+I0926 23:13:57.866091  6613 estimate_track.cc:182] 1247 tracks were estimated of 1348 possible tracks. 100 triangulations failed due to bad triangulation angles and 1 triangulations failed with too high reprojection errors.
+I0926 23:13:57.866353  6613 incremental_reconstruction_estimator.cc:536] Running partial bundle adjustment on 20 views.
+I0926 23:13:57.877624  6613 incremental_reconstruction_estimator.cc:583] Selected 36454 tracks to optimize.
+I0926 23:13:59.227339  6613 set_outlier_tracks_to_unestimated.cc:128] 5 points were removed because of bad reprojection errors. 1 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:13:59.227360  6613 incremental_reconstruction_estimator.cc:607] 6 outlier points were removed.
+Extend time: 4.8345 s
+Extend successful:
+Reconstruction:
+	Num views = 30
+	Num estimated views = 30
+	Num tracks = 51261
+	Num estimated tracks = 47999
+
+Extending reconstruction ...
+I0926 23:14:04.090502  6613 set_outlier_tracks_to_unestimated.cc:128] 13 points were removed because of bad reprojection errors. 0 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:14:04.090603  6613 incremental_reconstruction_estimator.cc:607] 13 outlier points were removed.
+I0926 23:14:04.124354  6613 estimate_track.cc:182] 1088 tracks were estimated of 4227 possible tracks. 3064 triangulations failed due to bad triangulation angles and 75 triangulations failed with too high reprojection errors.
+I0926 23:14:04.126134  6613 incremental_reconstruction_estimator.cc:482] Running full bundle adjustment on the entire reconstruction.
+I0926 23:14:04.137042  6613 incremental_reconstruction_estimator.cc:510] Selected 49074 tracks to optimize.
+I0926 23:14:05.899348  6613 set_outlier_tracks_to_unestimated.cc:128] 88 points were removed because of bad reprojection errors. 32 points were removed because they had insufficient viewing angles and were poorly constrained.
+I0926 23:14:05.899365  6613 incremental_reconstruction_estimator.cc:607] 120 outlier points were removed.
+Extend time: 5.41816 s
+Extend successful:
+Reconstruction:
+	Num views = 31
+	Num estimated views = 31
+	Num tracks = 52213
+	Num estimated tracks = 48954
+
+Reconstructing mesh ...
+Points inserted 48954 (100%, 457ms)
+Points weighted 48230 (100%, 395ms)
+Reconstruct mesh time: 1.90085 s
+Reconstruct mesh result:
+	17424 vertices, 34828 faces.
+
+Process finished with exit code 0

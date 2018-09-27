@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
     std::string images_path = project_path + "images/";
 
     std::vector<std::string> image_names;
-    for (int i = 0; i < 62; i++) {
+    for (int i = 0; i <= 62; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names.emplace_back("frame" + ss.str() + ".png");

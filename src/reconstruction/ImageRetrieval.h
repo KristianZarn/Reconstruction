@@ -15,7 +15,7 @@ public:
         std::string vocab_tree_path;
 
         // Maximum number of features used for retrieval
-        int max_num_features = 5000;
+        int max_num_features = 2000;
 
         // Options for image indexing
         colmap::retrieval::VisualIndex<>::IndexOptions index_options;

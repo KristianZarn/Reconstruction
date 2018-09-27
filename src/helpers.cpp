@@ -12,6 +12,11 @@ theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOp
 
     // Feature detection options
 
+    // Image retrieval options
+    options.image_retrieval_options.vocab_tree_path =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/vocab_tree_flickr100K_words32K.bin";
+    options.image_retrieval_options.query_options.max_num_images = 5;
+
     // Matching options
     options.min_track_length = 2;
     options.max_track_length = 50;

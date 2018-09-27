@@ -11,6 +11,7 @@
 #include <theia/sfm/reconstruction_estimator_utils.h>
 #include <theia/sfm/estimators/feature_correspondence_2d_3d.h>
 #include <theia/io/write_ply_file.h>
+#include <colmap/retrieval/utils.h>
 
 namespace theia {
 
@@ -20,6 +21,9 @@ namespace theia {
 
         // Initialize descriptor extractor
         descriptor_extractor_ = std::make_unique<SiftGpuDescriptorExtractor>(options_.descriptor_extractor_options);
+
+        // Initialize image retrieval
+        image_retrieval_ = std::make_unique<ImageRetrieval>(options_.image_retrieval_options);
 
         // Initialize matcher
         feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, intrinsics_prior_);
@@ -57,6 +61,15 @@ namespace theia {
         GetFilenameFromFilepath(image2_fullpath, true, &image2_filename);
         FloatImage image2(image2_fullpath);
 
+        // Add new views to reconstruction and set intrinsics priors
+        ViewId view1_id = reconstruction_->AddView(image1_filename, 0);
+        View* view1 = reconstruction_->MutableView(view1_id);
+        *(view1->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+
+        ViewId view2_id = reconstruction_->AddView(image2_filename, 0);
+        View* view2 = reconstruction_->MutableView(view2_id);
+        *(view2->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+
         // Feature extraction
         std::vector<Keypoint> image1_keypoints;
         std::vector<Eigen::VectorXf> image1_descriptors;
@@ -70,21 +83,14 @@ namespace theia {
         feature_matcher_->AddImage(image1_filename, image1_keypoints, image1_descriptors);
         feature_matcher_->AddImage(image2_filename, image2_keypoints, image2_descriptors);
 
+        // Add to image retrieval
+        image_retrieval_->AddImage(view1_id, image1_keypoints, image1_descriptors);
+        image_retrieval_->AddImage(view2_id, image2_keypoints, image2_descriptors);
+
         std::vector<ImagePairMatch> matches;
         std::vector<std::pair<std::string, std::string>> pairs_to_match;
         pairs_to_match.emplace_back(std::make_pair(image1_filename, image2_filename));
         feature_matcher_->MatchImages(&matches, pairs_to_match);
-
-        // Add to reconstruction
-        ViewId view1_id = reconstruction_->AddView(image1_filename, 0);
-        ViewId view2_id = reconstruction_->AddView(image2_filename, 0);
-
-        // Set intrinsics priors
-        View* view1 = reconstruction_->MutableView(view1_id);
-        *(view1->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
-
-        View* view2 = reconstruction_->MutableView(view2_id);
-        *(view2->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
 
         // Add matches to view graph
         if (!matches.empty()) {
@@ -139,32 +145,37 @@ namespace theia {
         GetFilenameFromFilepath(image_fullpath, true, &image_filename);
         FloatImage image(image_fullpath);
 
+        // Add new view to reconstruction and set intrinsics prior
+        ViewId view_id = reconstruction_->AddView(image_filename, 0);
+        View* view = reconstruction_->MutableView(view_id);
+        *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+
         // Feature extraction
         std::vector<Keypoint> image_keypoints;
         std::vector<Eigen::VectorXf> image_descriptors;
         descriptor_extractor_->DetectAndExtractDescriptors(image, &image_keypoints, &image_descriptors);
 
-        // Feature matching
-        feature_matcher_->AddImage(image_filename, image_keypoints, image_descriptors);
+        // Image retrieval (set pairs to match)
+        std::vector<colmap::retrieval::ImageScore> image_scores =
+                image_retrieval_->QueryImage(image_keypoints, image_descriptors);
 
         std::vector<std::pair<std::string, std::string>> pairs_to_match;
-        for (const auto& view_id : reconstruction_->ViewIds()) {
-            std::string other_filename = reconstruction_->View(view_id)->Name();
+        for (const auto& image_score : image_scores) {
+            auto other_view_id = static_cast<ViewId>(image_score.image_id);
+            std::string other_filename = reconstruction_->View(other_view_id)->Name();
             pairs_to_match.emplace_back(std::make_pair(other_filename, image_filename));
         }
 
+        // Feature matching
+        feature_matcher_->AddImage(image_filename, image_keypoints, image_descriptors);
         std::vector<ImagePairMatch> matches;
         feature_matcher_->MatchImages(&matches, pairs_to_match);
 
+        // Add to image retrieval
+        image_retrieval_->AddImage(view_id, image_keypoints, image_descriptors);
+
         // Add matches to view graph
         if (!matches.empty()) {
-
-            // Add new view to reconstruction
-            ViewId view_id = reconstruction_->AddView(image_filename, 0);
-
-            // Set intrinsics prior
-            View* view = reconstruction_->MutableView(view_id);
-            *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
 
             for (const auto& match : matches) {
                 ViewId view1_id = reconstruction_->ViewIdFromName(match.image1);
@@ -217,6 +228,8 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
+        // TODO: remove/exclude image from visual index somehow
+
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
             bool success;
