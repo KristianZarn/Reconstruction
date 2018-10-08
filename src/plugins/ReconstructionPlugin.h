@@ -111,8 +111,8 @@ public:
                          std::string images_path,
                          std::string reconstruction_path,
                          std::shared_ptr<std::vector<std::string>> image_names,
-                         theia::RealtimeReconstructionBuilder::Options options,
-                         theia::CameraIntrinsicsPrior intrinsics_prior);
+                         std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
+                         std::shared_ptr<MVS::Scene> mvs_scene);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;

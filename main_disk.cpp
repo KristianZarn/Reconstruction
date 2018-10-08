@@ -5,7 +5,7 @@
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
 
-#include "helpers.h"
+#include "reconstruction/Helpers.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
@@ -59,11 +59,14 @@ int main(int argc, char *argv[]) {
         return false;
     };
 
-    // Attach reconstruction plugin
-    ReconstructionPlugin::Parameters reconstruction_parameters;
+    // Setup reconstruction objects
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior);
+    auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
 
+    // Attach reconstruction plugin
+    ReconstructionPlugin::Parameters reconstruction_parameters;
     std::shared_ptr<std::vector<std::string>> image_names = std::make_unique<std::vector<std::string>>();
     for (int i = 0; i <= num_images; i++) {
         std::stringstream ss;
@@ -75,15 +78,17 @@ int main(int argc, char *argv[]) {
                                                images_path,
                                                reconstruction_path,
                                                image_names,
-                                               options,
-                                               intrinsics_prior);
+                                               reconstruction_builder,
+                                               mvs_scene);
     viewer.plugins.push_back(&reconstruction_plugin);
 
+    // Attach next best view plugin
+
+
     // Attach edit mesh plugin
-    EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
-                                    reconstruction_path);
-    viewer.plugins.push_back(&edit_mesh_plugin);
+    // EditMeshPlugin::Parameters edit_mesh_parameters;
+    // EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters, reconstruction_path);
+    // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach localization plugin
     // LocalizationPlugin localization_plugin(images_path,

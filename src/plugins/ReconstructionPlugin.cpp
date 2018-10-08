@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "ReconstructionPlugin.h"
 
 #include <sstream>
@@ -19,20 +21,20 @@
 #include <theia/io/reconstruction_reader.h>
 #include <theia/util/filesystem.h>
 
-#include "helpers.h"
+#include "reconstruction/Helpers.h"
 
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
                                            std::string reconstruction_path,
                                            std::shared_ptr<std::vector<std::string>> image_names,
-                                           theia::RealtimeReconstructionBuilder::Options options,
-                                           theia::CameraIntrinsicsPrior intrinsics_prior)
+                                           std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
+                                           std::shared_ptr<MVS::Scene> mvs_scene)
         : parameters_(parameters),
           images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
           image_names_(std::move(image_names)),
-          reconstruction_builder_(std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior)),
-          mvs_scene_(std::make_shared<MVS::Scene>(options.num_threads)) {}
+          reconstruction_builder_(std::move(reconstruction_builder)),
+          mvs_scene_(std::move(mvs_scene)) {}
 
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);

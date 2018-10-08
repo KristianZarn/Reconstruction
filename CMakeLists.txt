@@ -49,20 +49,9 @@ find_package(OpenMVS REQUIRED)
 
 # SUBDIRECTORIES
 add_subdirectory(libraries)
+add_subdirectory(src)
 
 # TARGETS
-set(SOURCE_FILES
-        src/helpers.cpp
-        src/reconstruction/RealtimeReconstructionBuilder.cpp
-        src/reconstruction/RealtimeFeatureMatcher.cpp
-        src/reconstruction/SiftGpuDescriptorExtractor.cpp
-        src/reconstruction/ImageRetrieval.cpp
-        src/plugins/WebcamPlugin.cpp
-        src/plugins/IPCameraPlugin.cpp
-        src/plugins/ReconstructionPlugin.cpp
-        src/plugins/EditMeshPlugin.cpp
-        src/plugins/LocalizationPlugin.cpp)
-
 set(INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/libraries
         ${CMAKE_SOURCE_DIR}/src
@@ -121,16 +110,16 @@ target_link_libraries(realtime_reconstruction_disk ${LIBRARIES})
 #target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
 #target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
 
-add_executable(retrieval_seq main_retrieval_ref.cpp)
-target_include_directories(retrieval_seq PUBLIC
-        ${COLMAP_INCLUDE_DIRS}
-        ${THEIA_INCLUDE_DIRS})
-target_link_libraries(retrieval_seq
-        ${COLMAP_LIBRARIES}
-        ${THEIA_LIBRARIES}
-        OpenMP::OpenMP_CXX)
+#add_executable(retrieval_seq main_retrieval_ref.cpp)
+#target_include_directories(retrieval_seq PUBLIC
+#        ${COLMAP_INCLUDE_DIRS}
+#        ${THEIA_INCLUDE_DIRS})
+#target_link_libraries(retrieval_seq
+#        ${COLMAP_LIBRARIES}
+#        ${THEIA_LIBRARIES}
+#        OpenMP::OpenMP_CXX)
 
-add_executable(retrieval_test main_retrieval_test.cpp ${SOURCE_FILES})
-target_compile_definitions(retrieval_test PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(retrieval_test PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(retrieval_test ${LIBRARIES})
+#add_executable(retrieval_test main_retrieval_test.cpp ${SOURCE_FILES})
+#target_compile_definitions(retrieval_test PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+#target_include_directories(retrieval_test PUBLIC ${INCLUDE_DIRS})
+#target_link_libraries(retrieval_test ${LIBRARIES})

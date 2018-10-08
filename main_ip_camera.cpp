@@ -5,7 +5,7 @@
 #include <igl/readOFF.h>
 #include <igl/opengl/glfw/Viewer.h>
 
-#include "helpers.h"
+#include "reconstruction/Helpers.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "plugins/IPCameraPlugin.h"
 #include "plugins/ReconstructionPlugin.h"

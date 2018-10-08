@@ -3,10 +3,8 @@
 - (low) fix random number generator in theiaSFM
 - (low) primerjaj track length, omejitev track length (max 50 npr.)
 - multithreading kjer se da
-- **reestimate tracks after remove view**
 - **prikaži kvaliteto dodane kamere**
     - št. ujemanj, koliko točk vidi, itd.
-- **Vizualizacija GSD in/ali degree of redundancy**
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
     - posodobi View razred z unordered_map of <feature, trackid>
@@ -30,7 +28,8 @@
 - isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # LOCALIZATION:
-- bolj pametno iskanje ujemanj (vocabulary tree, ali kaj drugega)
+- posodobi
+- združi z webcam in IPcamera
 
 # NEXT BEST VIEW:
 - color in mvs format (from points)
