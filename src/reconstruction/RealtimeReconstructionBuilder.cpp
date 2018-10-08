@@ -355,8 +355,6 @@ namespace theia {
                                                            hashed_match, features_match.descriptors,
                                                            lowes_ratio, &putative_matches);
 
-            // TODO: output statistics for debugging
-
             // Get normalized 2D 3D matches
             for (const auto& match_correspondence : putative_matches) {
                 const Keypoint& keypoint_camera = features_camera.keypoints[match_correspondence.feature1_ind];
@@ -416,7 +414,6 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::ColorizeReconstruction(const std::string& images_path) {
-        // TODO: write custom function
         theia::ColorizeReconstruction(images_path, options_.num_threads, reconstruction_.get());
         return true;
     }

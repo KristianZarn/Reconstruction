@@ -104,8 +104,7 @@ set(INTERNAL_LIBRARIES
 
 set(LIBRARIES
         ${INTERNAL_LIBRARIES}
-        ${EXTERNAL_LIBRARIES}
-        )
+        ${EXTERNAL_LIBRARIES})
 
 add_executable(realtime_reconstruction_disk main_disk.cpp ${SOURCE_FILES})
 target_compile_definitions(realtime_reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)

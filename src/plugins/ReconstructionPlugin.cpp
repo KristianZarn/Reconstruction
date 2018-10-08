@@ -6,11 +6,13 @@
 #include <utility>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <igl/project.h>
+#include <igl/jet.h>
 #include <theia/sfm/reconstruction.h>
 #include <theia/sfm/reconstruction_estimator.h>
 #include <theia/sfm/reconstruction_estimator_utils.h>
@@ -188,20 +190,51 @@ bool ReconstructionPlugin::post_draw() {
 
         // Eigen::Quaternionf quat = viewer->core.trackball_angle;
         // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
-        // ImGui::TextUnformatted(os.str().c_str());
+        // ImGui::TextUnformatted(debug.str().c_str());
+
+        // if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+        //     log_stream_ << "Debug button pressed" << std::endl;
+        //
+        //     viewer->selected_data_index = VIEWER_DATA_MESH;
+        //
+        //     auto num_faces = viewer->data().F.rows();
+        //     Eigen::VectorXi face_id = Eigen::VectorXi::LinSpaced(num_faces, 1, num_faces);
+        //
+        //     Eigen::MatrixXd color;
+        //     igl::jet(face_id, true, color);
+        //
+        //     // Add per-vertex colors
+        //     viewer->data().set_colors(color);
+        // }
+
+        // Show GSD
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Debug button pressed" << std::endl;
 
-            // Clean the mesh
-            mvs_scene_->mesh.Clean(1.0, 0.0, false, 100, 0, false);
+            viewer->selected_data_index = VIEWER_DATA_MESH;
 
-            // Recompute array of vertices incident to each vertex
-            mvs_scene_->mesh.ListIncidenteFaces();
+            // Open file
+            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/vrc_fa.txt";
+            std::ifstream inf(filename);
+            if (!inf) {
+                std::cerr << "Could not open file: " << filename << std::endl;
+                exit(1);
+            }
 
-            set_mesh();
-            show_mesh(true);
-            show_point_cloud(false);
+            // Read data
+            auto num_faces = viewer->data().F.rows();
+            Eigen::VectorXd measure(num_faces);
+            for (int i = 0; i < num_faces; i++) {
+                inf >> measure(i);
+            }
+
+            Eigen::MatrixXd color;
+            igl::jet(measure, 0.0, 1.0, color);
+
+            // Add per-vertex colors
+            viewer->data().set_colors(color);
         }
+
         ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
         ImGui::TreePop();
     }

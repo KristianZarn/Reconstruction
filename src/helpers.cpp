@@ -149,9 +149,7 @@ bool TheiaToMVS(const theia::Reconstruction &reconstruction,
         camera.K(1, 1) *= scale;
         camera.K(0, 2) *= scale;
         camera.K(1, 2) *= scale;
-        Matrix3x3 tmp_mat;
-        tmp_mat = Eigen::Matrix3d::Identity();
-        camera.R = tmp_mat;
+        camera.R = Eigen::Matrix3d::Identity();
         camera.C = Eigen::Vector3d::Zero();
 
         // Define images and poses
@@ -173,9 +171,7 @@ bool TheiaToMVS(const theia::Reconstruction &reconstruction,
                 image.scale = 1;
 
                 MVS::Platform::Pose& pose = platform.poses.AddEmpty();
-                Matrix3x3 tmp_mat;
-                tmp_mat = view->Camera().GetOrientationAsRotationMatrix();
-                pose.R = tmp_mat;
+                pose.R = view->Camera().GetOrientationAsRotationMatrix();
                 pose.C = view->Camera().GetPosition();
 
                 image.UpdateCamera(mvs_scene.platforms);
@@ -207,7 +203,13 @@ bool TheiaToMVS(const theia::Reconstruction &reconstruction,
                 MVS::PointCloud::View& view = views.AddEmpty();
                 view = view_id;
             }
-            // TODO: Set point color
+
+            // Set point color
+            const Eigen::Matrix<uint8_t, 3, 1>& track_color = track->Color();
+            MVS::PointCloud::Color& color = mvs_scene.pointcloud.colors.AddEmpty();
+            color.r = track_color(0);
+            color.g = track_color(1);
+            color.b = track_color(2);
         }
     }
     return true;

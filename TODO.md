@@ -33,7 +33,8 @@
 - bolj pametno iskanje ujemanj (vocabulary tree, ali kaj drugega)
 
 # NEXT BEST VIEW:
-- todo
+- color in mvs format (from points)
+- GSD (ground sampling distance) / degree of redundancy
 
 # OTHER:
 - (low) prikaz zajetih slik
@@ -42,3 +43,5 @@
 - **kamera v ločeni niti**
 - crash when removing view and then extend / localize (neki od tega)
 - extend with all images
+- **speedup colorize**
+    - določi barvo glede na eno sliko (tisto ki doda točko)

@@ -13,8 +13,9 @@
 
 int main(int argc, char *argv[]) {
 
-    std::string project_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
+    int num_images = 100;
 
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
@@ -64,7 +65,7 @@ int main(int argc, char *argv[]) {
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
 
     std::shared_ptr<std::vector<std::string>> image_names = std::make_unique<std::vector<std::string>>();
-    for (int i = 0; i <= 62; i++) {
+    for (int i = 0; i <= num_images; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
         image_names->emplace_back("frame" + ss.str() + ".png");
