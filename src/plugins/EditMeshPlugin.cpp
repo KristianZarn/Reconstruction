@@ -7,10 +7,8 @@
 #include <igl/qslim.h>
 #include <igl/decimate.h>
 
-EditMeshPlugin::EditMeshPlugin(Parameters parameters,
-                               std::string reconstruction_path)
-        : parameters_(parameters),
-          reconstruction_path_(std::move(reconstruction_path)) {}
+EditMeshPlugin::EditMeshPlugin(std::shared_ptr<MVS::Scene> mvs_scene)
+        : mvs_scene_(std::move(mvs_scene)) {}
 
 void EditMeshPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -46,38 +44,14 @@ bool EditMeshPlugin::post_draw() {
 
     // Input output
     if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
-        ImGui::Spacing();
-        if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
-            log_stream_ << std::endl;
-
-            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-            mvs_scene_.Save(reconstruction_path_ + filename_mvs);
-            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-
-            std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-            mvs_scene_.mesh.Save(reconstruction_path_ + filename_ply);
-            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+        if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
+            reload_mesh_callback();
         }
-        if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
-            log_stream_ << std::endl;
-
-            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-            mvs_scene_.Load(reconstruction_path_ + filename_mvs);
-            set_mesh(mvs_scene_);
-            center_object_callback();
-            show_mesh(true);
-            set_bounding_box();
-            set_plane();
-            log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-        }
-        if (ImGui::Button("Reset mesh", ImVec2(-1, 0))) {
-            reset_mesh_callback();
-        }
+        // TODO: show viewer mesh info
         std::ostringstream os;
         os << "Mesh info:"
-           << "\t" << mvs_scene_.mesh.vertices.GetSize() << " vertices"
-           << "\t" << mvs_scene_.mesh.faces.GetSize() << " faces";
+           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
+           << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
@@ -201,7 +175,7 @@ bool EditMeshPlugin::post_draw() {
             log_stream_ << "Vertices: " << viewer->data().V.rows() << std::endl;
             log_stream_ << "Faces: " << viewer->data().F.rows() << std::endl;
             log_stream_ << "V_uv: " << viewer->data().V_uv.rows() << " "
-                        << mvs_scene_.mesh.faceTexcoords.size() << std::endl;
+                        << mvs_scene_->mesh.faceTexcoords.size() << std::endl;
             log_stream_ << "F_uv: " << viewer->data().F_uv.rows() << std::endl;
 
             log_stream_ << "test: V_uv == 3 * faces" << std::endl;
@@ -233,23 +207,11 @@ void EditMeshPlugin::gizmo_options() {
     }
 }
 
-void EditMeshPlugin::reset_mesh_callback() {
-    log_stream_ << std::endl;
-    // Reset reconstruction
-    mvs_scene_.Release();
-    // Reset viewer data
-    viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
-    viewer->data().clear();
-    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
-    viewer->data().clear();
-    viewer->selected_data_index = VIEWER_DATA_PLANE;
-    viewer->data().clear();
-    // Reset selection
-    selected_faces_idx_.clear();
-    // Reset gizmos
-    bounding_box_gizmo_ = Eigen::Matrix4f::Identity();
-    plane_gizmo_ = Eigen::Matrix4f::Identity();
-    log_stream_ << "Mesh reset" << std::endl;
+void EditMeshPlugin::reload_mesh_callback() {
+    set_mesh();
+    set_bounding_box();
+    set_plane();
+    show_mesh(true);
 }
 
 void EditMeshPlugin::center_object_callback() {
@@ -359,7 +321,7 @@ void EditMeshPlugin::remove_selection_callback() {
     // Get vertices from faces
     std::unordered_set<int> selected_vertices_idx;
     for (const auto& i : selected_faces_idx_) {
-        MVS::Mesh::Face face = mvs_scene_.mesh.faces[i];
+        MVS::Mesh::Face face = mvs_scene_->mesh.faces[i];
         selected_vertices_idx.insert(face.x);
         selected_vertices_idx.insert(face.y);
         selected_vertices_idx.insert(face.z);
@@ -371,23 +333,23 @@ void EditMeshPlugin::remove_selection_callback() {
         MVS::Mesh::FIndex& tmp = faces_to_remove.AddEmpty();
         tmp = (MVS::Mesh::FIndex) i;
     }
-    mvs_scene_.mesh.RemoveFaces(faces_to_remove, false);
-    mvs_scene_.mesh.ListIncidenteFaces();
+    mvs_scene_->mesh.RemoveFaces(faces_to_remove, false);
+    mvs_scene_->mesh.ListIncidenteFaces();
 
     // Remove vertices without incident faces
     MVS::Mesh::VertexIdxArr vertices_to_remove;
     for (const auto& i : selected_vertices_idx) {
-        if (mvs_scene_.mesh.vertexFaces[i].IsEmpty()) {
+        if (mvs_scene_->mesh.vertexFaces[i].IsEmpty()) {
             MVS::Mesh::VIndex& tmp = vertices_to_remove.AddEmpty();
             tmp = (MVS::Mesh::VIndex) i;
         }
     }
-    mvs_scene_.mesh.RemoveVertices(vertices_to_remove, true);
-    mvs_scene_.mesh.ListIncidenteFaces();
+    mvs_scene_->mesh.RemoveVertices(vertices_to_remove, true);
+    mvs_scene_->mesh.ListIncidenteFaces();
     selected_faces_idx_.clear();
 
     // Reset mesh in viewer
-    set_mesh(mvs_scene_);
+    set_mesh();
     show_mesh(true);
     set_bounding_box();
     set_plane();
@@ -429,7 +391,7 @@ void EditMeshPlugin::fit_plane_callback() {
 }
 
 void EditMeshPlugin::decimate_callback() {
-    if (parameters_.decimate_target < mvs_scene_.mesh.faces.size()) {
+    if (parameters_.decimate_target < mvs_scene_->mesh.faces.size()) {
         viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
         Eigen::MatrixXd vertices = viewer->data().V;
         Eigen::MatrixXi faces = viewer->data().F;
@@ -448,8 +410,8 @@ void EditMeshPlugin::decimate_callback() {
             tmp.y = static_cast<MVS::Mesh::Type>(vertex(1));
             tmp.z = static_cast<MVS::Mesh::Type>(vertex(2));
         }
-        mvs_scene_.mesh.vertices.Release();
-        mvs_scene_.mesh.vertices = vertices_dec;
+        mvs_scene_->mesh.vertices.Release();
+        mvs_scene_->mesh.vertices = vertices_dec;
 
         MVS::Mesh::FaceArr faces_dec;
         for (int i = 0; i < F_dec.rows(); i++) {
@@ -459,13 +421,13 @@ void EditMeshPlugin::decimate_callback() {
             tmp.y = static_cast<MVS::Mesh::VIndex>(face(1));
             tmp.z = static_cast<MVS::Mesh::VIndex>(face(2));
         }
-        mvs_scene_.mesh.faces.Release();
-        mvs_scene_.mesh.faces = faces_dec;
+        mvs_scene_->mesh.faces.Release();
+        mvs_scene_->mesh.faces = faces_dec;
 
-        mvs_scene_.mesh.ListIncidenteFaces();
+        mvs_scene_->mesh.ListIncidenteFaces();
 
         // Set UVs
-        if (!mvs_scene_.mesh.faceTexcoords.IsEmpty()) {
+        if (!mvs_scene_->mesh.faceTexcoords.IsEmpty()) {
             Eigen::MatrixXd TC = viewer->data().V_uv;
             MVS::Mesh::TexCoordArr tex_coords;
             for (int i = 0; i < F_idx.size(); i++) {
@@ -481,15 +443,15 @@ void EditMeshPlugin::decimate_callback() {
                 tc3.x = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 2, 0));
                 tc3.y = static_cast<MVS::Mesh::Type>(TC(F_idx(i) * 3 + 2, 1));
             }
-            mvs_scene_.mesh.faceTexcoords.Release();
-            mvs_scene_.mesh.faceTexcoords = tex_coords;
+            mvs_scene_->mesh.faceTexcoords.Release();
+            mvs_scene_->mesh.faceTexcoords = tex_coords;
         }
 
-        set_mesh(mvs_scene_);
+        set_mesh();
         set_bounding_box();
         set_plane();
         log_stream_ << std::endl;
-        log_stream_ << "Decimate success: new number of faces is " << mvs_scene_.mesh.faces.size() << "." << std::endl;
+        log_stream_ << "Decimate success: new number of faces is " << mvs_scene_->mesh.faces.size() << "." << std::endl;
     } else {
         log_stream_ << std::endl;
         log_stream_ << "Decimate failed: target number of faces has to be lower than current number." << std::endl;
@@ -498,12 +460,12 @@ void EditMeshPlugin::decimate_callback() {
 
 void EditMeshPlugin::fill_holes_callback() {
     // Clean the mesh
-    mvs_scene_.mesh.Clean(1.0, 0.0, false, parameters_.fill_hole_size, 0, false);
+    mvs_scene_->mesh.Clean(1.0, 0.0, false, parameters_.fill_hole_size, 0, false);
 
     // Recompute array of vertices incident to each vertex
-    mvs_scene_.mesh.ListIncidenteFaces();
+    mvs_scene_->mesh.ListIncidenteFaces();
 
-    set_mesh(mvs_scene_);
+    set_mesh();
     show_mesh(true);
 }
 
@@ -520,25 +482,25 @@ void EditMeshPlugin::color_selection() {
     viewer->data().set_colors(colors);
 }
 
-void EditMeshPlugin::set_mesh(const MVS::Scene& mvs_scene) {
+void EditMeshPlugin::set_mesh() {
     // Select viewer data
     viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
     viewer->data().clear();
 
     // Add vertices
-    int num_vertices = mvs_scene.mesh.vertices.size();
+    int num_vertices = mvs_scene_->mesh.vertices.size();
     Eigen::MatrixXd V(num_vertices, 3);
     for (int i = 0; i < num_vertices; i++) {
-        MVS::Mesh::Vertex vertex = mvs_scene.mesh.vertices[i];
+        MVS::Mesh::Vertex vertex = mvs_scene_->mesh.vertices[i];
         V(i, 0) = vertex[0];
         V(i, 1) = vertex[1];
         V(i, 2) = vertex[2];
     }
     // Add faces
-    int num_faces = mvs_scene.mesh.faces.size();
+    int num_faces = mvs_scene_->mesh.faces.size();
     Eigen::MatrixXi F(num_faces, 3);
     for (int i = 0; i < num_faces; i++) {
-        MVS::Mesh::Face face = mvs_scene.mesh.faces[i];
+        MVS::Mesh::Face face = mvs_scene_->mesh.faces[i];
         F(i, 0) = face[0];
         F(i, 1) = face[1];
         F(i, 2) = face[2];
@@ -548,13 +510,13 @@ void EditMeshPlugin::set_mesh(const MVS::Scene& mvs_scene) {
     viewer->data().show_lines = parameters_.show_wireframe;
 
     // Add texture if available
-    if (!mvs_scene.mesh.faceTexcoords.IsEmpty()) {
+    if (!mvs_scene_->mesh.faceTexcoords.IsEmpty()) {
 
         // Set UVs
-        int num_texcoords = mvs_scene.mesh.faceTexcoords.size();
+        int num_texcoords = mvs_scene_->mesh.faceTexcoords.size();
         Eigen::MatrixXd TC(num_texcoords, 2);
         for (int i = 0; i < num_texcoords; i++) {
-            MVS::Mesh::TexCoord texcoord = mvs_scene.mesh.faceTexcoords[i];
+            MVS::Mesh::TexCoord texcoord = mvs_scene_->mesh.faceTexcoords[i];
             TC(i, 0) = texcoord[0];
             TC(i, 1) = texcoord[1];
         }
@@ -567,7 +529,7 @@ void EditMeshPlugin::set_mesh(const MVS::Scene& mvs_scene) {
         viewer->data().set_uv(TC, FTC);
 
         // Set texture
-        SEACAVE::Image8U3 img = mvs_scene.mesh.textureDiffuse;
+        SEACAVE::Image8U3 img = mvs_scene_->mesh.textureDiffuse;
         int width = img.width();
         int height = img.height();
 

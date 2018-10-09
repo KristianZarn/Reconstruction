@@ -24,11 +24,8 @@ public:
         ImGuizmo::OPERATION gizmo_operation = ImGuizmo::TRANSLATE;
         ImGuizmo::MODE gizmo_mode = ImGuizmo::LOCAL;
 
-        // Input output
-        char filename_buffer[64] = "filename";
-        Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
-
         // Display
+        Eigen::RowVector3d default_color = Eigen::RowVector3d(1, 1, 1);
         bool show_mesh = false;
         bool show_texture = false;
         bool show_wireframe = false;
@@ -42,8 +39,7 @@ public:
         int fill_hole_size = 100;
     };
 
-    EditMeshPlugin(Parameters parameters,
-                   std::string reconstruction_path);
+    explicit EditMeshPlugin(std::shared_ptr<MVS::Scene> mvs_scene);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool pre_draw() override;
@@ -69,11 +65,8 @@ private:
     // Parameters
     Parameters parameters_;
 
-    // Input and output paths
-    std::string reconstruction_path_;
-
     // Reconstruction
-    MVS::Scene mvs_scene_;
+    std::shared_ptr<MVS::Scene> mvs_scene_;
 
     // Selection
     std::unordered_set<int> selected_faces_idx_;
@@ -90,7 +83,7 @@ private:
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
-    void reset_mesh_callback();
+    void reload_mesh_callback();
     void center_object_callback();
     void select_inside_callback();
     void select_faces_below_callback();
@@ -101,7 +94,7 @@ private:
     void fill_holes_callback();
 
     // Helpers
-    void set_mesh(const MVS::Scene& mvs_scene);
+    void set_mesh();
     void show_mesh(bool visible);
 
     void set_bounding_box();

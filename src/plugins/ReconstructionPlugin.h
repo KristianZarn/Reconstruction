@@ -168,6 +168,7 @@ private:
     // Callback functions
     void save_scene_callback();
     void load_scene_callback();
+    void reload_mesh_callback();
     void initialize_callback();
     void extend_callback();
     void extend_all_callback();

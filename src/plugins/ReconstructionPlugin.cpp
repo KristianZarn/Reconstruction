@@ -80,6 +80,9 @@ bool ReconstructionPlugin::post_draw() {
         if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
             load_scene_callback();
         }
+        if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
+            reload_mesh_callback();
+        }
         std::ostringstream os;
         os << "Mesh info:"
            << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
@@ -137,30 +140,6 @@ bool ReconstructionPlugin::post_draw() {
     // Next best view
     if (ImGui::TreeNodeEx("Next best view", ImGuiTreeNodeFlags_DefaultOpen)) {
 
-        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
-            // Compute measure
-            next_best_view_->updateMesh();
-            std::vector<double> gsd = next_best_view_->groundSamplingDistance();
-
-            // Set color
-            viewer->selected_data_index = VIEWER_DATA_MESH;
-            assert(viewer->data().F.rows() == gsd.size());
-            auto num_faces = viewer->data().F.rows();
-            Eigen::VectorXd measure(num_faces);
-            for (int i = 0; i < num_faces; i++) {
-                measure(i) = gsd[i];
-            }
-
-            Eigen::MatrixXd color;
-            // igl::jet(dor, 0.0, 1.0, color);
-            igl::jet(measure, true, color);
-            viewer->data().set_colors(color);
-
-            // Write to file
-            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/gsd.dat";
-            writeMeasureToFile(filename, gsd);
-        }
-
         if (ImGui::Button("Degree of redundancy", ImVec2(-1, 0))) {
             // Compute measure
             next_best_view_->updateMesh();
@@ -176,13 +155,8 @@ bool ReconstructionPlugin::post_draw() {
             }
 
             Eigen::MatrixXd color;
-            // igl::jet(dor, 0.0, 1.0, color);
             igl::jet(measure, true, color);
             viewer->data().set_colors(color);
-
-            // Write to file
-            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/dor.dat";
-            writeMeasureToFile(filename, dor);
         }
 
         if (ImGui::Button("Pixels per area", ImVec2(-1, 0))) {
@@ -200,37 +174,8 @@ bool ReconstructionPlugin::post_draw() {
             }
 
             Eigen::MatrixXd color;
-            // igl::jet(dor, 0.0, 1.0, color);
             igl::jet(measure, true, color);
             viewer->data().set_colors(color);
-
-            // Write to file
-            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/ppa.dat";
-            writeMeasureToFile(filename, ppa);
-        }
-
-        if (ImGui::Button("Face area", ImVec2(-1, 0))) {
-            // Compute measure
-            next_best_view_->updateMesh();
-            std::vector<double> fa = next_best_view_->faceArea();
-
-            // Set color
-            viewer->selected_data_index = VIEWER_DATA_MESH;
-            assert(viewer->data().F.rows() == fa.size());
-            auto num_faces = viewer->data().F.rows();
-            Eigen::VectorXd measure(num_faces);
-            for (int i = 0; i < num_faces; i++) {
-                measure(i) = fa[i];
-            }
-
-            Eigen::MatrixXd color;
-            // igl::jet(dor, 0.0, 1.0, color);
-            igl::jet(measure, true, color);
-            viewer->data().set_colors(color);
-
-            // Write to file
-            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/fa.dat";
-            writeMeasureToFile(filename, fa);
         }
 
         ImGui::TreePop();
@@ -314,6 +259,11 @@ void ReconstructionPlugin::load_scene_callback() {
     show_point_cloud(false);
     center_object_callback();
     log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+}
+
+void ReconstructionPlugin::reload_mesh_callback() {
+    set_mesh();
+    show_mesh(true);
 }
 
 void ReconstructionPlugin::initialize_callback() {

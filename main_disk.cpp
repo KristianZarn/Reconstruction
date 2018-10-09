@@ -15,11 +15,11 @@
 int main(int argc, char *argv[]) {
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/amfora/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/amfora/";
 
     int num_images = 100;
 
@@ -91,9 +91,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters, reconstruction_path);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach localization plugin
     // LocalizationPlugin localization_plugin(images_path,
