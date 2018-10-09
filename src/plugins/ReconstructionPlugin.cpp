@@ -22,19 +22,22 @@
 #include <theia/util/filesystem.h>
 
 #include "reconstruction/Helpers.h"
+#include "nbv/Helpers.h"
 
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
                                            std::string reconstruction_path,
                                            std::shared_ptr<std::vector<std::string>> image_names,
                                            std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
-                                           std::shared_ptr<MVS::Scene> mvs_scene)
+                                           std::shared_ptr<MVS::Scene> mvs_scene,
+                                           std::shared_ptr<NextBestView> next_best_view)
         : parameters_(parameters),
           images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
           image_names_(std::move(image_names)),
           reconstruction_builder_(std::move(reconstruction_builder)),
-          mvs_scene_(std::move(mvs_scene)) {}
+          mvs_scene_(std::move(mvs_scene)),
+          next_best_view_(std::move(next_best_view)) {}
 
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -50,6 +53,9 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     // Append mesh for mesh
     viewer->append_mesh();
     VIEWER_DATA_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Initialize next best view
+    next_best_view_->initialize();
 }
 
 bool ReconstructionPlugin::post_draw() {
@@ -68,34 +74,11 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
-        if (ImGui::Button("Save point cloud (ply)", ImVec2(-1, 0))) {
-            log_stream_ << std::endl;
-
-            std::string filename = std::string(parameters_.filename_buffer) + ".ply";
-            reconstruction_builder_->WritePly(reconstruction_path_ + filename);
-            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename) << std::endl;
+        if (ImGui::Button("Save scene (MVS)", ImVec2(-1, 0))) {
+            save_scene_callback();
         }
-        if (ImGui::Button("Save mesh (MVS)", ImVec2(-1, 0))) {
-            log_stream_ << std::endl;
-
-            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-            mvs_scene_->Save(reconstruction_path_ + filename_mvs);
-            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
-
-            std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-            mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
-            log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
-        }
-        if (ImGui::Button("Load mesh (MVS)", ImVec2(-1, 0))) {
-            log_stream_ << std::endl;
-
-            std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
-            mvs_scene_->Load(reconstruction_path_ + filename_mvs);
-            set_mesh();
-            show_mesh(true);
-            show_point_cloud(false);
-            center_object_callback();
-            log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
+            load_scene_callback();
         }
         std::ostringstream os;
         os << "Mesh info:"
@@ -104,7 +87,6 @@ bool ReconstructionPlugin::post_draw() {
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
-
 
     // Sparse reconstruction
     if (ImGui::TreeNodeEx("Sparse reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -152,6 +134,108 @@ bool ReconstructionPlugin::post_draw() {
         ImGui::TreePop();
     }
 
+    // Next best view
+    if (ImGui::TreeNodeEx("Next best view", ImGuiTreeNodeFlags_DefaultOpen)) {
+
+        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
+            // Compute measure
+            next_best_view_->updateMesh();
+            std::vector<double> gsd = next_best_view_->groundSamplingDistance();
+
+            // Set color
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            assert(viewer->data().F.rows() == gsd.size());
+            auto num_faces = viewer->data().F.rows();
+            Eigen::VectorXd measure(num_faces);
+            for (int i = 0; i < num_faces; i++) {
+                measure(i) = gsd[i];
+            }
+
+            Eigen::MatrixXd color;
+            // igl::jet(dor, 0.0, 1.0, color);
+            igl::jet(measure, true, color);
+            viewer->data().set_colors(color);
+
+            // Write to file
+            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/gsd.dat";
+            writeMeasureToFile(filename, gsd);
+        }
+
+        if (ImGui::Button("Degree of redundancy", ImVec2(-1, 0))) {
+            // Compute measure
+            next_best_view_->updateMesh();
+            std::vector<unsigned int> dor = next_best_view_->degreeOfRedundancy();
+
+            // Set color
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            assert(viewer->data().F.rows() == dor.size());
+            auto num_faces = viewer->data().F.rows();
+            Eigen::VectorXd measure(num_faces);
+            for (int i = 0; i < num_faces; i++) {
+                measure(i) = dor[i];
+            }
+
+            Eigen::MatrixXd color;
+            // igl::jet(dor, 0.0, 1.0, color);
+            igl::jet(measure, true, color);
+            viewer->data().set_colors(color);
+
+            // Write to file
+            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/dor.dat";
+            writeMeasureToFile(filename, dor);
+        }
+
+        if (ImGui::Button("Pixels per area", ImVec2(-1, 0))) {
+            // Compute measure
+            next_best_view_->updateMesh();
+            std::vector<double> ppa = next_best_view_->pixelsPerArea();
+
+            // Set color
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            assert(viewer->data().F.rows() == ppa.size());
+            auto num_faces = viewer->data().F.rows();
+            Eigen::VectorXd measure(num_faces);
+            for (int i = 0; i < num_faces; i++) {
+                measure(i) = ppa[i];
+            }
+
+            Eigen::MatrixXd color;
+            // igl::jet(dor, 0.0, 1.0, color);
+            igl::jet(measure, true, color);
+            viewer->data().set_colors(color);
+
+            // Write to file
+            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/ppa.dat";
+            writeMeasureToFile(filename, ppa);
+        }
+
+        if (ImGui::Button("Face area", ImVec2(-1, 0))) {
+            // Compute measure
+            next_best_view_->updateMesh();
+            std::vector<double> fa = next_best_view_->faceArea();
+
+            // Set color
+            viewer->selected_data_index = VIEWER_DATA_MESH;
+            assert(viewer->data().F.rows() == fa.size());
+            auto num_faces = viewer->data().F.rows();
+            Eigen::VectorXd measure(num_faces);
+            for (int i = 0; i < num_faces; i++) {
+                measure(i) = fa[i];
+            }
+
+            Eigen::MatrixXd color;
+            // igl::jet(dor, 0.0, 1.0, color);
+            igl::jet(measure, true, color);
+            viewer->data().set_colors(color);
+
+            // Write to file
+            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/fa.dat";
+            writeMeasureToFile(filename, fa);
+        }
+
+        ImGui::TreePop();
+    }
+
     // Display options
     if (ImGui::TreeNodeEx("Display options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Center object", ImVec2(-1, 0))) {
@@ -184,57 +268,8 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     if (ImGui::TreeNodeEx("Debug")) {
-        // Debug info
-        // std::ostringstream debug;
-        // debug << "View: \n" << viewer->core.view << std::endl;
-        // debug << "Norm: \n" << viewer->core.norm << std::endl;
-        // debug << "Proj: \n" << viewer->core.proj << std::endl;
-
-        // Eigen::Quaternionf quat = viewer->core.trackball_angle;
-        // debug << "trackball_angle: \n" << quat.w() << ", " << quat.x() << ", " << quat.y() << ", " << quat.z() << std::endl;
-        // ImGui::TextUnformatted(debug.str().c_str());
-
-        // if (ImGui::Button("Debug", ImVec2(-1, 0))) {
-        //     log_stream_ << "Debug button pressed" << std::endl;
-        //
-        //     viewer->selected_data_index = VIEWER_DATA_MESH;
-        //
-        //     auto num_faces = viewer->data().F.rows();
-        //     Eigen::VectorXi face_id = Eigen::VectorXi::LinSpaced(num_faces, 1, num_faces);
-        //
-        //     Eigen::MatrixXd color;
-        //     igl::jet(face_id, true, color);
-        //
-        //     // Add per-vertex colors
-        //     viewer->data().set_colors(color);
-        // }
-
-        // Show GSD
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Debug button pressed" << std::endl;
-
-            viewer->selected_data_index = VIEWER_DATA_MESH;
-
-            // Open file
-            std::string filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/vrc_fa.txt";
-            std::ifstream inf(filename);
-            if (!inf) {
-                std::cerr << "Could not open file: " << filename << std::endl;
-                exit(1);
-            }
-
-            // Read data
-            auto num_faces = viewer->data().F.rows();
-            Eigen::VectorXd measure(num_faces);
-            for (int i = 0; i < num_faces; i++) {
-                inf >> measure(i);
-            }
-
-            Eigen::MatrixXd color;
-            igl::jet(measure, 0.0, 1.0, color);
-
-            // Add per-vertex colors
-            viewer->data().set_colors(color);
         }
 
         ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
@@ -251,6 +286,34 @@ std::shared_ptr<theia::RealtimeReconstructionBuilder> ReconstructionPlugin::get_
 
 std::shared_ptr<MVS::Scene> ReconstructionPlugin::get_mvs_scene_() {
     return mvs_scene_;
+}
+
+std::shared_ptr<NextBestView> ReconstructionPlugin::get_next_best_view_() {
+    return next_best_view_;
+}
+
+void ReconstructionPlugin::save_scene_callback() {
+    log_stream_ << std::endl;
+
+    std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+    mvs_scene_->Save(reconstruction_path_ + filename_mvs);
+    log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+
+    std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+    mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
+    log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+}
+
+void ReconstructionPlugin::load_scene_callback() {
+    log_stream_ << std::endl;
+
+    std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
+    mvs_scene_->Load(reconstruction_path_ + filename_mvs);
+    set_mesh();
+    show_mesh(true);
+    show_point_cloud(false);
+    center_object_callback();
+    log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
 }
 
 void ReconstructionPlugin::initialize_callback() {

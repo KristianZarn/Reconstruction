@@ -8,7 +8,7 @@
 - **Napiši svoj reconstruction estimator**
     - večino se da skopirat iz incremental estimator
     - posodobi View razred z unordered_map of <feature, trackid>
-- implementiraj AC-RANSAC ?
+- (low) implementiraj AC-RANSAC ?
 - remove unestimated views (button)
 - update next_image_idx if reconstruction fails
 - shrani/naloži redko rekonstrukcijo
@@ -32,8 +32,7 @@
 - združi z webcam in IPcamera
 
 # NEXT BEST VIEW:
-- color in mvs format (from points)
-- GSD (ground sampling distance) / degree of redundancy
+- nbv based on measure (non linear optimization)
 
 # OTHER:
 - (low) prikaz zajetih slik

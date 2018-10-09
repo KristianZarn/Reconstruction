@@ -3,55 +3,14 @@
 #include <cmath>
 
 NextBestView::NextBestView(std::shared_ptr<MVS::Scene> mvs_scene)
-        : mvs_scene_(std::move(mvs_scene)) {
+        : mvs_scene_(std::move(mvs_scene)) {}
 
-    assert(!mvs_scene_->images.empty());
-    image_width_ = mvs_scene_->images.front().width;
-    image_height_ = mvs_scene_->images.front().height;
-
-    // Initialize GLFW context
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-    window_ = glfwCreateWindow(image_width_, image_height_, "", NULL, NULL);
-    if (!window_) {
-        std::cout << "Failed to create GLFW window" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    glfwMakeContextCurrent(window_);
-
-    // Load all OpenGL function pointers
-    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        std::cout << "Failed to initialize GLAD" << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Framebuffer configuration
-    glGenFramebuffers(1, &framebuffer_);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_);
-
-    // Color attachment
-    glGenTextures(1, &framebufferTexture_);
-    glBindTexture(GL_TEXTURE_2D, framebufferTexture_);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, image_width_, image_height_, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture_, 0);
-
-    // Depth and stencil attachment
-    glGenRenderbuffers(1, &framebufferDepthStencil_);
-    glBindRenderbuffer(GL_RENDERBUFFER, framebufferDepthStencil_);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, image_width_, image_height_);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, framebufferDepthStencil_);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    }
-
+void NextBestView::initialize() {
     // Prepare shader
     shader_ = std::make_unique<SourceShader>(vertex_shader_source, fragment_shader_source);
+}
+
+void NextBestView::updateMesh() {
 
     // Convert from OpenMVS to OpenGLMesh
     std::vector<OpenGLMesh::Vertex> vertices;
@@ -72,26 +31,39 @@ NextBestView::NextBestView(std::shared_ptr<MVS::Scene> mvs_scene)
     mesh_ = std::make_unique<OpenGLMesh>(vertices);
 }
 
-NextBestView::~NextBestView() {
-    glDeleteFramebuffers(1, &framebuffer_);
-    glDeleteTextures(1, &framebufferTexture_);
-    glDeleteRenderbuffers(1, &framebufferDepthStencil_);
-    glfwDestroyWindow(window_);
-}
-
-int NextBestView::getImageWidth() {
-    return image_width_;
-}
-
-int NextBestView::getImageHeight() {
-    return image_height_;
-}
-
 std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
 
+    assert(mvs_scene_->images.size() > camera_id);
+    unsigned int image_width = mvs_scene_->images[camera_id].width;
+    unsigned int image_height = mvs_scene_->images[camera_id].height;
+
+    // Framebuffer configuration
+    unsigned int framebuffer;
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    // Color attachment
+    unsigned int framebufferTexture;
+    glGenTextures(1, &framebufferTexture);
+    glBindTexture(GL_TEXTURE_2D, framebufferTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, image_width, image_height, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferTexture, 0);
+
+    // Depth and stencil attachment
+    unsigned int framebufferDepthStencil;
+    glGenRenderbuffers(1, &framebufferDepthStencil);
+    glBindRenderbuffer(GL_RENDERBUFFER, framebufferDepthStencil);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, image_width, image_height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, framebufferDepthStencil);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+    }
+
     // Render configuration
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_);
-    glViewport(0, 0, image_width_, image_height_);
+    glViewport(0, 0, image_width, image_height);
     glEnable(GL_DEPTH_TEST);
 
     // Clear the buffers
@@ -104,14 +76,12 @@ std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
     shader_->use();
 
     // Projection matrix
-    unsigned int height = mvs_scene_->images[camera_id].height;
-    unsigned int width = mvs_scene_->images[camera_id].width;
     double focal_y = mvs_scene_->images[camera_id].camera.K(1,1);
-    double fov_y = (2 * std::atan(static_cast<double>(height) / (2*focal_y)));
+    double fov_y = (2 * std::atan(static_cast<double>(image_height) / (2*focal_y)));
 
     glm::mat4 projection = glm::perspective(
             static_cast<float>(fov_y),
-            static_cast<float>(width) / static_cast<float>(height),
+            static_cast<float>(image_width) / static_cast<float>(image_height),
             0.1f, 100.0f);
     shader_->setMat4("projection", projection);
 
@@ -137,13 +107,20 @@ std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
     mesh_->draw();
 
     // Read frambuffer texture
-    std::vector<unsigned int> render_data(image_width_ * image_height_);
-    glReadPixels(0, 0, image_width_, image_height_, GL_RED_INTEGER, GL_UNSIGNED_INT, render_data.data());
+    std::vector<unsigned int> render_data(image_width * image_height);
+    glReadPixels(0, 0, image_width, image_height, GL_RED_INTEGER, GL_UNSIGNED_INT, render_data.data());
+
+    // Cleanup
+    glDeleteFramebuffers(1, &framebuffer);
+    glDeleteTextures(1, &framebufferTexture);
+    glDeleteRenderbuffers(1, &framebufferDepthStencil);
 
     return render_data;
 }
 
 std::vector<double> NextBestView::groundSamplingDistance() {
+
+    assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
     int num_cameras = mvs_scene_->images.size();
     int num_faces = mvs_scene_->mesh.faces.size();
 
@@ -169,27 +146,10 @@ std::vector<double> NextBestView::groundSamplingDistance() {
     }
 
     // Compute GSD
-    auto vertices = mesh_->getVertices();
-    assert(vertices.size() == 3 * mvs_scene_->mesh.faces.size());
-
+    std::vector<double> face_area = faceArea();
     std::vector<double> gsd(num_faces);
     for (int i = 0; i < num_faces; i++) {
-
-        // Compute triangle area
-        const auto& a = vertices[i*3 + 0].position;
-        const auto& b = vertices[i*3 + 1].position;
-        const auto& c = vertices[i*3 + 2].position;
-
-        glm::vec3 ab = b - a;
-        glm::vec3 ac = c - a;
-
-        double face_area = 0.5 * sqrt(
-                pow(ab[1] * ac[2] - ab[2] * ac[1] , 2.0) +
-                pow(ab[2] * ac[0] - ab[0] * ac[2] , 2.0) +
-                pow(ab[0] * ac[1] - ab[1] * ac[0] , 2.0));
-
-        // Compute GSD measure
-        gsd[i] = sqrt(face_area / static_cast<double>(pixel_count[i]));
+        gsd[i] = sqrt(face_area[i] / static_cast<double>(pixel_count[i]));
         if (!isfinite(gsd[i])) {
             gsd[i] = 0.0;
         }
@@ -225,6 +185,8 @@ std::vector<unsigned int> NextBestView::degreeOfRedundancy() {
 }
 
 std::vector<double> NextBestView::pixelsPerArea() {
+
+    assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
     int num_cameras = mvs_scene_->images.size();
     int num_faces = mvs_scene_->mesh.faces.size();
 
@@ -240,27 +202,10 @@ std::vector<double> NextBestView::pixelsPerArea() {
     }
 
     // Compute PPA
-    auto vertices = mesh_->getVertices();
-    assert(vertices.size() == 3 * mvs_scene_->mesh.faces.size());
-
+    std::vector<double> face_area = faceArea();
     std::vector<double> ppa(num_faces);
     for (int i = 0; i < num_faces; i++) {
-
-        // Compute face area
-        const auto& a = vertices[i*3 + 0].position;
-        const auto& b = vertices[i*3 + 1].position;
-        const auto& c = vertices[i*3 + 2].position;
-
-        glm::vec3 ab = b - a;
-        glm::vec3 ac = c - a;
-
-        double face_area = 0.5 * sqrt(
-                pow(ab[1] * ac[2] - ab[2] * ac[1] , 2.0) +
-                pow(ab[2] * ac[0] - ab[0] * ac[2] , 2.0) +
-                pow(ab[0] * ac[1] - ab[1] * ac[0] , 2.0));
-
-        // Compute PPA measure
-        ppa[i] = static_cast<double>(pixel_count[i]) / face_area;
+        ppa[i] = static_cast<double>(pixel_count[i]) / face_area[i];
         if (!isfinite(ppa[i])) {
             ppa[i] = 0.0;
         }
@@ -269,25 +214,29 @@ std::vector<double> NextBestView::pixelsPerArea() {
 }
 
 std::vector<double> NextBestView::faceArea() {
-    int num_faces = mvs_scene_->mesh.faces.size();
-    auto vertices = mesh_->getVertices();
-    assert(vertices.size() == 3 * mvs_scene_->mesh.faces.size());
 
+    int num_faces = mvs_scene_->mesh.faces.size();
     std::vector<double> fa(num_faces);
     for (int i = 0; i < num_faces; i++) {
 
-        // Compute face area
-        const auto& a = vertices[i*3 + 0].position;
-        const auto& b = vertices[i*3 + 1].position;
-        const auto& c = vertices[i*3 + 2].position;
+        const auto& face = mvs_scene_->mesh.faces[i];
+        const auto& a = mvs_scene_->mesh.vertices[face[0]];
+        const auto& b = mvs_scene_->mesh.vertices[face[1]];
+        const auto& c = mvs_scene_->mesh.vertices[face[2]];
 
-        glm::vec3 ab = b - a;
-        glm::vec3 ac = c - a;
+        // Compute face area
+        double ab_x = b.x - a.x;
+        double ab_y = b.y - a.y;
+        double ab_z = b.z - a.z;
+
+        double ac_x = c.x - a.x;
+        double ac_y = c.y - a.y;
+        double ac_z = c.z - a.z;
 
         double face_area = 0.5 * sqrt(
-                pow(ab[1] * ac[2] - ab[2] * ac[1] , 2.0) +
-                pow(ab[2] * ac[0] - ab[0] * ac[2] , 2.0) +
-                pow(ab[0] * ac[1] - ab[1] * ac[0] , 2.0));
+                pow(ab_y * ac_z - ab_z * ac_y , 2.0) +
+                pow(ab_z * ac_x - ab_x * ac_z , 2.0) +
+                pow(ab_x * ac_y - ab_y * ac_x , 2.0));
 
         fa[i] = face_area;
     }

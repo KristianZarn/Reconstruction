@@ -10,6 +10,7 @@
 #include <OpenMVS/MVS.h>
 
 #include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "nbv/NextBestView.h"
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
@@ -112,7 +113,8 @@ public:
                          std::string reconstruction_path,
                          std::shared_ptr<std::vector<std::string>> image_names,
                          std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
-                         std::shared_ptr<MVS::Scene> mvs_scene);
+                         std::shared_ptr<MVS::Scene> mvs_scene,
+                         std::shared_ptr<NextBestView> next_best_view);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
@@ -120,6 +122,7 @@ public:
     // Accessors
     std::shared_ptr<theia::RealtimeReconstructionBuilder> get_reconstruction_builder();
     std::shared_ptr<MVS::Scene> get_mvs_scene_();
+    std::shared_ptr<NextBestView> get_next_best_view_();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -155,11 +158,16 @@ private:
     std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
+    // Next best view
+    std::shared_ptr<NextBestView> next_best_view_;
+
     // Log
     // std::ostringstream log_stream_;
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
+    void save_scene_callback();
+    void load_scene_callback();
     void initialize_callback();
     void extend_callback();
     void extend_all_callback();

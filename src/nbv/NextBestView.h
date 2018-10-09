@@ -15,10 +15,9 @@
 class NextBestView {
 public:
     explicit NextBestView(std::shared_ptr<MVS::Scene> mvs_scene);
-    ~NextBestView();
 
-    int getImageWidth();
-    int getImageHeight();
+    void initialize();
+    void updateMesh();
 
     std::vector<unsigned int> renderFromCamera(int camera_id);
     std::vector<double> groundSamplingDistance();
@@ -29,17 +28,10 @@ public:
 private:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
-    int image_width_;
-    int image_height_;
 
     // Rendering members
-    GLFWwindow* window_;
     std::unique_ptr<SourceShader> shader_;
     std::unique_ptr<OpenGLMesh> mesh_;
-
-    unsigned int framebuffer_;
-    unsigned int framebufferTexture_;
-    unsigned int framebufferDepthStencil_;
 
     // Shaders
     const std::string vertex_shader_source =

@@ -7,6 +7,7 @@
 
 #include "reconstruction/Helpers.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "nbv/NextBestView.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
 #include "plugins/LocalizationPlugin.h"
@@ -14,7 +15,12 @@
 int main(int argc, char *argv[]) {
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
+
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/amfora/";
+
     int num_images = 100;
 
     std::string images_path = project_path + "images/";
@@ -64,6 +70,7 @@ int main(int argc, char *argv[]) {
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
     auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
 
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters reconstruction_parameters;
@@ -79,11 +86,9 @@ int main(int argc, char *argv[]) {
                                                reconstruction_path,
                                                image_names,
                                                reconstruction_builder,
-                                               mvs_scene);
+                                               mvs_scene,
+                                               next_best_view);
     viewer.plugins.push_back(&reconstruction_plugin);
-
-    // Attach next best view plugin
-
 
     // Attach edit mesh plugin
     // EditMeshPlugin::Parameters edit_mesh_parameters;
