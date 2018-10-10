@@ -169,15 +169,21 @@ private:
     void save_scene_callback();
     void load_scene_callback();
     void reload_mesh_callback();
+
     void initialize_callback();
     void extend_callback();
     void extend_all_callback();
+
     void remove_view_callback(int view_id);
     void remove_last_view_callback();
     void reset_reconstruction_callback();
+
     void reconstruct_mesh_callback();
     void refine_mesh_callback();
     void texture_mesh_callback();
+
+    void pixels_per_area_callback();
+
     void center_object_callback();
 
     // Helper functions

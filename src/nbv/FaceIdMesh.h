@@ -7,15 +7,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class OpenGLMesh {
+class FaceIdMesh {
 public:
     struct Vertex {
         glm::vec3 position;
         unsigned int id;
     };
 
-    explicit OpenGLMesh(std::vector<Vertex> vertices);
-    ~OpenGLMesh();
+    explicit FaceIdMesh(std::vector<Vertex> vertices);
+    ~FaceIdMesh();
 
     const std::vector<Vertex>& getVertices();
     void draw();

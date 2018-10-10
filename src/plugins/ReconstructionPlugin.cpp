@@ -139,45 +139,9 @@ bool ReconstructionPlugin::post_draw() {
 
     // Next best view
     if (ImGui::TreeNodeEx("Next best view", ImGuiTreeNodeFlags_DefaultOpen)) {
-
-        if (ImGui::Button("Degree of redundancy", ImVec2(-1, 0))) {
-            // Compute measure
-            next_best_view_->updateMesh();
-            std::vector<unsigned int> dor = next_best_view_->degreeOfRedundancy();
-
-            // Set color
-            viewer->selected_data_index = VIEWER_DATA_MESH;
-            assert(viewer->data().F.rows() == dor.size());
-            auto num_faces = viewer->data().F.rows();
-            Eigen::VectorXd measure(num_faces);
-            for (int i = 0; i < num_faces; i++) {
-                measure(i) = dor[i];
-            }
-
-            Eigen::MatrixXd color;
-            igl::jet(measure, true, color);
-            viewer->data().set_colors(color);
-        }
-
         if (ImGui::Button("Pixels per area", ImVec2(-1, 0))) {
-            // Compute measure
-            next_best_view_->updateMesh();
-            std::vector<double> ppa = next_best_view_->pixelsPerArea();
-
-            // Set color
-            viewer->selected_data_index = VIEWER_DATA_MESH;
-            assert(viewer->data().F.rows() == ppa.size());
-            auto num_faces = viewer->data().F.rows();
-            Eigen::VectorXd measure(num_faces);
-            for (int i = 0; i < num_faces; i++) {
-                measure(i) = ppa[i];
-            }
-
-            Eigen::MatrixXd color;
-            igl::jet(measure, true, color);
-            viewer->data().set_colors(color);
+            pixels_per_area_callback();
         }
-
         ImGui::TreePop();
     }
 
@@ -305,7 +269,6 @@ void ReconstructionPlugin::initialize_callback() {
     show_cameras(true);
     set_point_cloud();
     show_point_cloud(true);
-    show_mesh(false);
     center_object_callback();
 }
 
@@ -346,7 +309,6 @@ void ReconstructionPlugin::extend_callback() {
     show_cameras(true);
     set_point_cloud();
     show_point_cloud(true);
-    show_mesh(false);
 }
 
 void ReconstructionPlugin::extend_all_callback() {
@@ -440,7 +402,6 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
 
     set_mesh();
     show_mesh(true);
-    show_point_cloud(false);
 }
 
 void ReconstructionPlugin::refine_mesh_callback() {
@@ -524,6 +485,38 @@ void ReconstructionPlugin::texture_mesh_callback() {
         show_point_cloud(false);
     } else {
         log_stream_ << "Texture mesh failed: Mesh is empty." << std::endl;
+    }
+}
+
+void ReconstructionPlugin::pixels_per_area_callback() {
+    log_stream_ << std::endl;
+
+    // Update NBV internal representation
+    next_best_view_->updateMesh();
+
+    log_stream_ << "Computing ppa measure ..." << std::endl;
+    auto time_begin = std::chrono::steady_clock::now();
+
+    // Compute measure
+    std::vector<double> ppa = next_best_view_->pixelsPerArea();
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Computation time: " << time_elapsed.count() << " s" << std::endl;
+
+    // Set color
+    if (!ppa.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == ppa.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = ppa[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
     }
 }
 

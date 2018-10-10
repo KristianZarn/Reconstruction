@@ -10,7 +10,7 @@
 #include <OpenMVS/MVS.h>
 
 #include "SourceShader.h"
-#include "OpenGLMesh.h"
+#include "FaceIdMesh.h"
 
 class NextBestView {
 public:
@@ -31,7 +31,7 @@ private:
 
     // Rendering members
     std::unique_ptr<SourceShader> shader_;
-    std::unique_ptr<OpenGLMesh> mesh_;
+    std::unique_ptr<FaceIdMesh> mesh_;
 
     // Shaders
     const std::string vertex_shader_source =

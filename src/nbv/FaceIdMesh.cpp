@@ -1,6 +1,6 @@
-#include "OpenGLMesh.h"
+#include "FaceIdMesh.h"
 
-OpenGLMesh::OpenGLMesh(std::vector<OpenGLMesh::Vertex> vertices)
+FaceIdMesh::FaceIdMesh(std::vector<FaceIdMesh::Vertex> vertices)
         : vertices_(std::move(vertices)) {
 
     // Create buffers
@@ -22,16 +22,16 @@ OpenGLMesh::OpenGLMesh(std::vector<OpenGLMesh::Vertex> vertices)
     glBindVertexArray(0);
 }
 
-OpenGLMesh::~OpenGLMesh() {
+FaceIdMesh::~FaceIdMesh() {
     glDeleteVertexArrays(1, &VAO_);
     glDeleteBuffers(1, &VBO_);
 }
 
-const std::vector<OpenGLMesh::Vertex>& OpenGLMesh::getVertices() {
+const std::vector<FaceIdMesh::Vertex>& FaceIdMesh::getVertices() {
     return vertices_;
 }
 
-void OpenGLMesh::draw() {
+void FaceIdMesh::draw() {
     glBindVertexArray(VAO_);
     glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(vertices_.size()));
     glBindVertexArray(0);

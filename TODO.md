@@ -25,11 +25,10 @@
 - (low) fix crash when mesh cannot be loaded
 - (low) fix color on selection
 - (low) posodobi uv koordinate po odstranjevanju točk/trikotnikov
-- isti mvs objekt za edit in reconstruction (da ni treba save/load)
 
 # LOCALIZATION:
-- posodobi
-- združi z webcam in IPcamera
+- **posodobi**
+- **združi z webcam in IPcamera**
 
 # NEXT BEST VIEW:
 - nbv based on measure (non linear optimization)
@@ -40,6 +39,5 @@
 - pogled na sceno iz kamere (pri lokalizaciji)
 - **kamera v ločeni niti**
 - crash when removing view and then extend / localize (neki od tega)
-- extend with all images
-- **speedup colorize**
+- speedup colorize
     - določi barvo glede na eno sliko (tisto ki doda točko)

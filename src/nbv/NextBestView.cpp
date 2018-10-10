@@ -12,13 +12,13 @@ void NextBestView::initialize() {
 
 void NextBestView::updateMesh() {
 
-    // Convert from OpenMVS to OpenGLMesh
-    std::vector<OpenGLMesh::Vertex> vertices;
+    // Convert from OpenMVS to FaceIdMesh
+    std::vector<FaceIdMesh::Vertex> vertices;
     unsigned int face_id = 1;
     for (const auto& face_mvs : mvs_scene_->mesh.faces) {
         for (int vert_id = 0; vert_id < 3; vert_id++) {
             const auto& vertex_mvs = mvs_scene_->mesh.vertices[face_mvs[vert_id]];
-            OpenGLMesh::Vertex vertex;
+            FaceIdMesh::Vertex vertex;
             vertex.position = glm::vec3(
                     vertex_mvs.x,
                     vertex_mvs.y,
@@ -28,7 +28,7 @@ void NextBestView::updateMesh() {
         }
         face_id++;
     }
-    mesh_ = std::make_unique<OpenGLMesh>(vertices);
+    mesh_ = std::make_unique<FaceIdMesh>(vertices);
 }
 
 std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
