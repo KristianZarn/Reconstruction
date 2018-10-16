@@ -68,7 +68,8 @@ int main(int argc, char *argv[]) {
     // Setup reconstruction objects
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
     theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
-    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior);
+    options.intrinsics_prior = intrinsics_prior;
+    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
     auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
 

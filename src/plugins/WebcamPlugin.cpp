@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <utility>
+#include <chrono>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -41,12 +42,28 @@ bool WebcamPlugin::post_draw() {
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Get frame from webcam
-    current_frame_ = webcam_.frame();
+    std::cout << "Capture frame: ";
+    auto time_begin = std::chrono::steady_clock::now();
+
+    // current_frame_ = webcam_.frame();
+    const RGBImage& frame = webcam_.frame();
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    std::cout << time_elapsed.count() << " s";
 
     // Replace texture with new frame
+    std::cout << "\tCopy to texture: ";
+    time_begin = std::chrono::steady_clock::now();
+
     glBindTexture(GL_TEXTURE_2D, textureID_);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width_, image_height_, GL_RGB, GL_UNSIGNED_BYTE, current_frame_.data);
+    // glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width_, image_height_, GL_RGB, GL_UNSIGNED_BYTE, current_frame_.data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image_width_, image_height_, GL_RGB, GL_UNSIGNED_BYTE, frame.data);
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    time_end = std::chrono::steady_clock::now();
+    time_elapsed = time_end - time_begin;
+    std::cout << time_elapsed.count() << " s" << std::endl;
 
     // Add an image
     float width = ImGui::GetWindowContentRegionWidth();

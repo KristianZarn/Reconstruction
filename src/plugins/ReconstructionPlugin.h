@@ -99,13 +99,16 @@ public:
         // Menu
         int point_size = 3;
         int view_to_delete = 0;
-        bool show_labels = false;
-        bool show_cameras = false;
-        bool show_point_cloud = false;
-        bool show_mesh = false;
+        bool show_labels = true;
+        bool show_cameras = true;
+        bool show_point_cloud = true;
+        bool show_mesh = true;
         bool show_texture = true;
         bool show_wireframe = false;
         char filename_buffer[64] = "filename";
+        // bool compute_mesh_ppa = true;
+        bool auto_reconstruct = true;
+        bool auto_compute_ppa = true;
     };
 
     ReconstructionPlugin(Parameters parameters,
@@ -183,6 +186,9 @@ private:
     void texture_mesh_callback();
 
     void pixels_per_area_callback();
+    void gsd_callback();
+    void dor_callback();
+    void fa_callback();
 
     void center_object_callback();
 

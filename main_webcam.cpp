@@ -6,28 +6,27 @@
 #include <igl/opengl/glfw/Viewer.h>
 
 #include "reconstruction/Helpers.h"
-#include "plugins/WebcamPlugin.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "plugins/WebcamPlugin.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
 #include "plugins/LocalizationPlugin.h"
 
 int main(int argc, char *argv[]) {
 
-    // Initialization
     std::string camera_device = "/dev/video1";
-    std::string images_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/webcam_images/";
-    std::string reconstruction_path =
-            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction_theia/dataset/webcam_reconstruction/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/webcam/";
 
-    std::string calibration_file = reconstruction_path + "prior_calibration.txt";
-    theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
+    std::string images_path = project_path + "images/";
+    std::string reconstruction_path = project_path + "reconstruction/";
+
+    std::string calibration_file = project_path + "prior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
+    viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
 
     // Setup viewer callbacks for ImGui
@@ -60,6 +59,13 @@ int main(int argc, char *argv[]) {
         return false;
     };
 
+    // Setup reconstruction objects
+    theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
+    theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options, intrinsics_prior);
+    auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+
     // Attach camera plugin
     int image_width = intrinsics_prior.image_width;
     int image_height = intrinsics_prior.image_height;
@@ -67,29 +73,27 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&camera_plugin);
 
     // Attach reconstruction plugin
-    ReconstructionPlugin::Parameters parameters;
-    theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    ReconstructionPlugin::Parameters reconstruction_parameters;
     std::shared_ptr<std::vector<std::string>> image_names = camera_plugin.get_captured_image_names();
 
-    ReconstructionPlugin reconstruction_plugin(parameters,
+    ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
                                                images_path,
                                                reconstruction_path,
                                                image_names,
-                                               options,
-                                               intrinsics_prior);
+                                               reconstruction_builder,
+                                               mvs_scene,
+                                               next_best_view);
     viewer.plugins.push_back(&reconstruction_plugin);
-
-    // Attach localization plugin
-    LocalizationPlugin localization_plugin(images_path,
-                                           reconstruction_plugin.get_reconstruction_builder(),
-                                           camera_plugin.get_current_frame());
-    viewer.plugins.push_back(&localization_plugin);
 
     // Attach edit mesh plugin
     EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(edit_mesh_parameters,
-                                    reconstruction_path);
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
     viewer.plugins.push_back(&edit_mesh_plugin);
+
+    // Attach localization plugin
+    // LocalizationPlugin localization_plugin(images_path,
+    //                                        reconstruction_plugin.get_reconstruction_builder());
+    // viewer.plugins.push_back(&localization_plugin);
 
     // Start viewer
     viewer.launch();

@@ -15,9 +15,8 @@
 
 namespace theia {
 
-    RealtimeReconstructionBuilder::RealtimeReconstructionBuilder(const Options& options,
-                                                                 const CameraIntrinsicsPrior& intrinsics_prior)
-            : options_(options), intrinsics_prior_(intrinsics_prior) {
+    RealtimeReconstructionBuilder::RealtimeReconstructionBuilder(const Options& options)
+            : options_(options) {
 
         // Initialize descriptor extractor
         descriptor_extractor_ = std::make_unique<SiftGpuDescriptorExtractor>(options_.descriptor_extractor_options);
@@ -26,7 +25,7 @@ namespace theia {
         image_retrieval_ = std::make_unique<ImageRetrieval>(options_.image_retrieval_options);
 
         // Initialize matcher
-        feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, intrinsics_prior_);
+        feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, options_.intrinsics_prior);
 
         // Initialize SfM objects
         view_graph_ = std::make_unique<ViewGraph>();
@@ -64,11 +63,11 @@ namespace theia {
         // Add new views to reconstruction and set intrinsics priors
         ViewId view1_id = reconstruction_->AddView(image1_filename, 0);
         View* view1 = reconstruction_->MutableView(view1_id);
-        *(view1->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+        *(view1->MutableCameraIntrinsicsPrior()) = options_.intrinsics_prior;
 
         ViewId view2_id = reconstruction_->AddView(image2_filename, 0);
         View* view2 = reconstruction_->MutableView(view2_id);
-        *(view2->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+        *(view2->MutableCameraIntrinsicsPrior()) = options_.intrinsics_prior;
 
         // Feature extraction
         std::vector<Keypoint> image1_keypoints;
@@ -148,7 +147,7 @@ namespace theia {
         // Add new view to reconstruction and set intrinsics prior
         ViewId view_id = reconstruction_->AddView(image_filename, 0);
         View* view = reconstruction_->MutableView(view_id);
-        *(view->MutableCameraIntrinsicsPrior()) = intrinsics_prior_;
+        *(view->MutableCameraIntrinsicsPrior()) = options_.intrinsics_prior;
 
         // Feature extraction
         std::vector<Keypoint> image_keypoints;
@@ -278,9 +277,7 @@ namespace theia {
     bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
                        CalibratedAbsolutePose& pose) {
 
-        // TODO: remove after debug
-        // std::cout << "Global matching." << std::endl;
-
+        // TODO: use image retrieval
         // Global localization (match with all images)
         std::vector<theia::ViewId> views_to_match = reconstruction_->ViewIds();
         bool success = LocalizeImage(image, views_to_match, pose);
@@ -312,9 +309,6 @@ namespace theia {
                 min_distance = distance;
             }
         }
-
-        // TODO: remove after debug
-        // std::cout << "Matching with view id: " << min_distance.first << std::endl;
 
         // Call localization
         std::vector<ViewId> views_to_match = {min_distance.first};
@@ -456,6 +450,10 @@ namespace theia {
 
     const Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {
         return *reconstruction_;
+    }
+
+    RealtimeReconstructionBuilder::Options RealtimeReconstructionBuilder::GetOptions() {
+        return options_;
     }
 
     std::string RealtimeReconstructionBuilder::GetMessage() {

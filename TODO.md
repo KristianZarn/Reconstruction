@@ -29,6 +29,7 @@
 # LOCALIZATION:
 - **posodobi**
 - **združi z webcam in IPcamera**
+    - posodobi localize funkcije z image retrieval
 
 # NEXT BEST VIEW:
 - nbv based on measure (non linear optimization)

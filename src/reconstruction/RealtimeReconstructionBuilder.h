@@ -33,17 +33,13 @@ namespace theia {
             // Number of threads used.
             int num_threads = 4;
 
-            // Minimum allowable track length. Tracks that are too short are often not
-            // well-constrained for triangulation and bundle adjustment.
-            int min_track_length = 2;
-
-            // Maximum allowable track length. Tracks that are too long are exceedingly
-            // likely to contain outliers.
-            int max_track_length = 50;
+            // Camera intrinsics prior information
+            CameraIntrinsicsPrior intrinsics_prior;
 
             // Options for descriptor extractor
             SiftGpuDescriptorExtractor::Options descriptor_extractor_options;
 
+            // Options for image retrieval
             ImageRetrieval::Options image_retrieval_options;
 
             // Options for computing matches between images.
@@ -53,8 +49,7 @@ namespace theia {
             ReconstructionEstimatorOptions reconstruction_estimator_options;
         };
 
-        RealtimeReconstructionBuilder(const Options& options,
-                                      const CameraIntrinsicsPrior& intrinsics_prior);
+        explicit RealtimeReconstructionBuilder(const Options& options);
 
         // Initialize reconstruction with two images
         bool InitializeReconstruction(const std::string& image1_fullpath, const std::string& image2_fullpath);
@@ -103,12 +98,14 @@ namespace theia {
         // Get constant reference to reconstruction
         const Reconstruction& GetReconstruction();
 
+        // Get options
+        Options GetOptions();
+
         // Get message
         std::string GetMessage();
 
     private:
         Options options_;
-        CameraIntrinsicsPrior intrinsics_prior_;
         std::string reconstruction_message_;
 
         // Feature extraction and matching

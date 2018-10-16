@@ -124,9 +124,12 @@ bool ReconstructionPlugin::post_draw() {
 
     // Dense reconstruction
     if (ImGui::TreeNodeEx("Dense reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-1, 0))) {
+        if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-70, 0))) {
             reconstruct_mesh_callback();
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto##reconstruct", &parameters_.auto_reconstruct);
+
         if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
             refine_mesh_callback();
         }
@@ -139,9 +142,24 @@ bool ReconstructionPlugin::post_draw() {
 
     // Next best view
     if (ImGui::TreeNodeEx("Next best view", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Pixels per area", ImVec2(-1, 0))) {
+        if (ImGui::Button("Pixels per area", ImVec2(-70, 0))) {
             pixels_per_area_callback();
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto##compute_ppa", &parameters_.auto_compute_ppa);
+
+        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
+            gsd_callback();
+        }
+
+        if (ImGui::Button("Degree of redundancy", ImVec2(-1, 0))) {
+            dor_callback();
+        }
+
+        if (ImGui::Button("Face area", ImVec2(-1, 0))) {
+            fa_callback();
+        }
+
         ImGui::TreePop();
     }
 
@@ -266,10 +284,15 @@ void ReconstructionPlugin::initialize_callback() {
     }
     reconstruction_builder_->PrintStatistics(log_stream_, false, true, false);
     set_cameras();
-    show_cameras(true);
     set_point_cloud();
-    show_point_cloud(true);
     center_object_callback();
+
+    if (parameters_.auto_reconstruct) {
+        reconstruct_mesh_callback();
+    }
+    if (parameters_.auto_compute_ppa) {
+        pixels_per_area_callback();
+    }
 }
 
 void ReconstructionPlugin::extend_callback() {
@@ -305,10 +328,16 @@ void ReconstructionPlugin::extend_callback() {
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
     reconstruction_builder_->PrintStatistics(log_stream_, false, true, false);
+
     set_cameras();
-    show_cameras(true);
     set_point_cloud();
-    show_point_cloud(true);
+
+    if (parameters_.auto_reconstruct) {
+        reconstruct_mesh_callback();
+    }
+    if (parameters_.auto_compute_ppa) {
+        pixels_per_area_callback();
+    }
 }
 
 void ReconstructionPlugin::extend_all_callback() {
@@ -325,9 +354,7 @@ void ReconstructionPlugin::remove_view_callback(int view_id) {
     reconstruction_builder_->PrintStatistics(log_stream_);
 
     set_point_cloud();
-    show_point_cloud(true);
     set_cameras();
-    show_cameras(true);
 }
 
 void ReconstructionPlugin::remove_last_view_callback() {
@@ -399,9 +426,7 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
 
     // Recompute array of vertices incident to each vertex
     mvs_scene_->mesh.ListIncidenteFaces();
-
     set_mesh();
-    show_mesh(true);
 }
 
 void ReconstructionPlugin::refine_mesh_callback() {
@@ -448,8 +473,6 @@ void ReconstructionPlugin::refine_mesh_callback() {
                     << mvs_scene_->mesh.faces.GetSize() << " faces." << std::endl;
 
         set_mesh();
-        show_mesh(true);
-        show_point_cloud(false);
     } else {
         log_stream_ << "Refine mesh failed: Mesh is empty." << std::endl;
     }
@@ -479,10 +502,7 @@ void ReconstructionPlugin::texture_mesh_callback() {
         auto time_end = std::chrono::steady_clock::now();
         std::chrono::duration<double> time_elapsed = time_end - time_begin;
         log_stream_ << "Texture mesh time: " << time_elapsed.count() << " s" << std::endl;
-
         set_mesh();
-        show_mesh(true);
-        show_point_cloud(false);
     } else {
         log_stream_ << "Texture mesh failed: Mesh is empty." << std::endl;
     }
@@ -512,6 +532,72 @@ void ReconstructionPlugin::pixels_per_area_callback() {
         Eigen::VectorXd measure(num_faces);
         for (int i = 0; i < num_faces; i++) {
             measure(i) = ppa[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::gsd_callback() {
+    next_best_view_->updateMesh();
+
+    // Compute measure
+    std::vector<double> gsd = next_best_view_->groundSamplingDistance();
+
+    // Set color
+    if (!gsd.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == gsd.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = gsd[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::dor_callback() {
+    next_best_view_->updateMesh();
+
+    // Compute measure
+    std::vector<unsigned int> dor = next_best_view_->degreeOfRedundancy();
+
+    // Set color
+    if (!dor.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == dor.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = dor[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::fa_callback() {
+    next_best_view_->updateMesh();
+
+    // Compute measure
+    std::vector<double> fa = next_best_view_->faceArea();
+
+    // Set color
+    if (!fa.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == fa.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = fa[i];
         }
 
         Eigen::MatrixXd color;

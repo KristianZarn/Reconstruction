@@ -101,14 +101,14 @@ target_include_directories(realtime_reconstruction_disk PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(realtime_reconstruction_disk ${LIBRARIES})
 
 #add_executable(realtime_reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
-#target_compile_definitions(realtime_reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY)
+#target_compile_definitions(realtime_reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
 #target_include_directories(realtime_reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
 #target_link_libraries(realtime_reconstruction_webcam ${LIBRARIES})
-#
-#add_executable(realtime_reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
-#target_compile_definitions(realtime_reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY)
-#target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
-#target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
+
+add_executable(realtime_reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
+target_compile_definitions(realtime_reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
 
 #add_executable(retrieval_seq main_retrieval_ref.cpp)
 #target_include_directories(retrieval_seq PUBLIC
