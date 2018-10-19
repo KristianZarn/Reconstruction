@@ -1,16 +1,16 @@
-#include "NextBestView.h"
+#include "QualityMeasure.h"
 
 #include <cmath>
 
-NextBestView::NextBestView(std::shared_ptr<MVS::Scene> mvs_scene)
+QualityMeasure::QualityMeasure(std::shared_ptr<MVS::Scene> mvs_scene)
         : mvs_scene_(std::move(mvs_scene)) {}
 
-void NextBestView::initialize() {
+void QualityMeasure::initialize() {
     // Prepare shader
     shader_ = std::make_unique<SourceShader>(vertex_shader_source, fragment_shader_source);
 }
 
-void NextBestView::updateMesh() {
+void QualityMeasure::updateMesh() {
 
     // Convert from OpenMVS to FaceIdMesh
     std::vector<FaceIdMesh::Vertex> vertices;
@@ -31,7 +31,7 @@ void NextBestView::updateMesh() {
     mesh_ = std::make_unique<FaceIdMesh>(vertices);
 }
 
-std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
+std::vector<unsigned int> QualityMeasure::renderFromCamera(int camera_id) {
 
     assert(mvs_scene_->images.size() > camera_id);
     unsigned int image_width = mvs_scene_->images[camera_id].width;
@@ -118,7 +118,7 @@ std::vector<unsigned int> NextBestView::renderFromCamera(int camera_id) {
     return render_data;
 }
 
-std::vector<double> NextBestView::groundSamplingDistance() {
+std::vector<double> QualityMeasure::groundSamplingDistance() {
 
     assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
     int num_cameras = mvs_scene_->images.size();
@@ -157,7 +157,7 @@ std::vector<double> NextBestView::groundSamplingDistance() {
     return gsd;
 }
 
-std::vector<unsigned int> NextBestView::degreeOfRedundancy() {
+std::vector<unsigned int> QualityMeasure::degreeOfRedundancy() {
     int num_cameras = mvs_scene_->images.size();
     int num_faces = mvs_scene_->mesh.faces.size();
 
@@ -184,7 +184,7 @@ std::vector<unsigned int> NextBestView::degreeOfRedundancy() {
     return visibility_count;
 }
 
-std::vector<double> NextBestView::pixelsPerArea() {
+std::vector<double> QualityMeasure::pixelsPerArea() {
 
     assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
     int num_cameras = mvs_scene_->images.size();
@@ -213,7 +213,7 @@ std::vector<double> NextBestView::pixelsPerArea() {
     return ppa;
 }
 
-std::vector<double> NextBestView::faceArea() {
+std::vector<double> QualityMeasure::faceArea() {
 
     int num_faces = mvs_scene_->mesh.faces.size();
     std::vector<double> fa(num_faces);

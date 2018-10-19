@@ -7,7 +7,7 @@
 
 #include "reconstruction/Helpers.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
-#include "nbv/NextBestView.h"
+#include "nbv/QualityMeasure.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
 
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     options.intrinsics_prior = intrinsics_prior;
     auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
-    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    auto quality_measure = std::make_shared<QualityMeasure>(mvs_scene);
 
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters reconstruction_parameters;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
                                                image_names,
                                                reconstruction_builder,
                                                mvs_scene,
-                                               next_best_view);
+                                               quality_measure);
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin

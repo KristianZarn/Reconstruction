@@ -10,7 +10,7 @@
 #include <OpenMVS/MVS.h>
 
 #include "reconstruction/RealtimeReconstructionBuilder.h"
-#include "nbv/NextBestView.h"
+#include "nbv/QualityMeasure.h"
 
 class ReconstructionPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
@@ -117,7 +117,7 @@ public:
                          std::shared_ptr<std::vector<std::string>> image_names,
                          std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
                          std::shared_ptr<MVS::Scene> mvs_scene,
-                         std::shared_ptr<NextBestView> next_best_view);
+                         std::shared_ptr<QualityMeasure> quality_measure);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool post_draw() override;
@@ -125,7 +125,7 @@ public:
     // Accessors
     std::shared_ptr<theia::RealtimeReconstructionBuilder> get_reconstruction_builder();
     std::shared_ptr<MVS::Scene> get_mvs_scene_();
-    std::shared_ptr<NextBestView> get_next_best_view_();
+    std::shared_ptr<QualityMeasure> get_quality_measure_();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -161,8 +161,8 @@ private:
     std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
-    // Next best view
-    std::shared_ptr<NextBestView> next_best_view_;
+    // Quality measure
+    std::shared_ptr<QualityMeasure> quality_measure_;
 
     // Log
     // std::ostringstream log_stream_;

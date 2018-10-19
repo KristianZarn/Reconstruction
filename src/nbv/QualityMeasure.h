@@ -1,5 +1,5 @@
-#ifndef SANDBOX_NBV_NEXTBESTVIEW_H
-#define SANDBOX_NBV_NEXTBESTVIEW_H
+#ifndef SANDBOX_NBV_QUALITYMEASURE_H
+#define SANDBOX_NBV_QUALITYMEASURE_H
 
 #include <string>
 #include <memory>
@@ -12,9 +12,9 @@
 #include "SourceShader.h"
 #include "FaceIdMesh.h"
 
-class NextBestView {
+class QualityMeasure {
 public:
-    explicit NextBestView(std::shared_ptr<MVS::Scene> mvs_scene);
+    explicit QualityMeasure(std::shared_ptr<MVS::Scene> mvs_scene);
 
     void initialize();
     void updateMesh();
@@ -59,4 +59,4 @@ private:
 };
 
 
-#endif //SANDBOX_NBV_NEXTBESTVIEW_H
+#endif //SANDBOX_NBV_QUALITYMEASURE_H

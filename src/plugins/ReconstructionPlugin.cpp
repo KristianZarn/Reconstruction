@@ -30,14 +30,14 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::shared_ptr<std::vector<std::string>> image_names,
                                            std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
                                            std::shared_ptr<MVS::Scene> mvs_scene,
-                                           std::shared_ptr<NextBestView> next_best_view)
+                                           std::shared_ptr<QualityMeasure> quality_measure)
         : parameters_(parameters),
           images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
           image_names_(std::move(image_names)),
           reconstruction_builder_(std::move(reconstruction_builder)),
           mvs_scene_(std::move(mvs_scene)),
-          next_best_view_(std::move(next_best_view)) {}
+          quality_measure_(std::move(quality_measure)) {}
 
 void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     ViewerPlugin::init(_viewer);
@@ -54,8 +54,8 @@ void ReconstructionPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     viewer->append_mesh();
     VIEWER_DATA_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
-    // Initialize next best view
-    next_best_view_->initialize();
+    // Initialize quality measure
+    quality_measure_->initialize();
 }
 
 bool ReconstructionPlugin::post_draw() {
@@ -215,8 +215,8 @@ std::shared_ptr<MVS::Scene> ReconstructionPlugin::get_mvs_scene_() {
     return mvs_scene_;
 }
 
-std::shared_ptr<NextBestView> ReconstructionPlugin::get_next_best_view_() {
-    return next_best_view_;
+std::shared_ptr<QualityMeasure> ReconstructionPlugin::get_quality_measure_() {
+    return quality_measure_;
 }
 
 void ReconstructionPlugin::save_scene_callback() {
@@ -512,13 +512,13 @@ void ReconstructionPlugin::pixels_per_area_callback() {
     log_stream_ << std::endl;
 
     // Update NBV internal representation
-    next_best_view_->updateMesh();
+    quality_measure_->updateMesh();
 
     log_stream_ << "Computing ppa measure ..." << std::endl;
     auto time_begin = std::chrono::steady_clock::now();
 
     // Compute measure
-    std::vector<double> ppa = next_best_view_->pixelsPerArea();
+    std::vector<double> ppa = quality_measure_->pixelsPerArea();
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
@@ -541,10 +541,10 @@ void ReconstructionPlugin::pixels_per_area_callback() {
 }
 
 void ReconstructionPlugin::gsd_callback() {
-    next_best_view_->updateMesh();
+    quality_measure_->updateMesh();
 
     // Compute measure
-    std::vector<double> gsd = next_best_view_->groundSamplingDistance();
+    std::vector<double> gsd = quality_measure_->groundSamplingDistance();
 
     // Set color
     if (!gsd.empty()) {
@@ -563,10 +563,10 @@ void ReconstructionPlugin::gsd_callback() {
 }
 
 void ReconstructionPlugin::dor_callback() {
-    next_best_view_->updateMesh();
+    quality_measure_->updateMesh();
 
     // Compute measure
-    std::vector<unsigned int> dor = next_best_view_->degreeOfRedundancy();
+    std::vector<unsigned int> dor = quality_measure_->degreeOfRedundancy();
 
     // Set color
     if (!dor.empty()) {
@@ -585,10 +585,10 @@ void ReconstructionPlugin::dor_callback() {
 }
 
 void ReconstructionPlugin::fa_callback() {
-    next_best_view_->updateMesh();
+    quality_measure_->updateMesh();
 
     // Compute measure
-    std::vector<double> fa = next_best_view_->faceArea();
+    std::vector<double> fa = quality_measure_->faceArea();
 
     // Set color
     if (!fa.empty()) {
