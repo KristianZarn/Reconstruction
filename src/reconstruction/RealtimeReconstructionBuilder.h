@@ -76,7 +76,8 @@ namespace theia {
                            CalibratedAbsolutePose& pose);
 
         // Helper function for localization
-        bool LocalizeImage(const FloatImage& image,
+        bool LocalizeImage(const std::vector<Keypoint>& image_keypoints,
+                           const std::vector<Eigen::VectorXf>& image_descriptors,
                            const std::vector<ViewId>& views_to_match,
                            CalibratedAbsolutePose& pose);
 

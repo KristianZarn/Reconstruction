@@ -34,9 +34,12 @@ public:
             const std::vector<theia::Keypoint>& keypoints,
             const std::vector<Eigen::VectorXf>& descriptors);
 
+    int GetNumImages();
+
 private:
     Options options_;
     colmap::retrieval::VisualIndex<> visual_index_;
+    int num_images_ = 0;
 
     void convertFromTheiaToColmap(const std::vector<theia::Keypoint> &keypoints_theia,
                                   const std::vector<Eigen::VectorXf> &descriptors_theia,

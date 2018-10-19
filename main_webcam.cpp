@@ -10,7 +10,6 @@
 #include "plugins/WebcamPlugin.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
-#include "plugins/LocalizationPlugin.h"
 
 int main(int argc, char *argv[]) {
 
@@ -89,11 +88,6 @@ int main(int argc, char *argv[]) {
     EditMeshPlugin::Parameters edit_mesh_parameters;
     EditMeshPlugin edit_mesh_plugin(mvs_scene);
     viewer.plugins.push_back(&edit_mesh_plugin);
-
-    // Attach localization plugin
-    // LocalizationPlugin localization_plugin(images_path,
-    //                                        reconstruction_plugin.get_reconstruction_builder());
-    // viewer.plugins.push_back(&localization_plugin);
 
     // Start viewer
     viewer.launch();

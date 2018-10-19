@@ -3,8 +3,6 @@ set(SUBDIR_SOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/EditMeshPlugin.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/IPCameraPlugin.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/IPCameraPlugin.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/LocalizationPlugin.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/LocalizationPlugin.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ReconstructionPlugin.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ReconstructionPlugin.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/WebcamPlugin.h"

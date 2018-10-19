@@ -10,7 +10,6 @@
 #include "plugins/IPCameraPlugin.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
-#include "plugins/LocalizationPlugin.h"
 
 int main(int argc, char *argv[]) {
 

@@ -22,14 +22,13 @@
     - **Poglej velikost teksture v mvs_scene in zmanjšaj po potrebi**
 
 # EDIT:
-- (low) fix crash when mesh cannot be loaded
 - (low) fix color on selection
 - (low) posodobi uv koordinate po odstranjevanju točk/trikotnikov
+- (low) marquee select
 
 # LOCALIZATION:
-- **posodobi**
-- **združi z webcam in IPcamera**
-    - posodobi localize funkcije z image retrieval
+- (low) webcam?
+- global localization if based of previous pose fails
 
 # NEXT BEST VIEW:
 - nbv based on measure (non linear optimization)

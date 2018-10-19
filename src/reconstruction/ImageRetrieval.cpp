@@ -22,6 +22,7 @@ void ImageRetrieval::AddImage(theia::ViewId view_id,
     // Add to visual index
     visual_index_.Add(options_.index_options, view_id, colmap_keypoints, colmap_descriptors);
     visual_index_.Prepare();
+    num_images_++;
 }
 
 std::vector<colmap::retrieval::ImageScore> ImageRetrieval::QueryImage(
@@ -70,4 +71,8 @@ void ImageRetrieval::convertFromTheiaToColmap(const std::vector<theia::Keypoint>
     // Keep largest-scale features
     colmap::ExtractTopScaleFeatures(keypoints_colmap, descriptors_colmap,
                                     static_cast<size_t>(options_.max_num_features));
+}
+
+int ImageRetrieval::GetNumImages() {
+    return num_images_;
 }

@@ -62,14 +62,13 @@ void IPCameraPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
 bool IPCameraPlugin::post_draw() {
     // Setup window
     float window_width = 480.0f;
-    float window_height = 480.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - window_width, 0.0f), ImGuiCond_FirstUseEver);
 
     ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Add an url text
-    ImGui::InputText("URL", url_buffer_, 200);
+    ImGui::InputText("URL", url_buffer_, 128);
 
     // Add an image
     auto intrinsic_prior = reconstruction_builder_->GetOptions().intrinsics_prior;
@@ -100,9 +99,6 @@ bool IPCameraPlugin::post_draw() {
     if (ImGui::Checkbox("Show localization camera", &show_camera_)) {
         show_camera(show_camera_);
     }
-
-    // Add camera message
-    // ImGui::TextWrapped("%s", camera_message_.c_str());
 
     // Camera model
     transform_camera();

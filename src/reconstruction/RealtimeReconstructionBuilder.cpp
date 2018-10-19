@@ -25,7 +25,8 @@ namespace theia {
         image_retrieval_ = std::make_unique<ImageRetrieval>(options_.image_retrieval_options);
 
         // Initialize matcher
-        feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options, options_.intrinsics_prior);
+        feature_matcher_ = std::make_unique<RealtimeFeatureMatcher>(options_.matching_options,
+                                                                    options_.intrinsics_prior);
 
         // Initialize SfM objects
         view_graph_ = std::make_unique<ViewGraph>();
@@ -34,8 +35,8 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::InitializeReconstruction(
-            const std::string &image1_fullpath,
-            const std::string &image2_fullpath) {
+            const std::string& image1_fullpath,
+            const std::string& image2_fullpath) {
 
         // Check if initialized
         if (IsInitialized()) {
@@ -275,18 +276,37 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
-                       CalibratedAbsolutePose& pose) {
+                                                      CalibratedAbsolutePose& pose) {
 
-        // TODO: use image retrieval
-        // Global localization (match with all images)
-        std::vector<theia::ViewId> views_to_match = reconstruction_->ViewIds();
-        bool success = LocalizeImage(image, views_to_match, pose);
+        if (image_retrieval_->GetNumImages() < 1) {
+            return false;
+        }
+
+        // Feature extraction
+        std::vector<Keypoint> image_keypoints;
+        std::vector<Eigen::VectorXf> image_descriptors;
+        descriptor_extractor_->DetectAndExtractDescriptors(image, &image_keypoints, &image_descriptors);
+
+        // Image retrieval
+        std::vector<colmap::retrieval::ImageScore> image_scores =
+                image_retrieval_->QueryImage(image_keypoints, image_descriptors);
+
+        std::vector<theia::ViewId> views_to_match;
+        for (const auto& image_score : image_scores) {
+            auto view_id = static_cast<ViewId>(image_score.image_id);
+            if (reconstruction_->View(view_id)->IsEstimated()) {
+                views_to_match.push_back(view_id);
+            }
+        }
+
+        // Call localization
+        bool success = LocalizeImage(image_keypoints, image_descriptors, views_to_match, pose);
         return success;
     }
 
     bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
-                       const CalibratedAbsolutePose& prev_pose,
-                       CalibratedAbsolutePose& pose) {
+                                                      const CalibratedAbsolutePose& prev_pose,
+                                                      CalibratedAbsolutePose& pose) {
 
         // Compute distances to estimated views
         std::vector<std::pair<ViewId, double>> distances;
@@ -294,10 +314,12 @@ namespace theia {
         GetEstimatedViewsFromReconstruction(*reconstruction_, &view_candidates);
         distances.reserve(view_candidates.size());
 
-        assert(!view_candidates.empty());
+        if (view_candidates.empty()) {
+            return false;
+        }
 
         for (const auto& view_id : view_candidates) {
-            const View * view = reconstruction_->View(view_id);
+            const View* view = reconstruction_->View(view_id);
             double distance = (prev_pose.position - view->Camera().GetPosition()).norm();
             distances.emplace_back(std::make_pair(view_id, distance));
         }
@@ -311,21 +333,24 @@ namespace theia {
         }
 
         // Call localization
-        std::vector<ViewId> views_to_match = {min_distance.first};
-        bool success = LocalizeImage(image, views_to_match, pose);
-        return success;
-    }
-
-    bool RealtimeReconstructionBuilder::LocalizeImage(const FloatImage& image,
-                                                      const std::vector<ViewId>& views_to_match,
-                                                      CalibratedAbsolutePose& pose) {
-        assert(!views_to_match.empty());
-
-        // Feature extraction
         std::vector<Keypoint> image_keypoints;
         std::vector<Eigen::VectorXf> image_descriptors;
         descriptor_extractor_->DetectAndExtractDescriptors(image, &image_keypoints, &image_descriptors);
 
+        std::vector<ViewId> views_to_match = {min_distance.first};
+        bool success = LocalizeImage(image_keypoints, image_descriptors, views_to_match, pose);
+        return success;
+    }
+
+    bool RealtimeReconstructionBuilder::LocalizeImage(const std::vector<Keypoint>& image_keypoints,
+                                                      const std::vector<Eigen::VectorXf>& image_descriptors,
+                                                      const std::vector<ViewId>& views_to_match,
+                                                      CalibratedAbsolutePose& pose) {
+        if (views_to_match.empty()) {
+            return false;
+        }
+
+        // Feature extraction
         KeypointsAndDescriptors features_camera;
         features_camera.image_name = "camera";
         features_camera.keypoints = image_keypoints;
@@ -393,7 +418,8 @@ namespace theia {
                 camera.ImageHeight());
 
         ransac_parameters.error_thresh = resolution_scaled_reprojection_error_threshold_pixels *
-                resolution_scaled_reprojection_error_threshold_pixels / (camera.FocalLength() * camera.FocalLength());
+                                         resolution_scaled_reprojection_error_threshold_pixels /
+                                         (camera.FocalLength() * camera.FocalLength());
 
         RansacSummary ransac_summary;
         EstimateCalibratedAbsolutePose(ransac_parameters, RansacType::RANSAC, pose_match, &pose, &ransac_summary);
@@ -416,7 +442,7 @@ namespace theia {
         return theia::WritePlyFile(output_fullpath, *reconstruction_, 2);
     }
 
-    void RealtimeReconstructionBuilder::PrintStatistics(std::ostream &stream,
+    void RealtimeReconstructionBuilder::PrintStatistics(std::ostream& stream,
                                                         bool print_images,
                                                         bool print_reconstruction,
                                                         bool print_view_graph) {
@@ -440,7 +466,7 @@ namespace theia {
             stream << "\n\tNum views = " << view_graph_->NumViews()
                    << "\n\tNum edges = " << view_graph_->NumEdges()
                    << "\n\tEdges = ";
-            for (const auto &edge : view_graph_->GetAllEdges()) {
+            for (const auto& edge : view_graph_->GetAllEdges()) {
                 ViewIdPair view_pair = edge.first;
                 stream << "\t(" << view_pair.first << ", " << view_pair.second << ")";
             }
