@@ -369,3 +369,69 @@ pose_correspondence.feature = camera.PixelToNormalizedCoordinates(match_correspo
 pose_correspondence.world_point = track->Point().hnormalized();
 pose_match.emplace_back(pose_correspondence);
 }
+
+void ReconstructionPlugin::gsd_callback() {
+    quality_measure_->updateMesh();
+
+    // Compute measure
+    std::vector<double> gsd = quality_measure_->groundSamplingDistance();
+
+    // Set color
+    if (!gsd.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == gsd.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = gsd[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::dor_callback() {
+    quality_measure_->updateMesh();
+
+    // Compute measure
+    std::vector<unsigned int> dor = quality_measure_->degreeOfRedundancy();
+
+    // Set color
+    if (!dor.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == dor.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = dor[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::fa_callback() {
+    quality_measure_->updateMesh();
+
+    // Compute measure
+    std::vector<double> fa = quality_measure_->faceArea();
+
+    // Set color
+    if (!fa.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == fa.size());
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = fa[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}

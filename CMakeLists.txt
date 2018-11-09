@@ -47,6 +47,11 @@ find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
 find_package(OpenMVS REQUIRED)
 
+# OptimLib
+add_library(optim STATIC IMPORTED)
+set_property(TARGET optim PROPERTY IMPORTED_LOCATION /usr/local/lib/liboptim.so)
+set(OPTIM_INCLUDE_DIR /usr/local/include/optim)
+
 # SUBDIRECTORIES
 add_subdirectory(libraries)
 add_subdirectory(src)
@@ -65,7 +70,8 @@ set(INCLUDE_DIRS
         ${COLMAP_INCLUDE_DIRS}
         ${OpenMVS_INCLUDE_DIRS}
         ${CUDA_INCLUDE_DIRS}
-        ${CURL_INCLUDE_DIRS})
+        ${CURL_INCLUDE_DIRS}
+        ${OPTIM_INCLUDE_DIR})
 
 set(EXTERNAL_LIBRARIES
         igl::png
@@ -85,7 +91,8 @@ set(EXTERNAL_LIBRARIES
         ${OpenMVS_LIBRARIES}
         ${CUDA_LIBRARIES}
         ${CURL_LIBRARIES}
-        OpenMP::OpenMP_CXX)
+        OpenMP::OpenMP_CXX
+        optim)
 
 set(INTERNAL_LIBRARIES
         webcam

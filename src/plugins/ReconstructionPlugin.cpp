@@ -141,25 +141,12 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     // Next best view
-    if (ImGui::TreeNodeEx("Next best view", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Quality measure", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Pixels per area", ImVec2(-70, 0))) {
             pixels_per_area_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##compute_ppa", &parameters_.auto_compute_ppa);
-
-        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
-            gsd_callback();
-        }
-
-        if (ImGui::Button("Degree of redundancy", ImVec2(-1, 0))) {
-            dor_callback();
-        }
-
-        if (ImGui::Button("Face area", ImVec2(-1, 0))) {
-            fa_callback();
-        }
-
         ImGui::TreePop();
     }
 
@@ -540,72 +527,6 @@ void ReconstructionPlugin::pixels_per_area_callback() {
     }
 }
 
-void ReconstructionPlugin::gsd_callback() {
-    quality_measure_->updateMesh();
-
-    // Compute measure
-    std::vector<double> gsd = quality_measure_->groundSamplingDistance();
-
-    // Set color
-    if (!gsd.empty()) {
-        viewer->selected_data_index = VIEWER_DATA_MESH;
-        assert(viewer->data().F.rows() == gsd.size());
-        auto num_faces = viewer->data().F.rows();
-        Eigen::VectorXd measure(num_faces);
-        for (int i = 0; i < num_faces; i++) {
-            measure(i) = gsd[i];
-        }
-
-        Eigen::MatrixXd color;
-        igl::jet(measure, true, color);
-        viewer->data().set_colors(color);
-    }
-}
-
-void ReconstructionPlugin::dor_callback() {
-    quality_measure_->updateMesh();
-
-    // Compute measure
-    std::vector<unsigned int> dor = quality_measure_->degreeOfRedundancy();
-
-    // Set color
-    if (!dor.empty()) {
-        viewer->selected_data_index = VIEWER_DATA_MESH;
-        assert(viewer->data().F.rows() == dor.size());
-        auto num_faces = viewer->data().F.rows();
-        Eigen::VectorXd measure(num_faces);
-        for (int i = 0; i < num_faces; i++) {
-            measure(i) = dor[i];
-        }
-
-        Eigen::MatrixXd color;
-        igl::jet(measure, true, color);
-        viewer->data().set_colors(color);
-    }
-}
-
-void ReconstructionPlugin::fa_callback() {
-    quality_measure_->updateMesh();
-
-    // Compute measure
-    std::vector<double> fa = quality_measure_->faceArea();
-
-    // Set color
-    if (!fa.empty()) {
-        viewer->selected_data_index = VIEWER_DATA_MESH;
-        assert(viewer->data().F.rows() == fa.size());
-        auto num_faces = viewer->data().F.rows();
-        Eigen::VectorXd measure(num_faces);
-        for (int i = 0; i < num_faces; i++) {
-            measure(i) = fa[i];
-        }
-
-        Eigen::MatrixXd color;
-        igl::jet(measure, true, color);
-        viewer->data().set_colors(color);
-    }
-}
-
 void ReconstructionPlugin::center_object_callback() {
     Eigen::MatrixXd points;
     viewer->selected_data_index = VIEWER_DATA_MESH;
@@ -670,12 +591,12 @@ void ReconstructionPlugin::set_cameras() {
         Eigen::Matrix3d rotation = reconstruction.View(view_id)->Camera().GetOrientationAsRotationMatrix();
 
         // Camera transformation
+        Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
+        transformation.linear() = rotation.transpose();
+        transformation.translation() = position;
+
         Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.5));
-        Eigen::Affine3d rotate;
-        rotate = rotation.transpose();
-        Eigen::Affine3d translate;
-        translate = Eigen::Translation3d(position);
-        Eigen::Affine3d transformation = translate * rotate * scale;
+        transformation = transformation * scale;
 
         // Apply transformation
         Eigen::MatrixXd transformed_V = (default_V.rowwise().homogeneous() * transformation.matrix().transpose()).rowwise().hnormalized();

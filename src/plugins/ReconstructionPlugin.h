@@ -186,9 +186,6 @@ private:
     void texture_mesh_callback();
 
     void pixels_per_area_callback();
-    void gsd_callback();
-    void dor_callback();
-    void fa_callback();
 
     void center_object_callback();
 

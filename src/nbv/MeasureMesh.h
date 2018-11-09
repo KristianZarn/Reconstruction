@@ -1,5 +1,5 @@
-#ifndef SANDBOX_NBV_FACEIDMESH_H
-#define SANDBOX_NBV_FACEIDMESH_H
+#ifndef SANDBOX_NBV_MEASUREMESH_H
+#define SANDBOX_NBV_MEASUREMESH_H
 
 #include <vector>
 
@@ -7,15 +7,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class FaceIdMesh {
+class MeasureMesh {
 public:
     struct Vertex {
         glm::vec3 position;
-        unsigned int id;
+        float measure;
     };
 
-    explicit FaceIdMesh(std::vector<Vertex> vertices);
-    ~FaceIdMesh();
+    explicit MeasureMesh(std::vector<Vertex> vertices);
+    ~MeasureMesh();
 
     const std::vector<Vertex>& getVertices();
     void draw();
@@ -27,4 +27,4 @@ private:
 };
 
 
-#endif //SANDBOX_NBV_FACEIDMESH_H
+#endif //SANDBOX_NBV_MEASUREMESH_H
