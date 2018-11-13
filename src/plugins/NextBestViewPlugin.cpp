@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "nbv/HelpersOptim.h"
 
@@ -15,10 +16,6 @@ void NextBestViewPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     // Append mesh for camera
     viewer->append_mesh();
     VIEWER_DATA_NBV = static_cast<unsigned int>(viewer->data_list.size() - 1);
-
-    // Initial camera pose
-    Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
-    camera_transformation_ = scale * Eigen::Matrix4d::Identity();
 
     set_camera();
     show_camera(show_camera_);
@@ -34,6 +31,9 @@ bool NextBestViewPlugin::post_draw() {
     if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
         next_best_view_->Initialize();
     }
+    ImGui::Text("Camera pose");
+    ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
+    ImGui::SliderFloat3("Angles", glm::value_ptr(camera_rot_), -M_PI, M_PI);
     if (ImGui::Button("Optimize position", ImVec2(-1, 0))) {
         optimize_position_callback();
     }
@@ -44,8 +44,10 @@ bool NextBestViewPlugin::post_draw() {
         show_camera(show_camera_);
     }
 
-    // Camera model
-    transform_camera();
+    // Camera model transformation
+    if (show_camera_) {
+        transform_camera();
+    }
 
     ImGui::End();
     return false;
@@ -90,7 +92,7 @@ void NextBestViewPlugin::optimize_position_callback() {
     std::cout << "Parameters: \n" << param_pos;
 
     // Set camera pose
-    set_camera_transformation();
+    transform_camera();
 }
 
 void NextBestViewPlugin::optimize_rotation_callback() {
@@ -132,21 +134,17 @@ void NextBestViewPlugin::optimize_rotation_callback() {
     std::cout << "Parameters: \n" << param_rot;
 
     // Set camera pose
-    set_camera_transformation();
-}
-
-void NextBestViewPlugin::set_camera_transformation() {
-
+    transform_camera();
 }
 
 void NextBestViewPlugin::set_camera() {
     // Vertices
     Eigen::MatrixXd tmp_V(5, 3);
     tmp_V << 0, 0, 0,
-            -0.75, -0.5, 1,
-            -0.75, 0.5, 1,
-            0.75, 0.5, 1,
-            0.75, -0.5, 1;
+            0.75, 0.5, -1,
+            -0.75, 0.5, -1,
+            -0.75, -0.5, -1,
+            0.75, -0.5, -1;
     camera_vertices_ = tmp_V;
 
     // Faces
@@ -163,11 +161,22 @@ void NextBestViewPlugin::set_camera() {
     viewer->data().clear();
     viewer->data().set_mesh(tmp_V, tmp_F);
     viewer->data().set_face_based(true);
-    viewer->data().set_colors(Eigen::RowVector3d(0, 0, 255) / 255.0);
+    Eigen::Vector3d blue_color = Eigen::Vector3d(0, 0, 255) / 255.0;
+    viewer->data().uniform_colors(blue_color, blue_color, blue_color);
 }
 
 void NextBestViewPlugin::transform_camera() {
     viewer->selected_data_index = VIEWER_DATA_NBV;
+
+    Eigen::Matrix4d camera_transformation_;
+    Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
+    Eigen::Affine3d translation(Eigen::Translation3d(camera_pos_[0], camera_pos_[1], camera_pos_[2]));
+    Eigen::Affine3d pitch(Eigen::AngleAxisd(camera_rot_[0], Eigen::Vector3d::UnitX()));
+    Eigen::Affine3d yaw(Eigen::AngleAxisd(camera_rot_[1], Eigen::Vector3d::UnitY()));
+    Eigen::Affine3d roll(Eigen::AngleAxisd(camera_rot_[2], Eigen::Vector3d::UnitZ()));
+
+    camera_transformation_ = translation * roll * pitch * yaw * scale * Eigen::Matrix4d::Identity();
+
     if (camera_vertices_.rows() > 0) {
         Eigen::MatrixXd V = camera_vertices_;
         V = (V.rowwise().homogeneous() * camera_transformation_.transpose()).rowwise().hnormalized();

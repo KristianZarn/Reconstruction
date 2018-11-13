@@ -192,11 +192,13 @@ void IPCameraPlugin::localize_image_callback() {
 
         // Set camera color
         viewer->selected_data_index = VIEWER_DATA_LOCALIZATION;
-        viewer->data().set_colors(Eigen::RowVector3d(0, 255, 0)/255.0);
+        Eigen::Vector3d green_color = Eigen::Vector3d(0, 255, 0) / 255.0;
+        viewer->data().uniform_colors(green_color, green_color, green_color);
     } else {
         // Set camera color
         viewer->selected_data_index = VIEWER_DATA_LOCALIZATION;
-        viewer->data().set_colors(Eigen::RowVector3d(255, 0, 0)/255.0);
+        Eigen::Vector3d red_color = Eigen::Vector3d(255, 0, 0) / 255.0;
+        viewer->data().uniform_colors(red_color, red_color, red_color);
     }
     prev_localization_success_ = success;
 }

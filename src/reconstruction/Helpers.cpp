@@ -134,7 +134,10 @@ bool TheiaToMVS(const theia::Reconstruction &reconstruction,
         MVS::Platform::Camera& camera = platform.cameras.AddEmpty();
 
         // Get camera intrinsics from Theia view
-        std::unordered_set<theia::ViewId> view_ids = reconstruction.GetViewsInCameraIntrinsicGroup(group_id);
+        std::unordered_set<theia::ViewId> view_ids_tmp = reconstruction.GetViewsInCameraIntrinsicGroup(group_id);
+        std::vector<theia::ViewId> view_ids(view_ids_tmp.begin(), view_ids_tmp.end());
+        std::sort(view_ids.begin(), view_ids.end());
+
         const theia::View* tmp_view = reconstruction.View(*(view_ids.begin()));
         Eigen::Matrix3d K;
         tmp_view->Camera().GetCalibrationMatrix(&K);

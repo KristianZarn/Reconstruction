@@ -184,6 +184,10 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Debug")) {
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Debug button pressed" << std::endl;
+
+            log_stream_ << "View: \n" << viewer->core.view << std::endl;
+            log_stream_ << "Proj: \n" << viewer->core.proj << std::endl;
+            log_stream_ << "Norm: \n" << viewer->core.norm << std::endl;
         }
 
         ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
@@ -224,6 +228,7 @@ void ReconstructionPlugin::load_scene_callback() {
     std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
     mvs_scene_->Load(reconstruction_path_ + filename_mvs);
     set_mesh();
+    set_cameras();
     show_mesh(true);
     show_point_cloud(false);
     center_object_callback();
@@ -265,6 +270,10 @@ void ReconstructionPlugin::initialize_callback() {
     if (success) {
         log_stream_ << "Initialization successful: \n";
         reconstruction_builder_->ColorizeReconstruction(images_path_);
+
+        // Convert reconstruction to MVS
+        mvs_scene_->Release();
+        TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
     } else {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
@@ -310,6 +319,10 @@ void ReconstructionPlugin::extend_callback() {
     if (success) {
         log_stream_ << "Extend successful: \n";
         reconstruction_builder_->ColorizeReconstruction(images_path_);
+
+        // Convert reconstruction to MVS
+        mvs_scene_->Release();
+        TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
     } else {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
@@ -339,6 +352,10 @@ void ReconstructionPlugin::remove_view_callback(int view_id) {
     reconstruction_builder_->RemoveView(static_cast<theia::ViewId>(view_id));
     log_stream_ << "Removed view with id = " << view_id << std::endl;
     reconstruction_builder_->PrintStatistics(log_stream_);
+
+    // Convert reconstruction to MVS
+    mvs_scene_->Release();
+    TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
 
     set_point_cloud();
     set_cameras();
@@ -370,13 +387,6 @@ void ReconstructionPlugin::reset_reconstruction_callback() {
 
 void ReconstructionPlugin::reconstruct_mesh_callback() {
     log_stream_ << std::endl;
-
-    // Set paths
-    std::string undistoreted_images_folder = images_path_;
-
-    // Convert reconstruction to mvs scene
-    mvs_scene_->Release();
-    TheiaToMVS(reconstruction_builder_->GetReconstruction(), undistoreted_images_folder, *mvs_scene_);
 
     // Select neighbor views
     int i = 0;
@@ -556,8 +566,6 @@ void ReconstructionPlugin::set_cameras() {
     viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().clear();
 
-    const theia::Reconstruction& reconstruction = reconstruction_builder_->GetReconstruction();
-
     // Camera in default position
     int num_vertices = 5;
     Eigen::MatrixXd default_V(num_vertices, 3);
@@ -577,18 +585,25 @@ void ReconstructionPlugin::set_cameras() {
                 1, 4, 3;
 
     // Add cameras
-    std::unordered_set<theia::ViewId> view_ids;
-    theia::GetEstimatedViewsFromReconstruction(reconstruction, &view_ids);
-    auto num_views = static_cast<int>(view_ids.size());
+    int num_views = mvs_scene_->images.size();
 
     Eigen::MatrixXd cameras_V(num_views * num_vertices, 3);
     Eigen::MatrixXi cameras_F(num_views * num_faces, 3);
 
     int i = 0;
-    for (const auto& view_id : view_ids) {
+    for (const auto& mvs_image : mvs_scene_->images) {
         // Get pose
-        Eigen::Vector3d position = reconstruction.View(view_id)->Camera().GetPosition();
-        Eigen::Matrix3d rotation = reconstruction.View(view_id)->Camera().GetOrientationAsRotationMatrix();
+        Eigen::Vector3d position = mvs_image.camera.C;
+        Eigen::Matrix3d rotation;
+        rotation(0, 0) = mvs_image.camera.R(0, 0);
+        rotation(0, 1) = mvs_image.camera.R(0, 1);
+        rotation(0, 2) = mvs_image.camera.R(0, 2);
+        rotation(1, 0) = mvs_image.camera.R(1, 0);
+        rotation(1, 1) = mvs_image.camera.R(1, 1);
+        rotation(1, 2) = mvs_image.camera.R(1, 2);
+        rotation(2, 0) = mvs_image.camera.R(2, 0);
+        rotation(2, 1) = mvs_image.camera.R(2, 1);
+        rotation(2, 2) = mvs_image.camera.R(2, 2);
 
         // Camera transformation
         Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
@@ -606,14 +621,15 @@ void ReconstructionPlugin::set_cameras() {
         cameras_F.middleRows(i * num_faces, num_faces) = transformed_F;
 
         // Add camera label
-        viewer->data().add_label(position, std::to_string(view_id));
+        viewer->data().add_label(position, std::to_string(i));
         i++;
     }
 
     // Set viewer data
     viewer->data().set_mesh(cameras_V, cameras_F);
     viewer->data().set_face_based(true);
-    viewer->data().set_colors(Eigen::RowVector3d(128, 128, 128)/255.0);
+    Eigen::Vector3d gray_color = Eigen::Vector3d(128, 128, 128) / 255.0;
+    viewer->data().uniform_colors(gray_color, gray_color, gray_color);
 }
 
 void ReconstructionPlugin::show_cameras(bool visible) {
@@ -883,6 +899,6 @@ void ReconstructionPlugin::draw_text(Eigen::Vector3d pos, Eigen::Vector3d normal
     ImDrawList* drawList = ImGui::GetWindowDrawList();
     drawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() * 1.5f,
                       ImVec2(coord[0], (viewer->core.viewport[3] - coord[1])),
-                      ImGui::GetColorU32(ImVec4(0, 255, 0, 255)),
+                      ImGui::GetColorU32(ImVec4(0.1, 0.1, 0.1, 1.0)),
                       &text[0], &text[0] + text.size());
 }

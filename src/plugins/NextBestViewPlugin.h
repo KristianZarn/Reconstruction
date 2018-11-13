@@ -36,8 +36,7 @@ private:
     // Viewer data
     unsigned int VIEWER_DATA_NBV;
     Eigen::MatrixXd camera_vertices_;
-    Eigen::Matrix4d camera_transformation_;
-    bool show_camera_ = true;
+    bool show_camera_ = false;
 
     // Next best view
     std::shared_ptr<NextBestView> next_best_view_;
@@ -50,7 +49,6 @@ private:
     // Callback functions
     void optimize_position_callback();
     void optimize_rotation_callback();
-    void set_camera_transformation();
 
     // Helpers
     void set_camera();

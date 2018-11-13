@@ -169,8 +169,6 @@ bool EditMeshPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Debug")) {
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             std::cout << "Debug button" << std::endl;
-            // std::ostringstream debug;
-            // ImGui::TextUnformatted(debug.str().c_str());
             viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
             log_stream_ << "Vertices: " << viewer->data().V.rows() << std::endl;
             log_stream_ << "Faces: " << viewer->data().F.rows() << std::endl;
