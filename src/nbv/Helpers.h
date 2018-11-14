@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-
-void writeBufferToFile(const std::string& filename, int width, int height, const std::vector<unsigned int>& data) {
+template <typename T>
+void writeBufferToFile(const std::string& filename, int width, int height, const std::vector<T>& data) {
     assert((width * height) == data.size());
 
     // Open file

@@ -4,7 +4,9 @@
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
+#include "nbv/Helpers.h"
 #include "nbv/HelpersOptim.h"
 
 NextBestViewPlugin::NextBestViewPlugin(std::shared_ptr<NextBestView> nbv)
@@ -33,7 +35,7 @@ bool NextBestViewPlugin::post_draw() {
     }
     ImGui::Text("Camera pose");
     ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
-    ImGui::SliderFloat3("Angles", glm::value_ptr(camera_rot_), -M_PI, M_PI);
+    ImGui::SliderFloat3("Angles", glm::value_ptr(camera_rot_), -M_PI, M_PI, "%.5f");
     if (ImGui::Button("Optimize position", ImVec2(-1, 0))) {
         optimize_position_callback();
     }
@@ -47,6 +49,26 @@ bool NextBestViewPlugin::post_draw() {
     // Camera model transformation
     if (show_camera_) {
         transform_camera();
+    }
+
+    if (ImGui::Button("Debug", ImVec2(-1, 0))) {
+        log_stream_ << "Debug button pressed" << std::endl;
+
+        // Camera parameters
+        unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+        unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+        double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+        auto view_matrix = generate_view_matrix(camera_pos_, camera_rot_);
+
+        double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
+        double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
+
+        // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
+        // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
+        //         image_width, image_height, render_data);
+
+        // log_stream_ << "Cost position: " << cost_pos << std::endl;
+        // log_stream_ << "Cost rotation: " << cost_rot << std::endl;
     }
 
     ImGui::End();
@@ -175,7 +197,8 @@ void NextBestViewPlugin::transform_camera() {
     Eigen::Affine3d yaw(Eigen::AngleAxisd(camera_rot_[1], Eigen::Vector3d::UnitY()));
     Eigen::Affine3d roll(Eigen::AngleAxisd(camera_rot_[2], Eigen::Vector3d::UnitZ()));
 
-    camera_transformation_ = translation * roll * pitch * yaw * scale * Eigen::Matrix4d::Identity();
+    camera_transformation_ = translation * yaw * pitch * roll * scale * Eigen::Matrix4d::Identity();
+    // camera_transformation_ = camera_transformation_.inverse().eval();
 
     if (camera_vertices_.rows() > 0) {
         Eigen::MatrixXd V = camera_vertices_;
