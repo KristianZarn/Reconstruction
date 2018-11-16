@@ -133,7 +133,7 @@ bool ReconstructionPlugin::post_draw() {
         if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
             refine_mesh_callback();
         }
-        if (ImGui::Button("Texture mesh [t]", ImVec2(-1, 0))) {
+        if (ImGui::Button("Texture mesh", ImVec2(-1, 0))) {
             texture_mesh_callback();
         }
         ImGui::ColorEdit3("Empty texture color", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
@@ -801,11 +801,6 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
             case 'm':
             {
                 reconstruct_mesh_callback();
-                return ImGui::GetIO().WantCaptureKeyboard;
-            }
-            case 't':
-            {
-                texture_mesh_callback();
                 return ImGui::GetIO().WantCaptureKeyboard;
             }
             case '1':

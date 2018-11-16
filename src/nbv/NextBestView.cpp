@@ -285,22 +285,13 @@ std::unordered_map<unsigned int, double>
 NextBestView::FaceAngles(const std::unordered_set<unsigned int>& faces, const glm::mat4& view_matrix) {
 
     glm::mat4 camera_world = glm::inverse(view_matrix);
-    glm::vec3 camera_center = glm::column(camera_world, 3);
     glm::vec3 camera_front = -glm::column(camera_world, 2);
     std::unordered_map<unsigned int, double> face_angles;
 
     for (const auto& face_id : faces) {
-
-        // Face center and normal
-        auto face_center = face_centers_[face_id];
         auto face_normal = face_normals_[face_id];
-
-        // Angle
-        glm::vec3 face_direction = glm::normalize(face_center - camera_center);
-        double alpha = glm::angle(face_direction, camera_front);
-        double beta = glm::angle(-face_direction, face_normal);
-
-        face_angles[face_id] = alpha + beta;
+        double alpha = glm::angle(face_normal, -camera_front);
+        face_angles[face_id] = alpha;
     }
     return face_angles;
 }
@@ -491,7 +482,10 @@ double NextBestView::CostFunctionPosition(
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
-    assert(!visible_view.empty());
+    // assert(!visible_view.empty());
+    if (visible_view.size() < visible_faces_target_) {
+        return std::numeric_limits<double>::max();
+    }
 
     // Visible faces of closest camera
     int closest_id = ClosestCameraID(view_matrix);
@@ -508,7 +502,7 @@ double NextBestView::CostFunctionPosition(
     double visibility_diff = pow(visibility_ratio - visibility_ratio_target_, 2.0) * 100;
 
     // Cost value (minimization)
-    std::cout << "Cost position: " << visibility_diff << std::endl;
+    std::cout << "Cost position: " << visibility_diff << " (closest id: " << closest_id << ")" << std::endl;
     return visibility_diff;
 }
 
@@ -523,10 +517,17 @@ double NextBestView::CostFunctionRotation(
             focal_y / downscale_factor_);
 
     if (visible_faces.size() < visible_faces_target_) {
+        visible_faces.clear();
         for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
             visible_faces.insert(face_id);
         }
     }
+
+    // All faces visible
+    // std::unordered_set<unsigned int> visible_faces;
+    // for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
+    //     visible_faces.insert(face_id);
+    // }
 
     // Compute average angle
     auto face_angles = FaceAngles(visible_faces, view_matrix);
@@ -536,7 +537,7 @@ double NextBestView::CostFunctionRotation(
     }
     double angle_avg = angle_sum / face_angles.size();
 
-    // Cost value (minimization)
+    // Cost value
     std::cout << "Cost rotation: " << angle_avg << std::endl;
     return angle_avg;
 }

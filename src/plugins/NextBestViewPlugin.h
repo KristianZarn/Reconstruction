@@ -35,12 +35,11 @@ public:
 private:
     // Viewer data
     unsigned int VIEWER_DATA_NBV;
-    Eigen::MatrixXd camera_vertices_;
-    bool show_camera_ = false;
+    bool camera_visible_ = false;
 
     // Next best view
     std::shared_ptr<NextBestView> next_best_view_;
-    glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
+    glm::vec3 camera_pos_ = glm::vec3(-1.245946, -2.296472, 0.642335);
     glm::vec3 camera_rot_ = glm::vec3(glm::radians(180.0), 0.0, 0.0);
 
     // Log
@@ -51,9 +50,7 @@ private:
     void optimize_rotation_callback();
 
     // Helpers
-    void set_camera();
-    void transform_camera();
-    void show_camera(bool visible);
+    void show_camera();
 };
 
 

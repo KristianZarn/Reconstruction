@@ -89,7 +89,7 @@ bool IPCameraPlugin::post_draw() {
     ImGui::SameLine();
     ImGui::Checkbox("Auto##localize", &auto_localize_);
 
-    if (ImGui::Button("Save image", ImVec2(-70, 0))) {
+    if (ImGui::Button("Save image [s]", ImVec2(-70, 0))) {
         save_image_callback();
     }
     ImGui::SameLine();
@@ -301,9 +301,19 @@ bool IPCameraPlugin::mouse_scroll(float delta_y) {
 // Keyboard IO
 bool IPCameraPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
-    if (key == ' ') {
-        capture_image_callback();
-        return true;
+    if (!ImGui::GetIO().WantTextInput) {
+        switch (key) {
+            case ' ':
+            {
+                capture_image_callback();
+                return true;
+            }
+            case 's':
+            {
+                save_image_callback();
+                return true;
+            }
+        }
     }
     return ImGui::GetIO().WantCaptureKeyboard;
 }
