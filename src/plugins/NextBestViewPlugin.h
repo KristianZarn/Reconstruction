@@ -12,6 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 
+#include "imguizmo/ImGuizmo.h"
 #include "nbv/NextBestView.h"
 
 class NextBestViewPlugin : public igl::opengl::glfw::ViewerPlugin{
@@ -19,6 +20,7 @@ public:
     explicit NextBestViewPlugin(std::shared_ptr<NextBestView> nbv);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
+    bool pre_draw() override;
     bool post_draw() override;
 
     // Mouse IO
@@ -36,11 +38,19 @@ private:
     // Viewer data
     unsigned int VIEWER_DATA_NBV;
     bool camera_visible_ = false;
+    bool pose_camera_ = false;
+
+    // Gizmo
+    ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
+    ImGuizmo::MODE gizmo_mode_ = ImGuizmo::LOCAL;
+    // ImGuizmo::MODE gizmo_mode_ = ImGuizmo::WORLD;
+    Eigen::Matrix4f camera_gizmo_;
 
     // Next best view
     std::shared_ptr<NextBestView> next_best_view_;
-    glm::vec3 camera_pos_ = glm::vec3(-1.245946, -2.296472, 0.642335);
-    glm::vec3 camera_rot_ = glm::vec3(glm::radians(180.0), 0.0, 0.0);
+    glm::vec3 camera_pos_ = glm::vec3(-1.662875, -0.806861, 0.905400);
+    // glm::vec3 camera_rot_ = glm::vec3(glm::radians(180.0), 0.0, 0.0);
+    glm::vec3 camera_rot_ = glm::vec3(2.899449, 0.087320, 0.007136);
 
     // Log
     std::ostream& log_stream_ = std::cout;
@@ -48,6 +58,7 @@ private:
     // Callback functions
     void optimize_position_callback();
     void optimize_rotation_callback();
+    void debug_callback();
 
     // Helpers
     void show_camera();

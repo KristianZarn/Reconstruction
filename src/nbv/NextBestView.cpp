@@ -340,6 +340,7 @@ int NextBestView::ClosestCameraID(const glm::mat4& view_matrix) {
     double closest_distance = camera_distances.begin()->second;
     for (const auto& [camera_id, distance] : camera_distances) {
         if (distance < closest_distance) {
+            closest_distance = distance;
             closest_id = camera_id;
         }
     }
@@ -499,7 +500,8 @@ double NextBestView::CostFunctionPosition(
         }
     }
     double visibility_ratio = static_cast<double>(intersection.size()) / visible_view.size();
-    double visibility_diff = pow(visibility_ratio - visibility_ratio_target_, 2.0) * 100;
+    // double visibility_diff = pow(visibility_ratio - visibility_ratio_target_, 2.0) * 100;
+    double visibility_diff = abs(visibility_ratio - visibility_ratio_target_);
 
     // Cost value (minimization)
     std::cout << "Cost position: " << visibility_diff << " (closest id: " << closest_id << ")" << std::endl;

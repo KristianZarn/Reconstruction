@@ -786,37 +786,37 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
             case 'i':
             {
                 initialize_callback();
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case 'e':
             {
                 extend_callback();
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case 'b':
             {
                 remove_last_view_callback();
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case 'm':
             {
                 reconstruct_mesh_callback();
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case '1':
             {
                 show_cameras(!parameters_.show_cameras);
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case '2':
             {
                 show_point_cloud(!parameters_.show_point_cloud);
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             case '3':
             {
                 show_mesh(!parameters_.show_mesh);
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             default: break;
         }

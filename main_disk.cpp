@@ -25,10 +25,9 @@ int main(int argc, char *argv[]) {
     std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
 
     int num_images = 100;
-
+    std::string image_ext = ".png";
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
-
     std::string calibration_file = project_path + "prior_calibration.txt";
 
     // Initialize the viewer
@@ -82,7 +81,7 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i <= num_images; i++) {
         std::stringstream ss;
         ss << std::setw(3) << std::setfill('0') << std::to_string(i);
-        image_names->emplace_back("frame" + ss.str() + ".png");
+        image_names->emplace_back("frame" + ss.str() + image_ext);
     }
 
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
