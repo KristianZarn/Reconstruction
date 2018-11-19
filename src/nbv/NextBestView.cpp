@@ -425,10 +425,6 @@ std::vector<double> NextBestView::FaceArea() {
     return fa;
 }
 
-double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
-    return 0;
-}
-
 double NextBestView::CostFunctionPosition(
         const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
 
@@ -467,7 +463,7 @@ double NextBestView::CostFunctionPosition(
     // Cost value (minimization)
     double alpha = 3.0; // gives bigger importance to standard deviation (should mean closer cameras)
     double cost = mean - alpha * sd;
-    std::cout << "Cost T: " << cost << " M: " << mean << " SD: " << sd << std::endl;
+    std::cout << "Cost T: " << cost << " (M: " << mean << " SD: " << sd << ")" << std::endl;
     return cost;
 }
 

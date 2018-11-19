@@ -48,10 +48,8 @@ private:
 
     // Next best view
     std::shared_ptr<NextBestView> next_best_view_;
-    // glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
-    // glm::vec3 camera_rot_ = glm::vec3(glm::radians(180.0), 0.0, 0.0);
-    glm::vec3 camera_pos_ = glm::vec3(-1.662875, -0.806861, 0.905400);
-    glm::vec3 camera_rot_ = glm::vec3(2.899449, 0.087320, 0.007136);
+    glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
+    glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
     // Log
     std::ostream& log_stream_ = std::cout;

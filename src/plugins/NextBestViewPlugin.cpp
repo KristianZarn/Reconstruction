@@ -21,11 +21,7 @@ void NextBestViewPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     VIEWER_DATA_NBV = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
     // Initial gizmo pose
-    Eigen::Affine3f translation(Eigen::Translation3f(camera_pos_[0], camera_pos_[1], camera_pos_[2]));
-    Eigen::Affine3f pitch(Eigen::AngleAxisf(camera_rot_[0], Eigen::Vector3f::UnitX()));
-    Eigen::Affine3f yaw(Eigen::AngleAxisf(camera_rot_[1], Eigen::Vector3f::UnitY()));
-    Eigen::Affine3f roll(Eigen::AngleAxisf(camera_rot_[2], Eigen::Vector3f::UnitZ()));
-    camera_gizmo_ = translation * yaw * pitch * roll * Eigen::Matrix4f::Identity();
+    camera_gizmo_ = Eigen::Matrix4f::Identity();
 }
 
 bool NextBestViewPlugin::pre_draw() {
@@ -88,21 +84,21 @@ bool NextBestViewPlugin::post_draw() {
     }
 
     if (pose_camera_) {
-        Eigen::Vector4f position = camera_gizmo_.col(3);
-        camera_pos_[0] = position(0);
-        camera_pos_[1] = position(1);
-        camera_pos_[2] = position(2);
-
-        Eigen::Matrix3f tmp = camera_gizmo_.topLeftCorner(3, 3);
-        camera_rot_[0] = atan2(-tmp(1,2), tmp(1,1));
-        camera_rot_[1] = atan2(-tmp(2,0), tmp(0,0));
-        camera_rot_[2] = asin(tmp(1,0));
+        // Camera gizmo -> position and rotation
+        glm::vec3 scale;
+        ImGuizmo::DecomposeMatrixToComponents(
+                camera_gizmo_.data(),
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale));
     } else {
-        Eigen::Affine3f translation(Eigen::Translation3f(camera_pos_[0], camera_pos_[1], camera_pos_[2]));
-        Eigen::Affine3f pitch(Eigen::AngleAxisf(camera_rot_[0], Eigen::Vector3f::UnitX()));
-        Eigen::Affine3f yaw(Eigen::AngleAxisf(camera_rot_[1], Eigen::Vector3f::UnitY()));
-        Eigen::Affine3f roll(Eigen::AngleAxisf(camera_rot_[2], Eigen::Vector3f::UnitZ()));
-        camera_gizmo_ = translation * yaw * pitch * roll * Eigen::Matrix4f::Identity();
+        // Position and rotation -> camera gizmo
+        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+        ImGuizmo::RecomposeMatrixFromComponents(
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale),
+                camera_gizmo_.data());
     }
 
     // Debugging
@@ -121,7 +117,15 @@ void NextBestViewPlugin::debug_callback() {
     unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
     unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
     double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-    auto view_matrix = generate_view_matrix(camera_pos_, camera_rot_);
+
+    glm::mat4 view_matrix;
+    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+    ImGuizmo::RecomposeMatrixFromComponents(
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale),
+            glm::value_ptr(view_matrix));
+    view_matrix = glm::inverse(view_matrix);
 
     double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
     double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
@@ -189,7 +193,7 @@ void NextBestViewPlugin::optimize_rotation_callback() {
     optim_rot_settings.iter_max = 1;
     optim_rot_settings.gd_method = 0;
     optim::gd_settings_t gd_settings_rot;
-    gd_settings_rot.step_size = 0.1;
+    gd_settings_rot.step_size = 300;
     optim_rot_settings.gd_settings = gd_settings_rot;
 
     OptimRotData optim_rot_data{next_best_view_.get(), camera_pos_, image_width, image_height, focal_y};
@@ -215,13 +219,14 @@ void NextBestViewPlugin::show_camera() {
     if (camera_visible_) {
 
         // Compute camera transformation
-        Eigen::Matrix4d camera_transformation_;
-        Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.0));
-        Eigen::Affine3d translation(Eigen::Translation3d(camera_pos_[0], camera_pos_[1], camera_pos_[2]));
-        Eigen::Affine3d pitch(Eigen::AngleAxisd(camera_rot_[0], Eigen::Vector3d::UnitX()));
-        Eigen::Affine3d yaw(Eigen::AngleAxisd(camera_rot_[1], Eigen::Vector3d::UnitY()));
-        Eigen::Affine3d roll(Eigen::AngleAxisd(camera_rot_[2], Eigen::Vector3d::UnitZ()));
-        camera_transformation_ = translation * yaw * pitch * roll * scale * Eigen::Matrix4d::Identity();
+        Eigen::Matrix4f tmp;
+        glm::vec3 scale = glm::vec3(1.0 / 2.0, 1.0 / 2.0, 1.0 / 2.0);
+        ImGuizmo::RecomposeMatrixFromComponents(
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale),
+                tmp.data());
+        Eigen::Matrix4d camera_transformation = tmp.cast<double>();
 
         // Vertices
         Eigen::MatrixXd tmp_V(5, 3);
@@ -241,7 +246,7 @@ void NextBestViewPlugin::show_camera() {
                 1, 4, 3;
 
         // Apply transformation
-        tmp_V = (tmp_V.rowwise().homogeneous() * camera_transformation_.transpose()).rowwise().hnormalized();
+        tmp_V = (tmp_V.rowwise().homogeneous() * camera_transformation.transpose()).rowwise().hnormalized();
 
         // Set viewer data
         viewer->data().clear();

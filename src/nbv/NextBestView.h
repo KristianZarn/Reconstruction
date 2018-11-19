@@ -42,7 +42,6 @@ public:
     std::vector<double> PixelsPerArea();
     std::vector<double> FaceArea();
 
-    double CostFunction(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
     double CostFunctionPosition(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
     double CostFunctionRotation(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
 
