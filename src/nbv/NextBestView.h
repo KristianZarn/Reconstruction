@@ -64,7 +64,6 @@ private:
 
     // Parameters
     double downscale_factor_ = 4.0;
-    double visibility_ratio_target_ = 0.8;
     int visible_faces_target_ = 50;
 
     // Speedup variables

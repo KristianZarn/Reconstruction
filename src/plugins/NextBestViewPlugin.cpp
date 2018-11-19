@@ -151,7 +151,7 @@ void NextBestViewPlugin::optimize_position_callback() {
     optim_pos_settings.iter_max = 1;
     optim_pos_settings.gd_method = 0;
     optim::gd_settings_t gd_settings_pos;
-    gd_settings_pos.step_size = 0.1;
+    gd_settings_pos.step_size = 0.001;
     optim_pos_settings.gd_settings = gd_settings_pos;
 
     OptimPosData optim_pos_data{next_best_view_.get(), camera_rot_, image_width, image_height, focal_y};

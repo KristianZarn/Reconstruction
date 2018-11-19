@@ -123,7 +123,7 @@ double optim_pos_function(const arma::vec& vals_inp, arma::vec* grad_out, void* 
 
     // Set gradient
     if (grad_out) {
-        double h = 0.05;
+        double h = 0.1;
         double dcost;
         glm::vec3 tmp;
 

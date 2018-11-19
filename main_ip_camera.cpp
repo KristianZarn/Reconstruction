@@ -10,6 +10,7 @@
 #include "plugins/IPCameraPlugin.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
+#include "plugins/NextBestViewPlugin.h"
 
 int main(int argc, char *argv[]) {
 
@@ -81,9 +82,14 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    viewer.plugins.push_back(&edit_mesh_plugin);
+
+    // Attach next best view plugin
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    NextBestViewPlugin nbv_plugin(next_best_view);
+    viewer.plugins.push_back(&nbv_plugin);
 
     // Start viewer
     viewer.launch();

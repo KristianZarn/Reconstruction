@@ -426,86 +426,49 @@ std::vector<double> NextBestView::FaceArea() {
 }
 
 double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
-
-    // Visible faces
-    auto visible_view = VisibleFaces(
-            view_matrix,
-            static_cast<int>(image_width / downscale_factor_),
-            static_cast<int>(image_height / downscale_factor_),
-            focal_y / downscale_factor_);
-
-    assert(!visible_view.empty());
-
-    // Visible faces of closest camera
-    int closest_id = ClosestCameraID(view_matrix);
-    const std::unordered_set<unsigned int>& visible_closest = visible_faces_[closest_id];
-
-    // Intersection of visible faces
-    std::unordered_set<unsigned int> intersection;
-    for (unsigned int face_id : visible_view) {
-        if (visible_closest.find(face_id) != visible_closest.end()) {
-            intersection.insert(face_id);
-        }
-    }
-    double visibility_ratio = static_cast<double>(intersection.size()) / visible_view.size();
-    double visibility_ratio_norm = pow(visibility_ratio - visibility_ratio_target_, 2.0) * 100;
-
-    // Compute average angle
-    auto face_angles = FaceAngles(visible_view, view_matrix);
-    double angle_sum = 0;
-    for (const auto& [face_id, face_angle] : face_angles) {
-        angle_sum += face_angle;
-    }
-    double angle_avg = angle_sum / face_angles.size();
-    double angle_norm = pow(angle_avg / glm::radians(90.0), 2.0);
-
-    // Cost function (minimize)
-    // Debug output
-    std::cout << std::endl;
-    std::cout << "Visible faces: " << visible_view.size() << std::endl;
-    std::cout << "Visibility ratio: " << visibility_ratio << std::endl;
-    std::cout << "Visibility ratio norm: " << visibility_ratio_norm << std::endl;
-    std::cout << "Average angle: " << glm::degrees(angle_avg) << std::endl;
-    std::cout << "Norm angle: " << angle_norm << std::endl;
-    std::cout << std::endl;
-
-    double cost = visibility_ratio_norm + angle_norm;
-    return cost;
+    return 0;
 }
 
 double NextBestView::CostFunctionPosition(
         const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
 
     // Visible faces
-    auto visible_view = VisibleFaces(
+    auto visible_faces = VisibleFaces(
             view_matrix,
             static_cast<int>(image_width / downscale_factor_),
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
     // assert(!visible_view.empty());
-    if (visible_view.size() < visible_faces_target_) {
+    if (visible_faces.size() < visible_faces_target_) {
         return std::numeric_limits<double>::max();
     }
 
-    // Visible faces of closest camera
-    int closest_id = ClosestCameraID(view_matrix);
-    const std::unordered_set<unsigned int>& visible_closest = visible_faces_[closest_id];
-
-    // Intersection of visible faces
-    std::unordered_set<unsigned int> intersection;
-    for (unsigned int face_id : visible_view) {
-        if (visible_closest.find(face_id) != visible_closest.end()) {
-            intersection.insert(face_id);
-        }
+    // Get face quality
+    std::unordered_set<double> face_quality;
+    for (const auto& face_id : visible_faces) {
+        face_quality.insert(ppa_[face_id]);
     }
-    double visibility_ratio = static_cast<double>(intersection.size()) / visible_view.size();
-    // double visibility_diff = pow(visibility_ratio - visibility_ratio_target_, 2.0) * 100;
-    double visibility_diff = abs(visibility_ratio - visibility_ratio_target_);
+
+    // Mean
+    double sum = 0.0;
+    for (double val : face_quality) {
+        sum += val;
+    }
+    double mean = sum / face_quality.size();
+
+    // Variance
+    double tmp = 0.0;
+    for (double val : face_quality) {
+        tmp += (val - mean) * (val - mean);
+    }
+    double sd = sqrt(tmp / (face_quality.size() - 1));
 
     // Cost value (minimization)
-    std::cout << "Cost position: " << visibility_diff << " (closest id: " << closest_id << ")" << std::endl;
-    return visibility_diff;
+    double alpha = 3.0; // gives bigger importance to standard deviation (should mean closer cameras)
+    double cost = mean - alpha * sd;
+    std::cout << "Cost T: " << cost << " M: " << mean << " SD: " << sd << std::endl;
+    return cost;
 }
 
 double NextBestView::CostFunctionRotation(
@@ -518,18 +481,13 @@ double NextBestView::CostFunctionRotation(
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
+    // Add all faces if threshold not met
     if (visible_faces.size() < visible_faces_target_) {
         visible_faces.clear();
         for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
             visible_faces.insert(face_id);
         }
     }
-
-    // All faces visible
-    // std::unordered_set<unsigned int> visible_faces;
-    // for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
-    //     visible_faces.insert(face_id);
-    // }
 
     // Compute average angle
     auto face_angles = FaceAngles(visible_faces, view_matrix);
@@ -540,7 +498,7 @@ double NextBestView::CostFunctionRotation(
     double angle_avg = angle_sum / face_angles.size();
 
     // Cost value
-    std::cout << "Cost rotation: " << angle_avg << std::endl;
+    std::cout << "Cost R: " << angle_avg << std::endl;
     return angle_avg;
 }
 
