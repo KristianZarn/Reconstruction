@@ -228,8 +228,6 @@ namespace theia {
     }
 
     bool RealtimeReconstructionBuilder::RemoveView(ViewId view_id) {
-        // TODO: remove/exclude image from visual index somehow
-
         const View* view = reconstruction_->View(view_id);
         if (view != nullptr) {
             bool success;

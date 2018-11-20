@@ -37,14 +37,19 @@ public:
 private:
     // Viewer data
     unsigned int VIEWER_DATA_NBV;
+    unsigned int VIEWER_DATA_BOUNDING_BOX;
+
     bool camera_visible_ = false;
     bool pose_camera_ = false;
+
+    bool bounding_box_visible_ = false;
+    bool pose_bounding_box_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE gizmo_mode_ = ImGuizmo::LOCAL;
-    // ImGuizmo::MODE gizmo_mode_ = ImGuizmo::WORLD;
     Eigen::Matrix4f camera_gizmo_;
+    Eigen::Matrix4f bounding_box_gizmo_;
 
     // Next best view
     std::shared_ptr<NextBestView> next_best_view_;
@@ -57,10 +62,13 @@ private:
     // Callback functions
     void optimize_position_callback();
     void optimize_rotation_callback();
+    void apply_selection_callback();
     void debug_callback();
 
     // Helpers
     void show_camera();
+    void show_bounding_box();
+
 };
 
 

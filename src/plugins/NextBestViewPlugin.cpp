@@ -20,8 +20,13 @@ void NextBestViewPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     viewer->append_mesh();
     VIEWER_DATA_NBV = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
+    // Append mesh for bounding box
+    viewer->append_mesh();
+    VIEWER_DATA_BOUNDING_BOX = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
     // Initial gizmo pose
     camera_gizmo_ = Eigen::Matrix4f::Identity();
+    bounding_box_gizmo_ = Eigen::Matrix4f::Identity();
 }
 
 bool NextBestViewPlugin::pre_draw() {
@@ -36,53 +41,93 @@ bool NextBestViewPlugin::post_draw() {
     ImGui::SetNextWindowPos(ImVec2(350.0f, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Next best view", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
-    // Prepare NBV object
-    if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
-        next_best_view_->Initialize();
-        camera_visible_ = true;
-    }
+    // Gizmo setup
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    Eigen::Affine3f scale_base_zoom(Eigen::Scaling(1.0f / viewer->core.camera_base_zoom));
+    Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
+    Eigen::Matrix4f gizmo_view = scale_base_zoom * scale_zoom * viewer->core.view;
 
-    // Optimize camera pose
-    ImGui::Text("Camera pose");
-    ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
-    ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
-    // ImGui::SliderFloat3("Angles", glm::value_ptr(camera_rot_), -M_PI, M_PI, "%.5f");
-    if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
-        optimize_position_callback();
+    // NBV object and pose optimization
+    if (ImGui::TreeNodeEx("Optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
+            next_best_view_->Initialize();
+            camera_visible_ = true;
+        }
+        if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
+            optimize_position_callback();
+        }
+        if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
+            optimize_rotation_callback();
+        }
+        ImGui::TreePop();
     }
-    if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
-        optimize_rotation_callback();
-    }
-    ImGui::Checkbox("Show next best view camera", &camera_visible_);
     show_camera();
 
-    // Pose NBV camera by hand
-    ImGui::Checkbox("Pose camera", &pose_camera_);
-    if (pose_camera_) {
-        // Gizmo setup
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        Eigen::Affine3f scale_base_zoom(Eigen::Scaling(1.0f / viewer->core.camera_base_zoom));
-        Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
-        Eigen::Matrix4f view = scale_base_zoom * scale_zoom * viewer->core.view;
+    // Optimize camera pose
+    if (ImGui::TreeNodeEx("Camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Show NBV camera", &camera_visible_);
+        ImGui::Checkbox("Pose camera", &pose_camera_);
+        ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
+        ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
 
-        // Show gizmo
-        ImGuizmo::Manipulate(view.data(),
-                             viewer->core.proj.data(),
-                             gizmo_operation_,
-                             gizmo_mode_,
-                             camera_gizmo_.data());
+        if (pose_camera_) {
+            // Show gizmo
+            ImGuizmo::Manipulate(gizmo_view.data(),
+                                 viewer->core.proj.data(),
+                                 gizmo_operation_,
+                                 gizmo_mode_,
+                                 camera_gizmo_.data());
 
-        ImGui::Text("Camera options:");
-        if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
-            gizmo_operation_ = ImGuizmo::TRANSLATE;
+            ImGui::Text("Camera options");
+            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+                gizmo_operation_ = ImGuizmo::TRANSLATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+                gizmo_operation_ = ImGuizmo::ROTATE;
+            }
         }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
-            gizmo_operation_ = ImGuizmo::ROTATE;
-        }
+        ImGui::TreePop();
     }
 
+    // Region of interest
+    if (ImGui::TreeNodeEx("Region of interest", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Show bounding box", &bounding_box_visible_);
+        ImGui::Checkbox("Pose bounding box", &pose_bounding_box_);
+
+        if (pose_bounding_box_) {
+            bounding_box_visible_ = true;
+
+            // Show gizmo
+            ImGuizmo::Manipulate(gizmo_view.data(),
+                                 viewer->core.proj.data(),
+                                 gizmo_operation_,
+                                 gizmo_mode_,
+                                 bounding_box_gizmo_.data());
+
+            ImGui::Text("Bounding box options");
+            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+                gizmo_operation_ = ImGuizmo::TRANSLATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+                gizmo_operation_ = ImGuizmo::ROTATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Scale", gizmo_operation_ == ImGuizmo::SCALE)) {
+                gizmo_operation_ = ImGuizmo::SCALE;
+            }
+        }
+
+        if (ImGui::Button("Apply selection", ImVec2(-1, 0))) {
+            apply_selection_callback();
+        }
+        ImGui::TreePop();
+    }
+    show_bounding_box();
+
+    // Set camera transformation
     if (pose_camera_) {
         // Camera gizmo -> position and rotation
         glm::vec3 scale;
@@ -214,6 +259,51 @@ void NextBestViewPlugin::optimize_rotation_callback() {
     std::cout << "Parameters: \n" << param_rot;
 }
 
+void NextBestViewPlugin::apply_selection_callback() {
+
+    // Get bounding box vectors
+    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    const Eigen::MatrixXd& bbox_V = viewer->data().V;
+    assert(bbox_V.rows() == 8 && bbox_V.cols() == 3);
+
+    Eigen::Vector3d u = bbox_V.row(4) - bbox_V.row(0);
+    Eigen::Vector3d v = bbox_V.row(2) - bbox_V.row(0);
+    Eigen::Vector3d w = bbox_V.row(1) - bbox_V.row(0);
+
+    // Add faces inside bounding box to valid faces
+    std::unordered_set<unsigned int> valid_faces;
+    for (int i = 0; i < next_best_view_->mvs_scene_->mesh.faces.size(); i++) {
+        auto mvs_face = next_best_view_->mvs_scene_->mesh.faces[i];
+
+        bool valid = true;
+        for (int j = 0; j < 3; j++) {
+            auto mvs_vert = next_best_view_->mvs_scene_->mesh.vertices[mvs_face[j]];
+            Eigen::Vector3d x;
+            x << mvs_vert[0], mvs_vert[1], mvs_vert[2];
+
+            double ux = u.dot(x);
+            double vx = v.dot(x);
+            double wx = w.dot(x);
+
+            valid = valid && (ux > u.dot(bbox_V.row(0)) && ux < u.dot(bbox_V.row(4)) &&
+                              vx > v.dot(bbox_V.row(0)) && vx < v.dot(bbox_V.row(2)) &&
+                              wx > w.dot(bbox_V.row(0)) && wx < w.dot(bbox_V.row(1)));
+        }
+
+        if (valid) {
+            valid_faces.insert(static_cast<unsigned int>(i));
+        }
+    }
+
+    // Set valid faces in NBV
+    if (valid_faces.empty()) {
+        std::cout << "Valid faces empty: not set." << std::endl;
+    } else {
+        next_best_view_->SetValidFaces(valid_faces);
+        std::cout << "Number of valid faces: " << valid_faces.size() << std::endl;
+    }
+}
+
 void NextBestViewPlugin::show_camera() {
     viewer->selected_data_index = VIEWER_DATA_NBV;
     if (camera_visible_) {
@@ -226,7 +316,7 @@ void NextBestViewPlugin::show_camera() {
                 glm::value_ptr(camera_rot_),
                 glm::value_ptr(scale),
                 tmp.data());
-        Eigen::Matrix4d camera_transformation = tmp.cast<double>();
+        Eigen::Matrix4d camera_mat_world = tmp.cast<double>();
 
         // Vertices
         Eigen::MatrixXd tmp_V(5, 3);
@@ -246,7 +336,7 @@ void NextBestViewPlugin::show_camera() {
                 1, 4, 3;
 
         // Apply transformation
-        tmp_V = (tmp_V.rowwise().homogeneous() * camera_transformation.transpose()).rowwise().hnormalized();
+        tmp_V = (tmp_V.rowwise().homogeneous() * camera_mat_world.transpose()).rowwise().hnormalized();
 
         // Set viewer data
         viewer->data().clear();
@@ -254,7 +344,54 @@ void NextBestViewPlugin::show_camera() {
         viewer->data().set_face_based(true);
         Eigen::Vector3d blue_color = Eigen::Vector3d(0, 0, 255) / 255.0;
         viewer->data().uniform_colors(blue_color, blue_color, blue_color);
+    } else {
+        viewer->data().clear();
+    }
+}
 
+void NextBestViewPlugin::show_bounding_box() {
+    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    if (bounding_box_visible_) {
+
+        // Bounding box transformation
+        Eigen::Matrix4d bbox_mat_world = bounding_box_gizmo_.cast<double>();
+
+        // Vertices
+        Eigen::MatrixXd bbox_V(8, 3);
+        bbox_V << 0, 0, 0,
+                0, 0, 1,
+                0, 1, 0,
+                0, 1, 1,
+                1, 0, 0,
+                1, 0, 1,
+                1, 1, 0,
+                1, 1, 1;
+        bbox_V = bbox_V.array() - 0.5;
+
+        // Faces
+        Eigen::MatrixXi bbox_F(12, 3);
+        bbox_F << 0, 6, 4,
+                0, 2, 6,
+                0, 3, 2,
+                0, 1, 3,
+                2, 7, 6,
+                2, 3, 7,
+                4, 6, 7,
+                4, 7, 5,
+                0, 4, 5,
+                0, 5, 1,
+                1, 5, 7,
+                1, 7, 3;
+
+        // Apply transformation
+        bbox_V = (bbox_V.rowwise().homogeneous() * bbox_mat_world.transpose()).rowwise().hnormalized();
+
+        // Set viewer data
+        viewer->data().clear();
+        viewer->data().set_mesh(bbox_V, bbox_F);
+        viewer->data().set_face_based(true);
+        viewer->data().set_colors(Eigen::RowVector4d(0, 255, 0, 64)/255.0);
+        viewer->data().show_lines = false;
     } else {
         viewer->data().clear();
     }
