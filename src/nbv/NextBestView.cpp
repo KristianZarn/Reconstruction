@@ -14,6 +14,10 @@ void NextBestView::Initialize() {
         faceid_shader_ = std::make_unique<SourceShader>(faceid_vert_source, faceid_frag_source);
     }
 
+    // Update neighborhood information
+    mvs_scene_->mesh.ListIncidenteVertices();
+    mvs_scene_->mesh.ListIncidenteFaces();
+
     // Update meshes
     UpdateFaceIdMesh();
     ppa_ = PixelsPerArea();
@@ -148,6 +152,35 @@ NextBestView::RenderFaceIdFromCamera(const glm::mat4& view_matrix, int image_wid
     return render_data;
 }
 
+std::vector<double> NextBestView::FaceArea() {
+    int num_faces = mvs_scene_->mesh.faces.size();
+    std::vector<double> fa(num_faces);
+    for (int i = 0; i < num_faces; i++) {
+
+        const auto& face = mvs_scene_->mesh.faces[i];
+        const auto& a = mvs_scene_->mesh.vertices[face[0]];
+        const auto& b = mvs_scene_->mesh.vertices[face[1]];
+        const auto& c = mvs_scene_->mesh.vertices[face[2]];
+
+        // Compute face area
+        double ab_x = b.x - a.x;
+        double ab_y = b.y - a.y;
+        double ab_z = b.z - a.z;
+
+        double ac_x = c.x - a.x;
+        double ac_y = c.y - a.y;
+        double ac_z = c.z - a.z;
+
+        double face_area = 0.5 * sqrt(
+                pow(ab_y * ac_z - ab_z * ac_y , 2.0) +
+                pow(ab_z * ac_x - ab_x * ac_z , 2.0) +
+                pow(ab_x * ac_y - ab_y * ac_x , 2.0));
+
+        fa[i] = face_area;
+    }
+    return fa;
+}
+
 std::vector<double> NextBestView::PixelsPerArea() {
 
     assert(faceid_mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
@@ -197,33 +230,103 @@ std::vector<double> NextBestView::PixelsPerArea() {
     return ppa;
 }
 
-std::vector<double> NextBestView::FaceArea() {
-    int num_faces = mvs_scene_->mesh.faces.size();
-    std::vector<double> fa(num_faces);
-    for (int i = 0; i < num_faces; i++) {
+std::unordered_set<unsigned int> NextBestView::FaceNeighbours(unsigned int face_id, int radius) {
+    const auto& mvs_face = mvs_scene_->mesh.faces[face_id];
 
-        const auto& face = mvs_scene_->mesh.faces[i];
-        const auto& a = mvs_scene_->mesh.vertices[face[0]];
-        const auto& b = mvs_scene_->mesh.vertices[face[1]];
-        const auto& c = mvs_scene_->mesh.vertices[face[2]];
+    // Vertex neighbourhood
+    std::unordered_set<unsigned int> neighbourhood_V;
+    neighbourhood_V.insert(mvs_face[0]);
+    neighbourhood_V.insert(mvs_face[1]);
+    neighbourhood_V.insert(mvs_face[2]);
 
-        // Compute face area
-        double ab_x = b.x - a.x;
-        double ab_y = b.y - a.y;
-        double ab_z = b.z - a.z;
+    for (int r = 1; r < radius; r++) {
 
-        double ac_x = c.x - a.x;
-        double ac_y = c.y - a.y;
-        double ac_z = c.z - a.z;
-
-        double face_area = 0.5 * sqrt(
-                pow(ab_y * ac_z - ab_z * ac_y , 2.0) +
-                pow(ab_z * ac_x - ab_x * ac_z , 2.0) +
-                pow(ab_x * ac_y - ab_y * ac_x , 2.0));
-
-        fa[i] = face_area;
+        // Expand neighbourhood
+        std::unordered_set<unsigned int> neighbourhood_exp;
+        for (const auto& vertex_id : neighbourhood_V) {
+            const auto& adjacent_vertices = mvs_scene_->mesh.vertexVertices[vertex_id];
+            for (const auto& adj_vertex_id : adjacent_vertices) {
+                neighbourhood_exp.insert(adj_vertex_id);
+            }
+        }
+        neighbourhood_V = neighbourhood_exp;
     }
-    return fa;
+
+    // Convert to face neighbourhood
+    std::unordered_set<unsigned int> neighbourhood_F;
+    for (const auto& vertex_id : neighbourhood_V) {
+        const auto& adjacent_faces = mvs_scene_->mesh.vertexFaces[vertex_id];
+        for (const auto& adj_face_id : adjacent_faces) {
+            neighbourhood_F.insert(adj_face_id);
+        }
+    }
+
+    return neighbourhood_F;
+}
+
+std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quality_measure) {
+
+    int num_faces = mvs_scene_->mesh.faces.size();
+    std::vector<double> face_cost(num_faces);
+
+    for (int face_id = 0; face_id < num_faces; face_id++) {
+        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, face_cost_radius_);
+
+        // Get face quality of face neighbourhood
+        std::unordered_set<double> face_quality;
+        for (const auto& neighbour_face_id : neighbourhood_F) {
+            face_quality.insert(quality_measure[neighbour_face_id]);
+        }
+
+        // Mean
+        double sum = 0.0;
+        for (double val : face_quality) {
+            sum += val;
+        }
+        double mean = sum / face_quality.size();
+
+        // Variance
+        double tmp = 0.0;
+        for (double val : face_quality) {
+            tmp += (val - mean) * (val - mean);
+        }
+        double sd = sqrt(tmp / (face_quality.size() - 1));
+
+        // Face cost
+        double cost = alpha_ * sd - beta_ * mean;
+        face_cost[face_id] = cost;
+    }
+    return face_cost;
+}
+
+std::vector<double> NextBestView::NonMaxSuppression(const std::vector<double>& face_values) {
+
+    // Update neighborhood information
+    mvs_scene_->mesh.ListIncidenteVertices();
+    mvs_scene_->mesh.ListIncidenteFaces();
+
+    // Non maxima suppression
+    int num_faces = mvs_scene_->mesh.faces.size();
+    std::vector<double> suppressed_values(num_faces);
+
+    for (int face_id = 0; face_id < num_faces; face_id++) {
+        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, nonmax_radius_);
+
+        // Get face values of face neighbourhood
+        std::unordered_set<double> neighbourhood_values;
+        for (const auto& neighbour_face_id : neighbourhood_F) {
+            neighbourhood_values.insert(face_values[neighbour_face_id]);
+        }
+        double neighbourhood_max = *std::max_element(neighbourhood_values.begin(), neighbourhood_values.end());
+
+        // Test for suppression
+        if (face_values[face_id] < neighbourhood_max) {
+            suppressed_values[face_id] = 0.0;
+        } else {
+            suppressed_values[face_id] = face_values[face_id];
+        }
+    }
+    return suppressed_values;
 }
 
 std::unordered_set<unsigned int>
@@ -282,10 +385,10 @@ double NextBestView::CostFunctionPosition(
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
-    // assert(!visible_view.empty());
-    if (visible_faces.size() < visible_faces_target_) {
-        return std::numeric_limits<double>::max();
-    }
+    assert(!visible_faces.empty());
+    // if (visible_faces.size() < visible_faces_target_) {
+    //     return std::numeric_limits<double>::max();
+    // }
 
     // Get face quality
     std::unordered_set<double> face_quality;
@@ -308,8 +411,7 @@ double NextBestView::CostFunctionPosition(
     double sd = sqrt(tmp / (face_quality.size() - 1));
 
     // Cost value (minimization)
-    double alpha = 3.0; // gives bigger importance to standard deviation (should mean closer cameras)
-    double cost = mean - alpha * sd;
+    double cost = mean - alpha_ * sd;
     std::cout << "Cost T: " << cost << " (M: " << mean << " SD: " << sd << ")" << std::endl;
     return cost;
 }
@@ -325,12 +427,13 @@ double NextBestView::CostFunctionRotation(
             focal_y / downscale_factor_);
 
     // Add all faces if threshold not met
-    if (visible_faces.size() < visible_faces_target_) {
-        visible_faces.clear();
-        for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
-            visible_faces.insert(face_id);
-        }
-    }
+    assert(!visible_faces.empty());
+    // if (visible_faces.size() < visible_faces_target_) {
+    //     visible_faces.clear();
+    //     for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
+    //         visible_faces.insert(face_id);
+    //     }
+    // }
 
     // Compute average angle
     auto face_angles = FaceAngles(visible_faces, view_matrix);

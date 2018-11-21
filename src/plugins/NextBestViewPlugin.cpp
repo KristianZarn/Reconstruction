@@ -6,6 +6,8 @@
 #include <imgui_impl_glfw_gl3.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <igl/jet.h>
+#include <igl/unproject_onto_mesh.h>
 
 #include "nbv/Helpers.h"
 #include "nbv/HelpersOptim.h"
@@ -18,11 +20,15 @@ void NextBestViewPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
 
     // Append mesh for camera
     viewer->append_mesh();
-    VIEWER_DATA_NBV = static_cast<unsigned int>(viewer->data_list.size() - 1);
+    VIEWER_DATA_CAMERA = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
     // Append mesh for bounding box
     viewer->append_mesh();
     VIEWER_DATA_BOUNDING_BOX = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Append mesh for mesh
+    viewer->append_mesh();
+    VIEWER_DATA_NBV_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
     // Initial gizmo pose
     camera_gizmo_ = Eigen::Matrix4f::Identity();
@@ -51,8 +57,7 @@ bool NextBestViewPlugin::post_draw() {
     // NBV object and pose optimization
     if (ImGui::TreeNodeEx("Optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
-            next_best_view_->Initialize();
-            camera_visible_ = true;
+            initialize_callback();
         }
         if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
             optimize_position_callback();
@@ -62,7 +67,6 @@ bool NextBestViewPlugin::post_draw() {
         }
         ImGui::TreePop();
     }
-    show_camera();
 
     // Optimize camera pose
     if (ImGui::TreeNodeEx("Camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -90,6 +94,26 @@ bool NextBestViewPlugin::post_draw() {
         }
         ImGui::TreePop();
     }
+    show_camera();
+
+    // Set camera transformation
+    if (pose_camera_) {
+        // Camera gizmo -> position and rotation
+        glm::vec3 scale;
+        ImGuizmo::DecomposeMatrixToComponents(
+                camera_gizmo_.data(),
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale));
+    } else {
+        // Position and rotation -> camera gizmo
+        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+        ImGuizmo::RecomposeMatrixFromComponents(
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale),
+                camera_gizmo_.data());
+    }
 
     // Region of interest
     if (ImGui::TreeNodeEx("Region of interest", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -97,8 +121,6 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::Checkbox("Pose bounding box", &pose_bounding_box_);
 
         if (pose_bounding_box_) {
-            bounding_box_visible_ = true;
-
             // Show gizmo
             ImGuizmo::Manipulate(gizmo_view.data(),
                                  viewer->core.proj.data(),
@@ -127,60 +149,42 @@ bool NextBestViewPlugin::post_draw() {
     }
     show_bounding_box();
 
-    // Set camera transformation
-    if (pose_camera_) {
-        // Camera gizmo -> position and rotation
-        glm::vec3 scale;
-        ImGuizmo::DecomposeMatrixToComponents(
-                camera_gizmo_.data(),
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale));
-    } else {
-        // Position and rotation -> camera gizmo
-        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-        ImGuizmo::RecomposeMatrixFromComponents(
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale),
-                camera_gizmo_.data());
-    }
-
     // Debugging
-    if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
-        debug_callback();
+    if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Recompute local face cost", ImVec2(-1, 0))) {
+            local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
+        }
+        ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
+        ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
+        ImGui::InputFloat("Beta", &next_best_view_->beta_);
+
+        if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
+            set_nbv_mesh_color(pixels_per_area_);
+        }
+        if (ImGui::Button("Show local face cost", ImVec2(-1, 0))) {
+            set_nbv_mesh_color(local_face_cost_);
+        }
+        if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
+            show_nbv_mesh(nbv_mesh_visible_);
+        }
+        if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
+            debug_callback();
+        }
+        ImGui::TreePop();
     }
 
     ImGui::End();
     return false;
 }
 
-void NextBestViewPlugin::debug_callback() {
-    log_stream_ << "Debug button pressed" << std::endl;
+void NextBestViewPlugin::initialize_callback() {
+    next_best_view_->Initialize();
 
-    // Camera parameters
-    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+    camera_visible_ = true;
+    pixels_per_area_ = next_best_view_->PixelsPerArea();
+    local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
 
-    glm::mat4 view_matrix;
-    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-    ImGuizmo::RecomposeMatrixFromComponents(
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale),
-            glm::value_ptr(view_matrix));
-    view_matrix = glm::inverse(view_matrix);
-
-    double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
-    double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
-
-    // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
-    // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
-    //         image_width, image_height, render_data);
-
-    // log_stream_ << "Cost position: " << cost_pos << std::endl;
-    // log_stream_ << "Cost rotation: " << cost_rot << std::endl;
+    set_nbv_mesh();
 }
 
 void NextBestViewPlugin::optimize_position_callback() {
@@ -215,10 +219,10 @@ void NextBestViewPlugin::optimize_position_callback() {
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    std::cout << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
+    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
 
     // Debug
-    std::cout << "Parameters: \n" << param_pos;
+    log_stream_ << "Parameters: \n" << param_pos;
 }
 
 void NextBestViewPlugin::optimize_rotation_callback() {
@@ -253,10 +257,10 @@ void NextBestViewPlugin::optimize_rotation_callback() {
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    std::cout << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
+    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
 
     // Debug
-    std::cout << "Parameters: \n" << param_rot;
+    log_stream_ << "Parameters: \n" << param_rot;
 }
 
 void NextBestViewPlugin::apply_selection_callback() {
@@ -297,15 +301,69 @@ void NextBestViewPlugin::apply_selection_callback() {
 
     // Set valid faces in NBV
     if (valid_faces.empty()) {
-        std::cout << "Valid faces empty: not set." << std::endl;
+        log_stream_ << "Valid faces empty: not set." << std::endl;
     } else {
         next_best_view_->SetValidFaces(valid_faces);
-        std::cout << "Number of valid faces: " << valid_faces.size() << std::endl;
+        log_stream_ << "Number of valid faces: " << valid_faces.size() << std::endl;
+    }
+}
+
+void NextBestViewPlugin::debug_callback() {
+    log_stream_ << "Debug button pressed" << std::endl;
+
+    // Camera parameters
+    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+
+    glm::mat4 view_matrix;
+    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+    ImGuizmo::RecomposeMatrixFromComponents(
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale),
+            glm::value_ptr(view_matrix));
+    view_matrix = glm::inverse(view_matrix);
+
+    double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
+    double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
+
+    // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
+    // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
+    //         image_width, image_height, render_data);
+
+    // log_stream_ << "Cost position: " << cost_pos << std::endl;
+    // log_stream_ << "Cost rotation: " << cost_rot << std::endl;
+}
+
+void NextBestViewPlugin::pick_face_callback() {
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+
+    int face_id;
+    Eigen::Vector3f barycentric;
+    double x = viewer->current_mouse_x;
+    double y = viewer->core.viewport(3) - viewer->current_mouse_y;
+
+    // Cast a ray
+    bool hit = igl::unproject_onto_mesh(
+            Eigen::Vector2f(x, y),
+            viewer->core.view,
+            viewer->core.proj,
+            viewer->core.viewport,
+            viewer->data().V,
+            viewer->data().F,
+            face_id,
+            barycentric);
+
+    if (hit) {
+        double ppa = pixels_per_area_[face_id];
+        double lfc = local_face_cost_[face_id];
+        log_stream_ << "ID: " << face_id << "\tPPA: " << ppa << "\tLFC:" << lfc << std::endl;
     }
 }
 
 void NextBestViewPlugin::show_camera() {
-    viewer->selected_data_index = VIEWER_DATA_NBV;
+    viewer->selected_data_index = VIEWER_DATA_CAMERA;
     if (camera_visible_) {
 
         // Compute camera transformation
@@ -397,6 +455,57 @@ void NextBestViewPlugin::show_bounding_box() {
     }
 }
 
+void NextBestViewPlugin::set_nbv_mesh() {
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    viewer->data().clear();
+
+    // Add vertices
+    int num_vertices = next_best_view_->mvs_scene_->mesh.vertices.size();
+    Eigen::MatrixXd V(num_vertices, 3);
+    for (int i = 0; i < num_vertices; i++) {
+        MVS::Mesh::Vertex vertex = next_best_view_->mvs_scene_->mesh.vertices[i];
+        V(i, 0) = vertex[0];
+        V(i, 1) = vertex[1];
+        V(i, 2) = vertex[2];
+    }
+
+    // Add faces
+    int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
+    Eigen::MatrixXi F(num_faces, 3);
+    for (int i = 0; i < num_faces; i++) {
+        MVS::Mesh::Face face = next_best_view_->mvs_scene_->mesh.faces[i];
+        F(i, 0) = face[0];
+        F(i, 1) = face[1];
+        F(i, 2) = face[2];
+    }
+
+    viewer->data().set_mesh(V, F);
+    viewer->data().show_lines = true;
+    show_nbv_mesh(true);
+}
+
+void NextBestViewPlugin::set_nbv_mesh_color(const std::vector<double>& face_values) {
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    assert(face_values.size() == viewer->data().F.rows());
+
+    int num_faces = face_values.size();
+    Eigen::VectorXd tmp(num_faces);
+    for (int i = 0; i < num_faces; i++) {
+        tmp(i) = face_values[i];
+    }
+
+    Eigen::MatrixXd color;
+    igl::jet(tmp, true, color);
+    viewer->data().set_colors(color);
+}
+
+void NextBestViewPlugin::show_nbv_mesh(bool visible) {
+    nbv_mesh_visible_ = visible;
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    viewer->data().show_faces = visible;
+    viewer->data().show_lines = visible;
+}
+
 // Mouse IO
 bool NextBestViewPlugin::mouse_down(int button, int modifier) {
     ImGui_ImplGlfwGL3_MouseButtonCallback(viewer->window, button, GLFW_PRESS, modifier);
@@ -434,6 +543,13 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
             case 'd':
             {
                 debug_callback();
+                return true;
+            }
+            case 's':
+            {
+                if (!ImGui::GetIO().WantCaptureMouse) {
+                    pick_face_callback();
+                }
                 return true;
             }
             default: break;

@@ -36,14 +36,17 @@ public:
 
 private:
     // Viewer data
-    unsigned int VIEWER_DATA_NBV;
+    unsigned int VIEWER_DATA_CAMERA;
     unsigned int VIEWER_DATA_BOUNDING_BOX;
+    unsigned int VIEWER_DATA_NBV_MESH;
 
     bool camera_visible_ = false;
     bool pose_camera_ = false;
 
     bool bounding_box_visible_ = false;
     bool pose_bounding_box_ = false;
+
+    bool nbv_mesh_visible_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
@@ -56,19 +59,29 @@ private:
     glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
     glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
+    // Debug variables
+    std::vector<double> pixels_per_area_;
+    std::vector<double> local_face_cost_;
+
     // Log
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
+    void initialize_callback();
     void optimize_position_callback();
     void optimize_rotation_callback();
     void apply_selection_callback();
+
     void debug_callback();
+    void pick_face_callback();
 
     // Helpers
     void show_camera();
     void show_bounding_box();
 
+    void set_nbv_mesh();
+    void set_nbv_mesh_color(const std::vector<double>& face_values);
+    void show_nbv_mesh(bool visible);
 };
 
 

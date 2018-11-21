@@ -24,8 +24,10 @@ public:
     std::vector<unsigned int>
     RenderFaceIdFromCamera(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
 
-    std::vector<double> PixelsPerArea();
     std::vector<double> FaceArea();
+    std::vector<double> PixelsPerArea();
+    std::vector<double> LocalFaceCost(const std::vector<double>& quality_measure);
+    std::vector<double> NonMaxSuppression(const std::vector<double>& face_values);
 
     std::unordered_set<unsigned int>
     VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
@@ -39,10 +41,18 @@ public:
 
 private:
     void UpdateFaceIdMesh();
+    std::unordered_set<unsigned int> FaceNeighbours(unsigned int face_id, int radius);
 
 public:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
+
+    // Parameters
+    double target_quality_ = 1000;
+    int face_cost_radius_ = 1;
+    int nonmax_radius_ = 1;
+    float alpha_ = 1.0; // importance of standard deviation in cost
+    float beta_ = 1.0; // importance of mean in cost
 
 private:
     // Rendering members

@@ -28,7 +28,7 @@ void writeBufferToFile(const std::string& filename, int width, int height, const
 }
 
 template <typename T>
-void writeMeasureToFile(const std::string& filename, const std::vector<T>& data) {
+void writeVectorToFile(const std::string& filename, const std::vector<T>& data) {
     // Open file
     std::ofstream outf(filename);
     if (!outf) {

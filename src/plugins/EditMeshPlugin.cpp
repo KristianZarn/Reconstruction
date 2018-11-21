@@ -753,7 +753,7 @@ bool EditMeshPlugin::key_pressed(unsigned int key, int modifiers) {
                         return true;
                     }
                 }
-                return ImGui::GetIO().WantCaptureKeyboard;
+                return true;
             }
             default: break;
         }
