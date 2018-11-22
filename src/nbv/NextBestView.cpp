@@ -275,26 +275,33 @@ std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quali
         // Get face quality of face neighbourhood
         std::unordered_set<double> face_quality;
         for (const auto& neighbour_face_id : neighbourhood_F) {
-            face_quality.insert(quality_measure[neighbour_face_id]);
+            if (quality_measure[neighbour_face_id] > 0) {
+                face_quality.insert(quality_measure[neighbour_face_id]);
+            }
         }
 
-        // Mean
-        double sum = 0.0;
-        for (double val : face_quality) {
-            sum += val;
-        }
-        double mean = sum / face_quality.size();
+        if (face_quality.size() > 1) {
 
-        // Variance
-        double tmp = 0.0;
-        for (double val : face_quality) {
-            tmp += (val - mean) * (val - mean);
-        }
-        double sd = sqrt(tmp / (face_quality.size() - 1));
+            // Mean
+            double sum = 0.0;
+            for (double val : face_quality) {
+                sum += val;
+            }
+            double mean = sum / face_quality.size();
 
-        // Face cost
-        double cost = alpha_ * sd - beta_ * mean;
-        face_cost[face_id] = cost;
+            // Variance
+            double tmp = 0.0;
+            for (double val : face_quality) {
+                tmp += (val - mean) * (val - mean);
+            }
+            double sd = sqrt(tmp / (face_quality.size() - 1));
+
+            // Face cost
+            double cost = alpha_ * sd - beta_ * mean;
+            face_cost[face_id] = cost;
+        } else {
+            face_cost[face_id] = 0.0;
+        }
     }
     return face_cost;
 }

@@ -51,8 +51,8 @@ public:
     double target_quality_ = 1000;
     int face_cost_radius_ = 1;
     int nonmax_radius_ = 1;
-    float alpha_ = 1.0; // importance of standard deviation in cost
-    float beta_ = 1.0; // importance of mean in cost
+    float alpha_ = 3.0; // importance of standard deviation in cost
+    float beta_ = 0.0; // importance of mean in cost
 
 private:
     // Rendering members

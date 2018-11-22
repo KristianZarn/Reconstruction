@@ -66,7 +66,8 @@ public:
 
         // Refine mesh
         // How many times to scale down the images before mesh refinement
-        unsigned int refine_resolution_level = 0;
+        // unsigned int refine_resolution_level = 0;
+        unsigned int refine_resolution_level = 2;
         // Do not scale images lower than this resolution
         unsigned int refine_min_resolution = 640;
         // Maximum number of neighbor images used to refine the mesh
@@ -80,7 +81,8 @@ public:
         // Maximum face area projected in any pair of images that is not subdivided (0 - disabled)
         unsigned int max_face_area = 64;
         // How many iterations to run mesh optimization on multi-scale images
-        unsigned int scales = 3;
+        // unsigned int scales = 3;
+        unsigned int scales = 1;
         // Image scale factor used at each mesh optimization step
         float scale_step = 0.5f;
         // Recompute some data in order to reduce memory requirements

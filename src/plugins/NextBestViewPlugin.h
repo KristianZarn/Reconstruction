@@ -60,6 +60,7 @@ private:
     glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
     // Debug variables
+    std::vector<double> face_area_;
     std::vector<double> pixels_per_area_;
     std::vector<double> local_face_cost_;
 
@@ -68,6 +69,7 @@ private:
 
     // Callback functions
     void initialize_callback();
+    void optimize_all_callback();
     void optimize_position_callback();
     void optimize_rotation_callback();
     void apply_selection_callback();

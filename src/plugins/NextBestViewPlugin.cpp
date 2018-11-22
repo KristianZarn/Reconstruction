@@ -55,9 +55,17 @@ bool NextBestViewPlugin::post_draw() {
     Eigen::Matrix4f gizmo_view = scale_base_zoom * scale_zoom * viewer->core.view;
 
     // NBV object and pose optimization
-    if (ImGui::TreeNodeEx("Optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Initialization", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
             initialize_callback();
+        }
+        ImGui::TreePop();
+    }
+
+    // Optimize camera pose
+    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
+            optimize_all_callback();
         }
         if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
             optimize_position_callback();
@@ -65,11 +73,6 @@ bool NextBestViewPlugin::post_draw() {
         if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
             optimize_rotation_callback();
         }
-        ImGui::TreePop();
-    }
-
-    // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Show NBV camera", &camera_visible_);
         ImGui::Checkbox("Pose camera", &pose_camera_);
         ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
@@ -158,6 +161,7 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
         ImGui::InputFloat("Beta", &next_best_view_->beta_);
 
+        ImGui::Spacing();
         if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
             set_nbv_mesh_color(pixels_per_area_);
         }
@@ -181,10 +185,58 @@ void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
 
     camera_visible_ = true;
+
+    log_stream_ << "Computing FA ... " << std::flush;
+    face_area_ = next_best_view_->FaceArea();
+    log_stream_ << "DONE" << std::endl;
+
+    log_stream_ << "Computing PPA ... " << std::flush;
     pixels_per_area_ = next_best_view_->PixelsPerArea();
+    log_stream_ << "DONE" << std::endl;
+
+    log_stream_ << "Computing LFC ... " << std::flush;
     local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
+    log_stream_ << "DONE" << std::endl;
 
     set_nbv_mesh();
+}
+
+void NextBestViewPlugin::optimize_all_callback() {
+
+    // Camera parameters
+    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+
+    // Optimization parameters
+    arma::vec param = arma::zeros(6, 1);
+    param(0) = camera_pos_[0];
+    param(1) = camera_pos_[1];
+    param(2) = camera_pos_[2];
+    param(3) = camera_rot_[0];
+    param(4) = camera_rot_[1];
+    param(5) = camera_rot_[2];
+
+    optim::algo_settings_t optim_settings;
+    optim_settings.iter_max = 1;
+
+    OptimData optim_data{next_best_view_.get(), image_width, image_height, focal_y};
+
+    // Run optimization
+    auto time_begin = std::chrono::steady_clock::now();
+    bool success = optim::nm(param, optim_function, &optim_data, optim_settings);
+    camera_pos_[0] = param(0);
+    camera_pos_[1] = param(1);
+    camera_pos_[2] = param(2);
+    camera_rot_[0] = param(3);
+    camera_rot_[1] = param(4);
+    camera_rot_[2] = param(5);
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
+
+    // Debug
+    log_stream_ << "Parameters: \n" << param;
 }
 
 void NextBestViewPlugin::optimize_position_callback() {
@@ -356,9 +408,13 @@ void NextBestViewPlugin::pick_face_callback() {
             barycentric);
 
     if (hit) {
+        double fa = face_area_[face_id];
         double ppa = pixels_per_area_[face_id];
         double lfc = local_face_cost_[face_id];
-        log_stream_ << "ID: " << face_id << "\tPPA: " << ppa << "\tLFC:" << lfc << std::endl;
+        log_stream_ << "ID: " << face_id
+                    << "\tFA: " << fa
+                    << "\tPPA: " << ppa
+                    << "\tLFC: " << lfc << std::endl;
     }
 }
 
