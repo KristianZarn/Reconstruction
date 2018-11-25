@@ -82,9 +82,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    viewer.plugins.push_back(&edit_mesh_plugin);
+    // EditMeshPlugin::Parameters edit_mesh_parameters;
+    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
     auto next_best_view = std::make_shared<NextBestView>(mvs_scene);

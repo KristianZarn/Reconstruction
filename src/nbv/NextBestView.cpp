@@ -267,19 +267,32 @@ std::unordered_set<unsigned int> NextBestView::FaceNeighbours(unsigned int face_
 std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quality_measure) {
 
     int num_faces = mvs_scene_->mesh.faces.size();
+    std::vector<double> face_area = FaceArea();
     std::vector<double> face_cost(num_faces);
 
-    for (int face_id = 0; face_id < num_faces; face_id++) {
-        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, face_cost_radius_);
+    for (unsigned int face_id = 0; face_id < num_faces; face_id++) {
 
-        // Get face quality of face neighbourhood
+        // Check if valid face
+        if (valid_faces_.find(face_id) == valid_faces_.end()) {
+            face_cost[face_id] = 0.0;
+            continue;
+        }
+
+        // Get face quality of neighbourhood
+        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, face_cost_radius_);
         std::unordered_set<double> face_quality;
         for (const auto& neighbour_face_id : neighbourhood_F) {
-            if (quality_measure[neighbour_face_id] > 0) {
-                face_quality.insert(quality_measure[neighbour_face_id]);
+
+            // Check for max_quality
+            double tmp_quality = std::min(quality_measure[neighbour_face_id], max_quality_);
+
+            // Check for positive quality and min area
+            if (tmp_quality > 0 && face_area[neighbour_face_id] > min_face_area_) {
+                face_quality.insert(tmp_quality);
             }
         }
 
+        // Compute local face cost
         if (face_quality.size() > 1) {
 
             // Mean

@@ -154,7 +154,7 @@ bool NextBestViewPlugin::post_draw() {
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Recompute local face cost", ImVec2(-1, 0))) {
+        if (ImGui::Button("Recompute", ImVec2(-1, 0))) {
             local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
         }
         ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
@@ -183,8 +183,6 @@ bool NextBestViewPlugin::post_draw() {
 
 void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
-
-    camera_visible_ = true;
 
     log_stream_ << "Computing FA ... " << std::flush;
     face_area_ = next_best_view_->FaceArea();

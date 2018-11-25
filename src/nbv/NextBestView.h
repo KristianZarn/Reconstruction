@@ -48,10 +48,12 @@ public:
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
     // Parameters
-    double target_quality_ = 1000;
+    double max_quality_ = 1000;
+    double min_quality_ = 300;
+    double min_face_area_ = 0.001;
     int face_cost_radius_ = 1;
     int nonmax_radius_ = 1;
-    float alpha_ = 3.0; // importance of standard deviation in cost
+    float alpha_ = 2.0; // importance of standard deviation in cost
     float beta_ = 0.0; // importance of mean in cost
 
 private:
