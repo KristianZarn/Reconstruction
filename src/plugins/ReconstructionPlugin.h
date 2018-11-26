@@ -105,7 +105,7 @@ public:
         bool show_cameras = true;
         bool show_point_cloud = true;
         bool show_mesh = true;
-        bool show_texture = true;
+        bool show_texture = false;
         bool show_wireframe = false;
         char filename_buffer[64] = "filename";
         // bool compute_mesh_ppa = true;

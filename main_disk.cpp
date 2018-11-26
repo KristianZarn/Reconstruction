@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/testbed/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vzorci/";
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
     std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
 
     int num_images = 100;
-    std::string image_ext = ".png";
+    std::string image_ext = ".jpg";
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
     std::string calibration_file = project_path + "prior_calibration.txt";

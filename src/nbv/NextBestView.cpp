@@ -148,6 +148,7 @@ NextBestView::RenderFaceIdFromCamera(const glm::mat4& view_matrix, int image_wid
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteTextures(1, &framebufferTexture);
     glDeleteRenderbuffers(1, &framebufferDepthStencil);
+    glDisable(GL_CULL_FACE);
 
     return render_data;
 }
@@ -310,7 +311,7 @@ std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quali
             double sd = sqrt(tmp / (face_quality.size() - 1));
 
             // Face cost
-            double cost = alpha_ * sd - beta_ * mean;
+            double cost = sd;
             face_cost[face_id] = cost;
         } else {
             face_cost[face_id] = 0.0;
@@ -319,34 +320,54 @@ std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quali
     return face_cost;
 }
 
-std::vector<double> NextBestView::NonMaxSuppression(const std::vector<double>& face_values) {
-
-    // Update neighborhood information
-    mvs_scene_->mesh.ListIncidenteVertices();
-    mvs_scene_->mesh.ListIncidenteFaces();
-
-    // Non maxima suppression
+std::vector<std::vector<unsigned int>> NextBestView::ExtractClusters(const std::vector<double>& face_values) {
     int num_faces = mvs_scene_->mesh.faces.size();
-    std::vector<double> suppressed_values(num_faces);
+    std::vector<bool> processed(num_faces, false);
 
-    for (int face_id = 0; face_id < num_faces; face_id++) {
-        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, nonmax_radius_);
-
-        // Get face values of face neighbourhood
-        std::unordered_set<double> neighbourhood_values;
-        for (const auto& neighbour_face_id : neighbourhood_F) {
-            neighbourhood_values.insert(face_values[neighbour_face_id]);
-        }
-        double neighbourhood_max = *std::max_element(neighbourhood_values.begin(), neighbourhood_values.end());
-
-        // Test for suppression
-        if (face_values[face_id] < neighbourhood_max) {
-            suppressed_values[face_id] = 0.0;
-        } else {
-            suppressed_values[face_id] = face_values[face_id];
+    // Skip faces with LCF value too small (indirectly also skips non valid faces)
+    for (unsigned int face_i = 0; face_i < num_faces; face_i++) {
+        if (face_values[face_i] < cluster_min_lfc_) {
+            processed[face_i] = true;
         }
     }
-    return suppressed_values;
+
+    // Find clusters
+    std::vector<std::vector<unsigned int>> clusters;
+    for (unsigned int face_i = 0; face_i < num_faces; face_i++) {
+        if (!processed[face_i]) {
+
+            // Add current face to a new cluster
+            std::vector<unsigned int> queue;
+            queue.push_back(face_i);
+            glm::vec3 normal_ref = face_normals_[face_i];
+            processed[face_i] = true;
+            for (int j = 0; j < queue.size(); j++) {
+
+                // Search for a set of valid neighbors
+                unsigned int face_j = queue[j];
+                std::unordered_set<unsigned int> neighbors = FaceNeighbours(face_j, 1);
+                for (const auto& face_n : neighbors) {
+                    if (!processed[face_n] && queue.size() < cluster_max_size_) {
+
+                        // Check if valid
+                        glm::vec3 normal_n = face_normals_[face_n];
+                        double angle = glm::degrees(glm::angle(normal_n, normal_ref));
+                        if (angle < cluster_angle_) {
+
+                            // Add to queue
+                            queue.push_back(face_n);
+                            processed[face_n] = true;
+
+                            // Update reference values
+                            normal_ref = normal_ref + (normal_n - normal_ref) / static_cast<float>(queue.size());
+                        }
+                    }
+                }
+            }
+            clusters.push_back(queue);
+        }
+    }
+    return clusters;
 }
 
 std::unordered_set<unsigned int>

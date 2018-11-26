@@ -6,6 +6,7 @@
 #include <imgui_impl_glfw_gl3.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <igl/colormap.h>
 #include <igl/jet.h>
 #include <igl/unproject_onto_mesh.h>
 
@@ -22,13 +23,13 @@ void NextBestViewPlugin::init(igl::opengl::glfw::Viewer *_viewer) {
     viewer->append_mesh();
     VIEWER_DATA_CAMERA = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
-    // Append mesh for bounding box
-    viewer->append_mesh();
-    VIEWER_DATA_BOUNDING_BOX = static_cast<unsigned int>(viewer->data_list.size() - 1);
-
     // Append mesh for mesh
     viewer->append_mesh();
     VIEWER_DATA_NBV_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Append mesh for bounding box
+    viewer->append_mesh();
+    VIEWER_DATA_BOUNDING_BOX = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
     // Initial gizmo pose
     camera_gizmo_ = Eigen::Matrix4f::Identity();
@@ -63,7 +64,7 @@ bool NextBestViewPlugin::post_draw() {
     }
 
     // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Camera pose optimization")) {
         if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
             optimize_all_callback();
         }
@@ -154,19 +155,26 @@ bool NextBestViewPlugin::post_draw() {
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Recompute", ImVec2(-1, 0))) {
+
+        if (ImGui::Button("Recompute LCF", ImVec2(-1, 0))) {
             local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
         }
-        ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
-        ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
-        ImGui::InputFloat("Beta", &next_best_view_->beta_);
+        // ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
+        // ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
+        // ImGui::InputFloat("Beta", &next_best_view_->beta_);
+        // ImGui::Spacing();
 
-        ImGui::Spacing();
+        ImGui::InputInt("Cluster size", &next_best_view_->cluster_max_size_);
+        ImGui::InputFloat("Cluster angle", &next_best_view_->cluster_angle_);
+
         if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
             set_nbv_mesh_color(pixels_per_area_);
         }
         if (ImGui::Button("Show local face cost", ImVec2(-1, 0))) {
             set_nbv_mesh_color(local_face_cost_);
+        }
+        if (ImGui::Button("Show clusters", ImVec2(-1, 0))) {
+            show_clusters_callback();
         }
         if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
             show_nbv_mesh(nbv_mesh_visible_);
@@ -416,6 +424,36 @@ void NextBestViewPlugin::pick_face_callback() {
     }
 }
 
+void NextBestViewPlugin::show_clusters_callback() {
+
+    // Compute clusters
+    std::vector<std::vector<unsigned int>> clusters = next_best_view_->ExtractClusters(local_face_cost_);
+    int num_clusters = clusters.size();
+    int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
+
+    // Set default color
+    Eigen::MatrixXd color(num_faces, 3);
+    Eigen::RowVector3d default_color = Eigen::RowVector3d(1.0, 1.0, 1.0);
+    for (int i = 0; i < num_faces; i++) {
+        color.row(i) = default_color;
+    }
+
+    // Set cluster colors
+    int num_clustered_faces = 0;
+    Eigen::MatrixXd color_palette = (Eigen::MatrixXd::Random(num_clusters, 3).array() + 1.0) / 2.0;
+    for (int i = 0; i < clusters.size(); i++) {
+        num_clustered_faces += clusters[i].size();
+        for (const auto& face_id : clusters[i]) {
+            color.row(face_id) = color_palette.row(i);
+        }
+    }
+    log_stream_ << "Number of clustered faces: " << num_clustered_faces << std::endl;
+
+    // Show colors
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    viewer->data().set_colors(color);
+}
+
 void NextBestViewPlugin::show_camera() {
     viewer->selected_data_index = VIEWER_DATA_CAMERA;
     if (camera_visible_) {
@@ -549,7 +587,7 @@ void NextBestViewPlugin::set_nbv_mesh_color(const std::vector<double>& face_valu
     }
 
     Eigen::MatrixXd color;
-    igl::jet(tmp, true, color);
+    igl::colormap(igl::ColorMapType::COLOR_MAP_TYPE_JET, tmp, true, color);
     viewer->data().set_colors(color);
 }
 

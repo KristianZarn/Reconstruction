@@ -84,7 +84,7 @@ bool ReconstructionPlugin::post_draw() {
             reload_mesh_callback();
         }
         std::ostringstream os;
-        os << "Mesh info:"
+        os << "MVS mesh:"
            << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
            << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
         ImGui::TextUnformatted(os.str().c_str());
@@ -387,43 +387,46 @@ void ReconstructionPlugin::reset_reconstruction_callback() {
 
 void ReconstructionPlugin::reconstruct_mesh_callback() {
     log_stream_ << std::endl;
-
-    // Select neighbor views
-    int i = 0;
-    for (auto& image : mvs_scene_->images) {
-        image.ReloadImage(0, false);
-        image.UpdateCamera(mvs_scene_->platforms);
-        if (image.neighbors.IsEmpty()) {
-            SEACAVE::IndexArr points;
-            mvs_scene_->SelectNeighborViews(static_cast<uint32_t>(i), points);
+    if (!mvs_scene_->pointcloud.IsEmpty()) {
+        // Select neighbor views
+        int i = 0;
+        for (auto& image : mvs_scene_->images) {
+            image.ReloadImage(0, false);
+            image.UpdateCamera(mvs_scene_->platforms);
+            if (image.neighbors.IsEmpty()) {
+                SEACAVE::IndexArr points;
+                mvs_scene_->SelectNeighborViews(static_cast<uint32_t>(i), points);
+            }
+            i++;
         }
-        i++;
+
+        // Reconstruct mesh
+        log_stream_ << "Reconstructing mesh ..." << std::endl;
+        auto time_begin = std::chrono::steady_clock::now();
+
+        mvs_scene_->ReconstructMesh(parameters_.dist_insert,
+                                    parameters_.use_free_space_support,
+                                    parameters_.fix_non_manifold,
+                                    parameters_.thickness_factor,
+                                    parameters_.quality_factor);
+
+        auto time_end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> time_elapsed = time_end - time_begin;
+        log_stream_ << "Reconstruct mesh time: " << time_elapsed.count() << " s" << std::endl;
+        log_stream_ << "Reconstruct mesh result: \n\t"
+                    << mvs_scene_->mesh.vertices.GetSize() << " vertices, "
+                    << mvs_scene_->mesh.faces.GetSize() << " faces." << std::endl;
+
+        // Clean the mesh
+        mvs_scene_->mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
+                               parameters_.close_holes, parameters_.smooth_mesh, false);
+
+        // Recompute array of vertices incident to each vertex
+        mvs_scene_->mesh.ListIncidenteFaces();
+        set_mesh();
+    } else {
+        log_stream_ << "Reconstruct mesh failed: Pointcloud is empty." << std::endl;
     }
-
-    // Reconstruct mesh
-    log_stream_ << "Reconstructing mesh ..." << std::endl;
-    auto time_begin = std::chrono::steady_clock::now();
-
-    mvs_scene_->ReconstructMesh(parameters_.dist_insert,
-                                parameters_.use_free_space_support,
-                                parameters_.fix_non_manifold,
-                                parameters_.thickness_factor,
-                                parameters_.quality_factor);
-
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Reconstruct mesh time: " << time_elapsed.count() << " s" << std::endl;
-    log_stream_ << "Reconstruct mesh result: \n\t"
-                << mvs_scene_->mesh.vertices.GetSize() << " vertices, "
-                << mvs_scene_->mesh.faces.GetSize() << " faces." << std::endl;
-
-    // Clean the mesh
-    mvs_scene_->mesh.Clean(parameters_.decimate_mesh, parameters_.remove_spurious, parameters_.remove_spikes,
-                          parameters_.close_holes, parameters_.smooth_mesh, false);
-
-    // Recompute array of vertices incident to each vertex
-    mvs_scene_->mesh.ListIncidenteFaces();
-    set_mesh();
 }
 
 void ReconstructionPlugin::refine_mesh_callback() {

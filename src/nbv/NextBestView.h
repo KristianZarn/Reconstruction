@@ -27,7 +27,8 @@ public:
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
     std::vector<double> LocalFaceCost(const std::vector<double>& quality_measure);
-    std::vector<double> NonMaxSuppression(const std::vector<double>& face_values);
+    std::vector<std::vector<unsigned int>> ExtractClusters(const std::vector<double>& face_values);
+
 
     std::unordered_set<unsigned int>
     VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
@@ -47,24 +48,27 @@ public:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
-    // Parameters
+    // LFC parameters
     double max_quality_ = 1000;
-    double min_quality_ = 300;
     double min_face_area_ = 0.001;
     int face_cost_radius_ = 1;
-    int nonmax_radius_ = 1;
-    float alpha_ = 2.0; // importance of standard deviation in cost
+
+    // Clustering parameters
+    int cluster_max_size_ = 200; // max size of cluster
+    float cluster_angle_ = 20; // max angle deviation from mean to be considered part of cluster
+    float cluster_min_lfc_ = 1.0;
+
+    // Cost function parameters
+    double downscale_factor_ = 4.0;
+    int visible_faces_target_ = 50;
+    float alpha_ = 1.0; // importance of standard deviation in cost
     float beta_ = 0.0; // importance of mean in cost
 
 private:
     // Rendering members
     std::unique_ptr<SourceShader> faceid_shader_;
     std::unique_ptr<FaceIdMesh> faceid_mesh_;
-
-    // Parameters
     std::unordered_set<unsigned int> valid_faces_;
-    double downscale_factor_ = 4.0;
-    int visible_faces_target_ = 50;
 
     // Speedup variables
     std::vector<double> ppa_;
