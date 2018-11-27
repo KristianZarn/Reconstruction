@@ -64,7 +64,7 @@ bool NextBestViewPlugin::post_draw() {
     }
 
     // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization")) {
+    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
             optimize_all_callback();
         }
@@ -156,26 +156,40 @@ bool NextBestViewPlugin::post_draw() {
     // Debugging
     if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 
+        // PPA
+        if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
+            set_nbv_mesh_color(pixels_per_area_);
+        }
+        ImGui::Spacing();
+
+        // LCF
+        if (ImGui::Button("Show local face cost", ImVec2(-1, 0))) {
+            set_nbv_mesh_color(local_face_cost_);
+        }
         if (ImGui::Button("Recompute LCF", ImVec2(-1, 0))) {
             local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
         }
         // ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
         // ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
         // ImGui::InputFloat("Beta", &next_best_view_->beta_);
-        // ImGui::Spacing();
+        ImGui::Spacing();
 
-        ImGui::InputInt("Cluster size", &next_best_view_->cluster_max_size_);
-        ImGui::InputFloat("Cluster angle", &next_best_view_->cluster_angle_);
-
-        if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
-            set_nbv_mesh_color(pixels_per_area_);
-        }
-        if (ImGui::Button("Show local face cost", ImVec2(-1, 0))) {
-            set_nbv_mesh_color(local_face_cost_);
-        }
+        // Clustering
         if (ImGui::Button("Show clusters", ImVec2(-1, 0))) {
             show_clusters_callback();
         }
+        ImGui::InputInt("Cluster size", &next_best_view_->cluster_max_size_);
+        ImGui::InputFloat("Cluster angle", &next_best_view_->cluster_angle_);
+        ImGui::Spacing();
+
+        // Best view
+        if (ImGui::Button("Best view init", ImVec2(-1, 0))) {
+            show_best_view_callback();
+        }
+        ImGui::InputFloat("Dist mult", &next_best_view_->dist_mult_);
+        ImGui::Spacing();
+
+        // Other
         if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
             show_nbv_mesh(nbv_mesh_visible_);
         }
@@ -383,8 +397,8 @@ void NextBestViewPlugin::debug_callback() {
             glm::value_ptr(view_matrix));
     view_matrix = glm::inverse(view_matrix);
 
-    double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
-    double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
+    // double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
+    // double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
 
     // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
     // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
@@ -392,6 +406,12 @@ void NextBestViewPlugin::debug_callback() {
 
     // log_stream_ << "Cost position: " << cost_pos << std::endl;
     // log_stream_ << "Cost rotation: " << cost_rot << std::endl;
+
+    log_stream_ << "Camera gizmo data: ";
+    for (int i = 0; i < camera_gizmo_.size(); i++) {
+        log_stream_ << *(camera_gizmo_.data() + i) << "  ";
+    }
+    log_stream_ << std::endl;
 }
 
 void NextBestViewPlugin::pick_face_callback() {
@@ -427,7 +447,7 @@ void NextBestViewPlugin::pick_face_callback() {
 void NextBestViewPlugin::show_clusters_callback() {
 
     // Compute clusters
-    std::vector<std::vector<unsigned int>> clusters = next_best_view_->ExtractClusters(local_face_cost_);
+    std::vector<std::vector<unsigned int>> clusters = next_best_view_->FaceClusters(local_face_cost_);
     int num_clusters = clusters.size();
     int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
 
@@ -452,6 +472,22 @@ void NextBestViewPlugin::show_clusters_callback() {
     // Show colors
     viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
     viewer->data().set_colors(color);
+}
+
+void NextBestViewPlugin::show_best_view_callback() {
+
+    std::vector<std::vector<unsigned int>> clusters = next_best_view_->FaceClusters(local_face_cost_);
+    glm::mat4 view = next_best_view_->BestViewInit(clusters, local_face_cost_);
+    glm::mat4 view_world = glm::inverse(view);
+
+    glm::vec3 scale;
+    ImGuizmo::DecomposeMatrixToComponents(
+            glm::value_ptr(view_world),
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale));
+
+    log_stream_ << "Initial best view set." << std::endl;
 }
 
 void NextBestViewPlugin::show_camera() {
@@ -637,7 +673,7 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
                 debug_callback();
                 return true;
             }
-            case 's':
+            case 'p':
             {
                 if (!ImGui::GetIO().WantCaptureMouse) {
                     pick_face_callback();

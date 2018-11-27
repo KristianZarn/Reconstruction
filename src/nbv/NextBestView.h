@@ -27,8 +27,9 @@ public:
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
     std::vector<double> LocalFaceCost(const std::vector<double>& quality_measure);
-    std::vector<std::vector<unsigned int>> ExtractClusters(const std::vector<double>& face_values);
-
+    std::vector<std::vector<unsigned int>> FaceClusters(const std::vector<double>& face_values);
+    glm::mat4 BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
+                           const std::vector<double>& face_values);
 
     std::unordered_set<unsigned int>
     VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
@@ -54,9 +55,12 @@ public:
     int face_cost_radius_ = 1;
 
     // Clustering parameters
-    int cluster_max_size_ = 200; // max size of cluster
+    int cluster_max_size_ = 500; // max size of cluster
     float cluster_angle_ = 20; // max angle deviation from mean to be considered part of cluster
     float cluster_min_lfc_ = 1.0;
+
+    // Best view parameters
+    float dist_mult_ = 2.0;
 
     // Cost function parameters
     double downscale_factor_ = 4.0;
@@ -71,9 +75,11 @@ private:
     std::unordered_set<unsigned int> valid_faces_;
 
     // Speedup variables
-    std::vector<double> ppa_;
     std::vector<glm::vec3> face_centers_;
     std::vector<glm::vec3> face_normals_;
+
+    // Optimization
+    std::vector<double> ppa_;
 
     // Shaders
     const std::string faceid_vert_source =

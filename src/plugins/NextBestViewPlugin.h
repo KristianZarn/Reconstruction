@@ -77,6 +77,7 @@ private:
     void debug_callback();
     void pick_face_callback();
     void show_clusters_callback();
+    void show_best_view_callback();
 
     // Helpers
     void show_camera();

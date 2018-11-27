@@ -18,7 +18,7 @@ void NextBestView::Initialize() {
     mvs_scene_->mesh.ListIncidenteVertices();
     mvs_scene_->mesh.ListIncidenteFaces();
 
-    // Update meshes
+    // Update mesh
     UpdateFaceIdMesh();
     ppa_ = PixelsPerArea();
 
@@ -320,7 +320,7 @@ std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quali
     return face_cost;
 }
 
-std::vector<std::vector<unsigned int>> NextBestView::ExtractClusters(const std::vector<double>& face_values) {
+std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vector<double>& face_values) {
     int num_faces = mvs_scene_->mesh.faces.size();
     std::vector<bool> processed(num_faces, false);
 
@@ -368,6 +368,48 @@ std::vector<std::vector<unsigned int>> NextBestView::ExtractClusters(const std::
         }
     }
     return clusters;
+}
+
+glm::mat4 NextBestView::BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
+                                     const std::vector<double>& face_values) {
+    // Compute cluster costs
+    std::vector<std::pair<int, double>> cluster_costs;
+    for (int i = 0; i < clusters.size(); i++) {
+        double cluster_cost = 0.0;
+        for (const auto& face_id : clusters[i]) {
+            cluster_cost += face_values[face_id];
+        }
+        cluster_costs.emplace_back(i, cluster_cost);
+    }
+
+    // Find max
+    auto best = *std::max_element(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
+        return left.second < right.second;
+    });
+
+    // Average center and normal
+    const std::vector<unsigned int>& cluster = clusters[best.first];
+    glm::vec3 center_sum = glm::vec3(0);
+    glm::vec3 normal_sum = glm::vec3(0);
+    for (const auto& face_id : cluster) {
+        center_sum += face_centers_[face_id];
+        normal_sum += face_normals_[face_id];
+    }
+    glm::vec3 cluster_center = center_sum / static_cast<float>(cluster.size());
+    glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.size());
+
+    // Compute camera distance
+    double distance_sum = 0.0;
+    for (const auto& face_id : cluster) {
+        distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
+    }
+    double camera_distance = (distance_sum / cluster.size()) * dist_mult_;
+
+    // Generate view matrix
+    glm::vec3 up = glm::vec3(0, 1, 0);
+    glm::vec3 eye = cluster_center + cluster_normal * static_cast<float>(camera_distance);
+    glm::mat4 view = glm::lookAt(eye, cluster_center, up);
+    return view;
 }
 
 std::unordered_set<unsigned int>
