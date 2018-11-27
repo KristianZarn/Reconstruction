@@ -26,10 +26,9 @@ public:
 
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
-    std::vector<double> LocalFaceCost(const std::vector<double>& quality_measure);
-    std::vector<std::vector<unsigned int>> FaceClusters(const std::vector<double>& face_values);
+    std::vector<std::vector<unsigned int>> FaceClusters(const std::vector<double>& quality_measure);
     glm::mat4 BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
-                           const std::vector<double>& face_values);
+                           const std::vector<double>& face_quality);
 
     std::unordered_set<unsigned int>
     VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
@@ -38,6 +37,7 @@ public:
     std::unordered_map<unsigned int, double>
     FaceDistances(const std::unordered_set<unsigned int>& faces, const glm::mat4& view_matrix);
 
+    double Cost(const std::unordered_set<double>& face_quality);
     double CostFunctionPosition(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
     double CostFunctionRotation(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
 
@@ -49,24 +49,19 @@ public:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
-    // LFC parameters
-    double max_quality_ = 1000;
-    double min_face_area_ = 0.001;
-    int face_cost_radius_ = 1;
-
     // Clustering parameters
     int cluster_max_size_ = 500; // max size of cluster
-    float cluster_angle_ = 20; // max angle deviation from mean to be considered part of cluster
-    float cluster_min_lfc_ = 1.0;
+    float cluster_angle_ = 40; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
-    float dist_mult_ = 2.0;
+    float dist_mult_ = 6.0;
 
     // Cost function parameters
+    double max_quality_ = 1000;
     double downscale_factor_ = 4.0;
-    int visible_faces_target_ = 50;
-    float alpha_ = 1.0; // importance of standard deviation in cost
-    float beta_ = 0.0; // importance of mean in cost
+    // int visible_faces_target_ = 50;
+    float alpha_ = 0.5; // importance of mean in cost
+    float beta_ = 3.0; // importance of standard deviation in cost
 
 private:
     // Rendering members

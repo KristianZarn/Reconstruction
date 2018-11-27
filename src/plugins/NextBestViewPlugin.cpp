@@ -156,22 +156,14 @@ bool NextBestViewPlugin::post_draw() {
     // Debugging
     if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
 
+        if (ImGui::Button("Recompute", ImVec2(-1, 0))) {
+            recompute_callback();
+        }
+
         // PPA
         if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
             set_nbv_mesh_color(pixels_per_area_);
         }
-        ImGui::Spacing();
-
-        // LCF
-        if (ImGui::Button("Show local face cost", ImVec2(-1, 0))) {
-            set_nbv_mesh_color(local_face_cost_);
-        }
-        if (ImGui::Button("Recompute LCF", ImVec2(-1, 0))) {
-            local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
-        }
-        // ImGui::InputInt("Radius", &next_best_view_->face_cost_radius_);
-        // ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
-        // ImGui::InputFloat("Beta", &next_best_view_->beta_);
         ImGui::Spacing();
 
         // Clustering
@@ -184,8 +176,10 @@ bool NextBestViewPlugin::post_draw() {
 
         // Best view
         if (ImGui::Button("Best view init", ImVec2(-1, 0))) {
-            show_best_view_callback();
+            init_best_view_callback();
         }
+        ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
+        ImGui::InputFloat("Beta", &next_best_view_->beta_);
         ImGui::InputFloat("Dist mult", &next_best_view_->dist_mult_);
         ImGui::Spacing();
 
@@ -205,7 +199,11 @@ bool NextBestViewPlugin::post_draw() {
 
 void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
+    recompute_callback();
+    set_nbv_mesh();
+}
 
+void NextBestViewPlugin::recompute_callback() {
     log_stream_ << "Computing FA ... " << std::flush;
     face_area_ = next_best_view_->FaceArea();
     log_stream_ << "DONE" << std::endl;
@@ -214,49 +212,23 @@ void NextBestViewPlugin::initialize_callback() {
     pixels_per_area_ = next_best_view_->PixelsPerArea();
     log_stream_ << "DONE" << std::endl;
 
-    log_stream_ << "Computing LFC ... " << std::flush;
-    local_face_cost_ = next_best_view_->LocalFaceCost(pixels_per_area_);
+    log_stream_ << "Computing Clusters ... " << std::flush;
+    clusters_ = next_best_view_->FaceClusters(pixels_per_area_);
     log_stream_ << "DONE" << std::endl;
 
-    set_nbv_mesh();
+    // Set cluster_id for debugging
+    cluster_id_.resize(next_best_view_->mvs_scene_->mesh.faces.size());
+    std::fill(cluster_id_.begin(), cluster_id_.end(), -1);
+    for (int i = 0; i < clusters_.size(); i++) {
+        for (const auto& face_id : clusters_[i]) {
+            cluster_id_[face_id] = i;
+        }
+    }
 }
 
 void NextBestViewPlugin::optimize_all_callback() {
-
-    // Camera parameters
-    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-
-    // Optimization parameters
-    arma::vec param = arma::zeros(6, 1);
-    param(0) = camera_pos_[0];
-    param(1) = camera_pos_[1];
-    param(2) = camera_pos_[2];
-    param(3) = camera_rot_[0];
-    param(4) = camera_rot_[1];
-    param(5) = camera_rot_[2];
-
-    optim::algo_settings_t optim_settings;
-    optim_settings.iter_max = 1;
-
-    OptimData optim_data{next_best_view_.get(), image_width, image_height, focal_y};
-
-    // Run optimization
-    auto time_begin = std::chrono::steady_clock::now();
-    bool success = optim::nm(param, optim_function, &optim_data, optim_settings);
-    camera_pos_[0] = param(0);
-    camera_pos_[1] = param(1);
-    camera_pos_[2] = param(2);
-    camera_rot_[0] = param(3);
-    camera_rot_[1] = param(4);
-    camera_rot_[2] = param(5);
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
-
-    // Debug
-    log_stream_ << "Parameters: \n" << param;
+    optimize_position_callback();
+    optimize_rotation_callback();
 }
 
 void NextBestViewPlugin::optimize_position_callback() {
@@ -436,19 +408,33 @@ void NextBestViewPlugin::pick_face_callback() {
     if (hit) {
         double fa = face_area_[face_id];
         double ppa = pixels_per_area_[face_id];
-        double lfc = local_face_cost_[face_id];
+        int cid = cluster_id_[face_id];
+
+        // Get faces quality
+        double cost;
+        if (cid >= 0) {
+            std::unordered_set<double> face_quality;
+            for (const auto& face_id : clusters_[cid]) {
+                double q = std::min(pixels_per_area_[face_id], next_best_view_->max_quality_);
+                face_quality.insert(q);
+            }
+            // Cost value
+            cost = next_best_view_->Cost(face_quality) * (clusters_[cid].size() / static_cast<double>(next_best_view_->cluster_max_size_));
+        } else {
+            cost = -1;
+        }
+
         log_stream_ << "ID: " << face_id
-                    << "\tFA: " << fa
                     << "\tPPA: " << ppa
-                    << "\tLFC: " << lfc << std::endl;
+                    << "\tCID: " << cid
+                    << "\tCCost: " << cost << std::endl;
     }
 }
 
 void NextBestViewPlugin::show_clusters_callback() {
 
     // Compute clusters
-    std::vector<std::vector<unsigned int>> clusters = next_best_view_->FaceClusters(local_face_cost_);
-    int num_clusters = clusters.size();
+    int num_clusters = clusters_.size();
     int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
 
     // Set default color
@@ -461,9 +447,9 @@ void NextBestViewPlugin::show_clusters_callback() {
     // Set cluster colors
     int num_clustered_faces = 0;
     Eigen::MatrixXd color_palette = (Eigen::MatrixXd::Random(num_clusters, 3).array() + 1.0) / 2.0;
-    for (int i = 0; i < clusters.size(); i++) {
-        num_clustered_faces += clusters[i].size();
-        for (const auto& face_id : clusters[i]) {
+    for (int i = 0; i < clusters_.size(); i++) {
+        num_clustered_faces += clusters_[i].size();
+        for (const auto& face_id : clusters_[i]) {
             color.row(face_id) = color_palette.row(i);
         }
     }
@@ -474,10 +460,8 @@ void NextBestViewPlugin::show_clusters_callback() {
     viewer->data().set_colors(color);
 }
 
-void NextBestViewPlugin::show_best_view_callback() {
-
-    std::vector<std::vector<unsigned int>> clusters = next_best_view_->FaceClusters(local_face_cost_);
-    glm::mat4 view = next_best_view_->BestViewInit(clusters, local_face_cost_);
+void NextBestViewPlugin::init_best_view_callback() {
+    glm::mat4 view = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
     glm::mat4 view_world = glm::inverse(view);
 
     glm::vec3 scale;

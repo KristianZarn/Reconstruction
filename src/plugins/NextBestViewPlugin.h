@@ -62,7 +62,8 @@ private:
     // Debug variables
     std::vector<double> face_area_;
     std::vector<double> pixels_per_area_;
-    std::vector<double> local_face_cost_;
+    std::vector<std::vector<unsigned int>> clusters_;
+    std::vector<int> cluster_id_;
 
     // Log
     std::ostream& log_stream_ = std::cout;
@@ -72,12 +73,14 @@ private:
     void optimize_all_callback();
     void optimize_position_callback();
     void optimize_rotation_callback();
+
     void apply_selection_callback();
 
+    void recompute_callback();
+    void show_clusters_callback();
+    void init_best_view_callback();
     void debug_callback();
     void pick_face_callback();
-    void show_clusters_callback();
-    void show_best_view_callback();
 
     // Helpers
     void show_camera();

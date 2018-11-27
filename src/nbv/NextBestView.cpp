@@ -265,68 +265,13 @@ std::unordered_set<unsigned int> NextBestView::FaceNeighbours(unsigned int face_
     return neighbourhood_F;
 }
 
-std::vector<double> NextBestView::LocalFaceCost(const std::vector<double>& quality_measure) {
-
-    int num_faces = mvs_scene_->mesh.faces.size();
-    std::vector<double> face_area = FaceArea();
-    std::vector<double> face_cost(num_faces);
-
-    for (unsigned int face_id = 0; face_id < num_faces; face_id++) {
-
-        // Check if valid face
-        if (valid_faces_.find(face_id) == valid_faces_.end()) {
-            face_cost[face_id] = 0.0;
-            continue;
-        }
-
-        // Get face quality of neighbourhood
-        std::unordered_set<unsigned int> neighbourhood_F = FaceNeighbours(face_id, face_cost_radius_);
-        std::unordered_set<double> face_quality;
-        for (const auto& neighbour_face_id : neighbourhood_F) {
-
-            // Check for max_quality
-            double tmp_quality = std::min(quality_measure[neighbour_face_id], max_quality_);
-
-            // Check for positive quality and min area
-            if (tmp_quality > 0 && face_area[neighbour_face_id] > min_face_area_) {
-                face_quality.insert(tmp_quality);
-            }
-        }
-
-        // Compute local face cost
-        if (face_quality.size() > 1) {
-
-            // Mean
-            double sum = 0.0;
-            for (double val : face_quality) {
-                sum += val;
-            }
-            double mean = sum / face_quality.size();
-
-            // Variance
-            double tmp = 0.0;
-            for (double val : face_quality) {
-                tmp += (val - mean) * (val - mean);
-            }
-            double sd = sqrt(tmp / (face_quality.size() - 1));
-
-            // Face cost
-            double cost = sd;
-            face_cost[face_id] = cost;
-        } else {
-            face_cost[face_id] = 0.0;
-        }
-    }
-    return face_cost;
-}
-
-std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vector<double>& face_values) {
+std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
     int num_faces = mvs_scene_->mesh.faces.size();
     std::vector<bool> processed(num_faces, false);
 
-    // Skip faces with LCF value too small (indirectly also skips non valid faces)
+    // Clamp quality to max value and discard invalid faces
     for (unsigned int face_i = 0; face_i < num_faces; face_i++) {
-        if (face_values[face_i] < cluster_min_lfc_) {
+        if ((quality_measure[face_i] > max_quality_) || (valid_faces_.find(face_i) == valid_faces_.end())) {
             processed[face_i] = true;
         }
     }
@@ -371,21 +316,30 @@ std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vec
 }
 
 glm::mat4 NextBestView::BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
-                                     const std::vector<double>& face_values) {
+                                     const std::vector<double>& quality_measure) {
     // Compute cluster costs
     std::vector<std::pair<int, double>> cluster_costs;
     for (int i = 0; i < clusters.size(); i++) {
-        double cluster_cost = 0.0;
+
+        // Get faces quality
+        std::unordered_set<double> face_quality;
         for (const auto& face_id : clusters[i]) {
-            cluster_cost += face_values[face_id];
+            double q = std::min(quality_measure[face_id], max_quality_);
+            face_quality.insert(q);
         }
-        cluster_costs.emplace_back(i, cluster_cost);
+
+        // Cost value
+        double cost = Cost(face_quality) * (clusters[i].size() / static_cast<double>(cluster_max_size_));
+        cluster_costs.emplace_back(i, cost);
     }
 
-    // Find max
-    auto best = *std::max_element(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
+    // Find min
+    auto best = *std::min_element(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
         return left.second < right.second;
     });
+
+    // TODO: remove after debug
+    std::cout << "Best cluster: " << best.first << " cost: " << best.second << std::endl;
 
     // Average center and normal
     const std::vector<unsigned int>& cluster = clusters[best.first];
@@ -458,6 +412,27 @@ NextBestView::FaceDistances(const std::unordered_set<unsigned int>& faces, const
     return face_distances;
 }
 
+double NextBestView::Cost(const std::unordered_set<double>& face_quality) {
+
+    // Mean
+    double sum = 0.0;
+    for (double val : face_quality) {
+        sum += val;
+    }
+    double mean = sum / face_quality.size();
+
+    // Variance
+    double tmp = 0.0;
+    for (double val : face_quality) {
+        tmp += (val - mean) * (val - mean);
+    }
+    double sd = sqrt(tmp / (face_quality.size() - 1));
+
+    // Cost
+    double cost = -(alpha_ * mean + beta_ * sd);
+    return cost;
+}
+
 double NextBestView::CostFunctionPosition(
         const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
 
@@ -476,26 +451,14 @@ double NextBestView::CostFunctionPosition(
     // Get face quality
     std::unordered_set<double> face_quality;
     for (const auto& face_id : visible_faces) {
-        face_quality.insert(ppa_[face_id]);
+        double q = std::min(ppa_[face_id], max_quality_);
+        face_quality.insert(q);
     }
-
-    // Mean
-    double sum = 0.0;
-    for (double val : face_quality) {
-        sum += val;
-    }
-    double mean = sum / face_quality.size();
-
-    // Variance
-    double tmp = 0.0;
-    for (double val : face_quality) {
-        tmp += (val - mean) * (val - mean);
-    }
-    double sd = sqrt(tmp / (face_quality.size() - 1));
 
     // Cost value (minimization)
-    double cost = mean - alpha_ * sd;
-    std::cout << "Cost T: " << cost << " (M: " << mean << " SD: " << sd << ")" << std::endl;
+    double cost = Cost(face_quality);
+    // std::cout << "Cost T: " << cost << " (M: " << mean << " SD: " << sd << ")" << std::endl;
+    std::cout << "Cost T: " << cost << std::endl;
     return cost;
 }
 
@@ -513,7 +476,7 @@ double NextBestView::CostFunctionRotation(
     assert(!visible_faces.empty());
     // if (visible_faces.size() < visible_faces_target_) {
     //     visible_faces.clear();
-    //     for (int face_id = 0; face_id < mvs_scene_->mesh.faces.size(); face_id++) {
+    //     for (const auto& face_id : valid_faces_) {
     //         visible_faces.insert(face_id);
     //     }
     // }

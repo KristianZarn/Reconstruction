@@ -435,3 +435,91 @@ void ReconstructionPlugin::fa_callback() {
         viewer->data().set_colors(color);
     }
 }
+
+std::vector<glm::mat4> NextBestView::BestViews(const std::vector<std::vector<unsigned int>>& clusters,
+                                               const std::vector<double>& face_values) {
+    // Compute cluster costs
+    std::vector<std::pair<int, double>> cluster_costs;
+    for (int i = 0; i < clusters.size(); i++) {
+        double cluster_cost = 0.0;
+        for (const auto& face_id : clusters[i]) {
+            cluster_cost += face_values[face_id];
+        }
+        cluster_costs.emplace_back(i, cluster_cost);
+    }
+
+    // Sort descending
+    std::sort(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
+        return left.second > right.second;
+    });
+
+    // Keep only top N clusters
+    if (cluster_costs.size() > max_views_) {
+        cluster_costs.resize(max_views_);
+    }
+
+    // Average centers and normals
+    std::vector<glm::vec3> centers;
+    std::vector<glm::vec3> normals;
+    for (const auto& pair : cluster_costs) {
+        const std::vector<unsigned int>& cluster = clusters[pair.first];
+
+        glm::vec3 center_sum(0.0f);
+        glm::vec3 normal_sum(0.0f);
+        for (const auto& face_id : cluster) {
+            center_sum += face_centers_[face_id];
+            normal_sum += face_normals_[face_id];
+        }
+
+        centers.emplace_back(center_sum / static_cast<float>(cluster.size()));
+        normals.emplace_back(normal_sum / static_cast<float>(cluster.size()));
+    }
+
+    // Generate view matrix
+
+}
+
+double NextBestView::AverageCameraDistance() {
+
+    int count = 0;
+    double distance_sum = 0.0;
+
+    int num_cameras = mvs_scene_->images.size();
+    for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
+
+        // Camera parameters
+        unsigned int image_width = mvs_scene_->images[camera_idx].width;
+        unsigned int image_height = mvs_scene_->images[camera_idx].height;
+        double focal_y = mvs_scene_->images[camera_idx].camera.K(1,1);
+
+        // Camera view matrix
+        const auto& R = mvs_scene_->images[camera_idx].camera.R; // world to view (view coordinates)
+        const auto& T = mvs_scene_->images[camera_idx].camera.C; // world coordinates
+
+        glm::mat3 view_R(R(0,0), R(0,1), R(0,2),
+                         -R(1,0), -R(1,1), -R(1,2),
+                         -R(2,0), -R(2,1), -R(2,2));
+        glm::vec3 view_T(T.x, T.y, T.z);
+
+        glm::mat4 tmp_R = glm::mat4(view_R);
+        glm::mat4 tmp_T = glm::translate(glm::mat4(1.0f), view_T);
+        glm::mat4 view_matrix = glm::inverse(tmp_T * tmp_R);
+
+        // Visible faces
+        double downscale_factor = 8.0;
+        auto visible_faces = VisibleFaces(
+                view_matrix,
+                static_cast<int>(image_width / downscale_factor),
+                static_cast<int>(image_height / downscale_factor),
+                focal_y / downscale_factor);
+
+        // Average distance
+        for (const auto& face_id : visible_faces) {
+            glm::vec3 face_center = face_centers_[face_id];
+            distance_sum += glm::distance(face_center, view_T);
+            count++;
+        }
+    }
+
+    return (distance_sum / count);
+}
