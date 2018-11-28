@@ -329,7 +329,9 @@ glm::mat4 NextBestView::BestViewInit(const std::vector<std::vector<unsigned int>
         }
 
         // Cost value
-        double cost = Cost(face_quality) * (clusters[i].size() / static_cast<double>(cluster_max_size_));
+        auto mean_sd = MeanDeviation(face_quality);
+        double weight = (clusters[i].size() / static_cast<double>(cluster_max_size_));
+        double cost = (init_alpha_ * mean_sd.first + init_beta_ * mean_sd.second) * weight;
         cluster_costs.emplace_back(i, cost);
     }
 
@@ -412,7 +414,7 @@ NextBestView::FaceDistances(const std::unordered_set<unsigned int>& faces, const
     return face_distances;
 }
 
-double NextBestView::Cost(const std::unordered_set<double>& face_quality) {
+std::pair<double, double>  NextBestView::MeanDeviation(const std::unordered_set<double>& face_quality) {
 
     // Mean
     double sum = 0.0;
@@ -421,16 +423,14 @@ double NextBestView::Cost(const std::unordered_set<double>& face_quality) {
     }
     double mean = sum / face_quality.size();
 
-    // Variance
+    // Standard deviation
     double tmp = 0.0;
     for (double val : face_quality) {
         tmp += (val - mean) * (val - mean);
     }
     double sd = sqrt(tmp / (face_quality.size() - 1));
 
-    // Cost
-    double cost = -(alpha_ * mean + beta_ * sd);
-    return cost;
+    return std::make_pair(mean, sd);
 }
 
 double NextBestView::CostFunctionPosition(
@@ -451,14 +451,14 @@ double NextBestView::CostFunctionPosition(
     // Get face quality
     std::unordered_set<double> face_quality;
     for (const auto& face_id : visible_faces) {
-        double q = std::min(ppa_[face_id], max_quality_);
+        double q = ppa_[face_id];
         face_quality.insert(q);
     }
 
     // Cost value (minimization)
-    double cost = Cost(face_quality);
-    // std::cout << "Cost T: " << cost << " (M: " << mean << " SD: " << sd << ")" << std::endl;
-    std::cout << "Cost T: " << cost << std::endl;
+    auto mean_sd = MeanDeviation(face_quality);
+    double cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
+    std::cout << "Cost T: " << cost << " (M: " << mean_sd.first << " SD: " << mean_sd.second << ")" << std::endl;
     return cost;
 }
 

@@ -74,6 +74,8 @@ bool NextBestViewPlugin::post_draw() {
         if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
             optimize_rotation_callback();
         }
+        ImGui::InputFloat("Optim Alpha", &next_best_view_->optim_alpha_);
+        ImGui::InputFloat("Optim Beta", &next_best_view_->optim_beta_);
         ImGui::Checkbox("Show NBV camera", &camera_visible_);
         ImGui::Checkbox("Pose camera", &pose_camera_);
         ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
@@ -178,8 +180,8 @@ bool NextBestViewPlugin::post_draw() {
         if (ImGui::Button("Best view init", ImVec2(-1, 0))) {
             init_best_view_callback();
         }
-        ImGui::InputFloat("Alpha", &next_best_view_->alpha_);
-        ImGui::InputFloat("Beta", &next_best_view_->beta_);
+        ImGui::InputFloat("Init Alpha", &next_best_view_->init_alpha_);
+        ImGui::InputFloat("Init Beta", &next_best_view_->init_beta_);
         ImGui::InputFloat("Dist mult", &next_best_view_->dist_mult_);
         ImGui::Spacing();
 
@@ -227,8 +229,60 @@ void NextBestViewPlugin::recompute_callback() {
 }
 
 void NextBestViewPlugin::optimize_all_callback() {
-    optimize_position_callback();
-    optimize_rotation_callback();
+
+    // Camera parameters
+    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+
+    // Optimization parameters
+    arma::vec param = arma::zeros(6, 1);
+    param(0) = camera_pos_[0];
+    param(1) = camera_pos_[1];
+    param(2) = camera_pos_[2];
+    param(3) = camera_rot_[0];
+    param(4) = camera_rot_[1];
+    param(5) = camera_rot_[2];
+
+    arma::vec param_lo = arma::zeros(6, 1);
+    param_lo(0) = param_lo(0) - 1.0;
+    param_lo(1) = param_lo(1) - 1.0;
+    param_lo(2) = param_lo(2) - 1.0;
+    param_lo(3) = param_lo(3) - 20.0;
+    param_lo(4) = param_lo(4) - 20.0;
+    param_lo(5) = param_lo(5) - 20.0;
+
+    arma::vec param_hi = arma::zeros(6, 1);
+    param_hi(0) = param_hi(0) + 1.0;
+    param_hi(1) = param_hi(1) + 1.0;
+    param_hi(2) = param_hi(2) + 1.0;
+    param_hi(3) = param_hi(3) + 20.0;
+    param_hi(4) = param_hi(4) + 20.0;
+    param_hi(5) = param_hi(5) + 20.0;
+
+    optim::algo_settings_t optim_settings;
+    optim_settings.iter_max = 10;
+    optim_settings.vals_bound = true;
+    optim_settings.lower_bounds = param_lo;
+    optim_settings.upper_bounds = param_hi;
+
+    OptimData optim_data{next_best_view_.get(), image_width, image_height, focal_y};
+
+    // Run optimization
+    auto time_begin = std::chrono::steady_clock::now();
+    bool success = optim::nm(param, optim_function, &optim_data, optim_settings);
+    camera_pos_[0] = param(0);
+    camera_pos_[1] = param(1);
+    camera_pos_[2] = param(2);
+    camera_rot_[0] = param(3);
+    camera_rot_[1] = param(4);
+    camera_rot_[2] = param(5);
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
+
+    // Debug
+    log_stream_ << "Parameters: \n" << param;
 }
 
 void NextBestViewPlugin::optimize_position_callback() {
@@ -312,7 +366,10 @@ void NextBestViewPlugin::apply_selection_callback() {
     // Get bounding box vectors
     viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
     const Eigen::MatrixXd& bbox_V = viewer->data().V;
-    assert(bbox_V.rows() == 8 && bbox_V.cols() == 3);
+
+    if(!(bbox_V.rows() == 8 && bbox_V.cols() == 3)) {
+        log_stream_ << "Bounding box has to be visible on selection." << std::endl;
+    }
 
     Eigen::Vector3d u = bbox_V.row(4) - bbox_V.row(0);
     Eigen::Vector3d v = bbox_V.row(2) - bbox_V.row(0);
@@ -406,22 +463,21 @@ void NextBestViewPlugin::pick_face_callback() {
             barycentric);
 
     if (hit) {
-        double fa = face_area_[face_id];
+        // double fa = face_area_[face_id];
         double ppa = pixels_per_area_[face_id];
         int cid = cluster_id_[face_id];
 
-        // Get faces quality
-        double cost;
+        // Get cluster quality
+        double cost = -1;
         if (cid >= 0) {
             std::unordered_set<double> face_quality;
-            for (const auto& face_id : clusters_[cid]) {
-                double q = std::min(pixels_per_area_[face_id], next_best_view_->max_quality_);
+            for (const auto& face_i : clusters_[cid]) {
+                double q = std::min(pixels_per_area_[face_i], next_best_view_->max_quality_);
                 face_quality.insert(q);
             }
-            // Cost value
-            cost = next_best_view_->Cost(face_quality) * (clusters_[cid].size() / static_cast<double>(next_best_view_->cluster_max_size_));
-        } else {
-            cost = -1;
+            auto mean_sd = next_best_view_->MeanDeviation(face_quality);
+            double weight = (clusters_[cid].size() / static_cast<double>(next_best_view_->cluster_max_size_));
+            cost = (next_best_view_->init_alpha_ * mean_sd.first + next_best_view_->init_beta_ * mean_sd.second) * weight;
         }
 
         log_stream_ << "ID: " << face_id

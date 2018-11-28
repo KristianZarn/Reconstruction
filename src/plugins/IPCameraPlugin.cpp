@@ -168,13 +168,16 @@ void IPCameraPlugin::localize_image_callback() {
     theia::FloatImage image(image_width, image_height, channels, image_data_float.data());
 
     // Localize image
-    bool success;
+    bool success = false;
     theia::CalibratedAbsolutePose camera_pose;
+
     if (prev_localization_success_) {
         log_stream_ << "IP Camera: Localization based on previous pose ... ";
         success = reconstruction_builder_->LocalizeImage(image, prev_camera_pose_, camera_pose);
         log_stream_ << success << std::endl;
-    } else {
+    }
+
+    if (!success) {
         log_stream_ << "IP Camera: Global localization ... ";
         success = reconstruction_builder_->LocalizeImage(image, camera_pose);
         log_stream_ << success << std::endl;

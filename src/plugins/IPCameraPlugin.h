@@ -55,7 +55,7 @@ private:
     std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
 
     // Localization
-    bool prev_localization_success_;
+    bool prev_localization_success_ = false;
     theia::CalibratedAbsolutePose prev_camera_pose_;
     Eigen::MatrixXd camera_vertices_;
     Eigen::Matrix4d camera_transformation_;

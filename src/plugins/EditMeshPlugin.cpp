@@ -47,7 +47,7 @@ bool EditMeshPlugin::post_draw() {
         if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
             reload_mesh_callback();
         }
-        // TODO: show viewer mesh info
+
         std::ostringstream os;
         os << "Mesh info:"
            << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"

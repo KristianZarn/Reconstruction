@@ -37,7 +37,7 @@ public:
     std::unordered_map<unsigned int, double>
     FaceDistances(const std::unordered_set<unsigned int>& faces, const glm::mat4& view_matrix);
 
-    double Cost(const std::unordered_set<double>& face_quality);
+    std::pair<double, double> MeanDeviation(const std::unordered_set<double>& face_quality);
     double CostFunctionPosition(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
     double CostFunctionRotation(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
 
@@ -49,19 +49,22 @@ public:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
+    // General parameters
+    double max_quality_ = 2000;
+
     // Clustering parameters
     int cluster_max_size_ = 500; // max size of cluster
     float cluster_angle_ = 40; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
+    float init_alpha_ = 0.5; // mean multiplier for initialization
+    float init_beta_ = 3.0; // standard deviation multiplier for initialization
     float dist_mult_ = 6.0;
 
     // Cost function parameters
-    double max_quality_ = 1000;
     double downscale_factor_ = 4.0;
-    // int visible_faces_target_ = 50;
-    float alpha_ = 0.5; // importance of mean in cost
-    float beta_ = 3.0; // importance of standard deviation in cost
+    float optim_alpha_ = -1; // mean multiplier for optimization
+    float optim_beta_ = 3.0; // standard deviation multiplier for optimization
 
 private:
     // Rendering members
