@@ -265,7 +265,8 @@ std::unordered_set<unsigned int> NextBestView::FaceNeighbours(unsigned int face_
     return neighbourhood_F;
 }
 
-std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
+std::vector<std::pair<std::vector<unsigned int>, double>>
+NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
     int num_faces = mvs_scene_->mesh.faces.size();
     std::vector<bool> processed(num_faces, false);
 
@@ -312,28 +313,30 @@ std::vector<std::vector<unsigned int>> NextBestView::FaceClusters(const std::vec
             clusters.push_back(queue);
         }
     }
-    return clusters;
-}
 
-glm::mat4 NextBestView::BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
-                                     const std::vector<double>& quality_measure) {
     // Compute cluster costs
-    std::vector<std::pair<int, double>> cluster_costs;
-    for (int i = 0; i < clusters.size(); i++) {
+    std::vector<std::pair<std::vector<unsigned int>, double>> cluster_costs;
+    for (const auto& cluster : clusters) {
 
         // Get faces quality
         std::unordered_set<double> face_quality;
-        for (const auto& face_id : clusters[i]) {
+        for (const auto& face_id : cluster) {
             double q = std::min(quality_measure[face_id], max_quality_);
             face_quality.insert(q);
         }
 
         // Cost value
         auto mean_sd = MeanDeviation(face_quality);
-        double weight = (clusters[i].size() / static_cast<double>(cluster_max_size_));
+        double weight = (cluster.size() / static_cast<double>(cluster_max_size_));
         double cost = (init_alpha_ * mean_sd.first + init_beta_ * mean_sd.second) * weight;
-        cluster_costs.emplace_back(i, cost);
+        cluster_costs.emplace_back(cluster, cost);
     }
+
+    return cluster_costs;
+}
+
+glm::mat4 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
+                                     const std::vector<double>& quality_measure) {
 
     // Find min
     auto best = *std::min_element(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
@@ -341,10 +344,10 @@ glm::mat4 NextBestView::BestViewInit(const std::vector<std::vector<unsigned int>
     });
 
     // TODO: remove after debug
-    std::cout << "Best cluster: " << best.first << " cost: " << best.second << std::endl;
+    std::cout << "Best cluster cost: " << best.second << std::endl;
 
     // Average center and normal
-    const std::vector<unsigned int>& cluster = clusters[best.first];
+    const std::vector<unsigned int>& cluster = best.first;
     glm::vec3 center_sum = glm::vec3(0);
     glm::vec3 normal_sum = glm::vec3(0);
     for (const auto& face_id : cluster) {
@@ -445,7 +448,8 @@ double NextBestView::CostFunctionPosition(
 
     assert(!visible_faces.empty());
     // if (visible_faces.size() < visible_faces_target_) {
-    //     return std::numeric_limits<double>::max();
+        // return std::numeric_limits<double>::max();
+        // return 5000;
     // }
 
     // Get face quality

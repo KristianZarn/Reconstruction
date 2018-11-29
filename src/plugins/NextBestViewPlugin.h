@@ -62,7 +62,7 @@ private:
     // Debug variables
     std::vector<double> face_area_;
     std::vector<double> pixels_per_area_;
-    std::vector<std::vector<unsigned int>> clusters_;
+    std::vector<std::pair<std::vector<unsigned int>, double>> clusters_;
     std::vector<int> cluster_id_;
 
     // Log

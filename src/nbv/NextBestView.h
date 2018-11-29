@@ -26,8 +26,8 @@ public:
 
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
-    std::vector<std::vector<unsigned int>> FaceClusters(const std::vector<double>& quality_measure);
-    glm::mat4 BestViewInit(const std::vector<std::vector<unsigned int>>& clusters,
+    std::vector<std::pair<std::vector<unsigned int>, double>> FaceClusters(const std::vector<double>& quality_measure);
+    glm::mat4 BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
                            const std::vector<double>& face_quality);
 
     std::unordered_set<unsigned int>
@@ -57,14 +57,15 @@ public:
     float cluster_angle_ = 40; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
-    float init_alpha_ = 0.5; // mean multiplier for initialization
-    float init_beta_ = 3.0; // standard deviation multiplier for initialization
-    float dist_mult_ = 6.0;
+    float init_alpha_ = -0.5f; // mean multiplier for initialization
+    float init_beta_ = -3.0f; // standard deviation multiplier for initialization
+    float dist_mult_ = 6.0f;
 
     // Cost function parameters
     double downscale_factor_ = 4.0;
-    float optim_alpha_ = -1; // mean multiplier for optimization
-    float optim_beta_ = 3.0; // standard deviation multiplier for optimization
+    int visible_faces_target_ = 50;
+    float optim_alpha_ = 1.0f; // mean multiplier for optimization
+    float optim_beta_ = -3.0f; // standard deviation multiplier for optimization
 
 private:
     // Rendering members

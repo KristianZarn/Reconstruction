@@ -523,3 +523,29 @@ double NextBestView::AverageCameraDistance() {
 
     return (distance_sum / count);
 }
+
+void NextBestViewPlugin::show_clusters_callback() {
+
+    // Compute clusters
+    int num_clusters = clusters_.size();
+    int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
+
+    // Set default color
+    Eigen::MatrixXd color(num_faces, 3);
+    Eigen::RowVector3d default_color = Eigen::RowVector3d(1.0, 1.0, 1.0);
+    for (int i = 0; i < num_faces; i++) {
+        color.row(i) = default_color;
+    }
+
+    // Set cluster colors
+    Eigen::MatrixXd color_palette = (Eigen::MatrixXd::Random(num_clusters, 3).array() + 1.0) / 2.0;
+    for (int i = 0; i < clusters_.size(); i++) {
+        for (const auto& face_id : clusters_[i].first) {
+            color.row(face_id) = color_palette.row(i);
+        }
+    }
+
+    // Show colors
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    viewer->data().set_colors(color);
+}

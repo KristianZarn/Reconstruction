@@ -15,9 +15,10 @@
 int main(int argc, char *argv[]) {
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vzorci/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";

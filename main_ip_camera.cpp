@@ -16,7 +16,9 @@ int main(int argc, char *argv[]) {
 
     // Initialization
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/zoga/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
     std::string calibration_file = project_path + "prior_calibration.txt";
