@@ -60,66 +60,13 @@ bool NextBestViewPlugin::post_draw() {
         if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
             initialize_callback();
         }
-        ImGui::TreePop();
-    }
-
-    // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
-            optimize_all_callback();
+        if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
+            show_nbv_mesh(nbv_mesh_visible_);
         }
-        if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
-            optimize_position_callback();
-        }
-        if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
-            optimize_rotation_callback();
-        }
-        ImGui::InputFloat("Optim Alpha", &next_best_view_->optim_alpha_);
-        ImGui::InputFloat("Optim Beta", &next_best_view_->optim_beta_);
         ImGui::Checkbox("Show NBV camera", &camera_visible_);
-        ImGui::Checkbox("Pose camera", &pose_camera_);
-        ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
-        ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
-
-        if (pose_camera_) {
-            // Show gizmo
-            ImGuizmo::Manipulate(gizmo_view.data(),
-                                 viewer->core.proj.data(),
-                                 gizmo_operation_,
-                                 gizmo_mode_,
-                                 camera_gizmo_.data());
-
-            ImGui::Text("Camera options");
-            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
-                gizmo_operation_ = ImGuizmo::TRANSLATE;
-            }
-            ImGui::SameLine();
-            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
-                gizmo_operation_ = ImGuizmo::ROTATE;
-            }
-        }
         ImGui::TreePop();
     }
     show_camera();
-
-    // Set camera transformation
-    if (pose_camera_) {
-        // Camera gizmo -> position and rotation
-        glm::vec3 scale;
-        ImGuizmo::DecomposeMatrixToComponents(
-                camera_gizmo_.data(),
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale));
-    } else {
-        // Position and rotation -> camera gizmo
-        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-        ImGuizmo::RecomposeMatrixFromComponents(
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale),
-                camera_gizmo_.data());
-    }
 
     // Region of interest
     if (ImGui::TreeNodeEx("Region of interest", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -148,16 +95,26 @@ bool NextBestViewPlugin::post_draw() {
             }
         }
 
-        if (ImGui::Button("Apply selection", ImVec2(-1, 0))) {
+        if (ImGui::Button("Apply selection", ImVec2(-70, 0))) {
             apply_selection_callback();
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto##applyselection", &auto_apply_selection_);
+
+        double percentage = 0;
+        if (!pixels_per_area_.empty()) {
+            percentage = next_best_view_->TargetPercentage(pixels_per_area_);
+        }
+        std::ostringstream os;
+        os << "Faces at target quality: "
+           << "\t" << percentage << " %";
+        ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
     show_bounding_box();
 
-    // Debugging
-    if (ImGui::TreeNodeEx("Debug", ImGuiTreeNodeFlags_DefaultOpen)) {
-
+    // Best view init
+    if (ImGui::TreeNodeEx("Camera pose init", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Recompute", ImVec2(-1, 0))) {
             recompute_callback();
         }
@@ -170,30 +127,94 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::Spacing();
 
         // Clustering
-        if (ImGui::Button("Show clusters", ImVec2(-1, 0))) {
+        if (ImGui::Button("Show clusters", ImVec2(-70, 0))) {
             show_clusters_callback();
         }
-        ImGui::InputInt("Cluster size", &next_best_view_->cluster_max_size_);
-        ImGui::InputFloat("Cluster angle", &next_best_view_->cluster_angle_);
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto##showclusters", &auto_show_clusters_);
+        ImGui::InputInt("Min size", &next_best_view_->cluster_min_size_);
+        ImGui::InputInt("Max size", &next_best_view_->cluster_max_size_);
+        ImGui::InputFloat("Angle", &next_best_view_->cluster_angle_);
         ImGui::Spacing();
 
         // Best view
-        if (ImGui::Button("Best view init", ImVec2(-1, 0))) {
+        if (ImGui::Button("Best view init", ImVec2(-70, 0))) {
             init_best_view_callback();
         }
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto##bestviewinit", &auto_init_best_view_);
         ImGui::InputFloat("Init Alpha", &next_best_view_->init_alpha_);
         ImGui::InputFloat("Init Beta", &next_best_view_->init_beta_);
         ImGui::InputFloat("Dist mult", &next_best_view_->dist_mult_);
         ImGui::Spacing();
 
-        // Other
-        if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
-            show_nbv_mesh(nbv_mesh_visible_);
+        ImGui::TreePop();
+    }
+
+    // Optimize camera pose
+    if (ImGui::TreeNodeEx("Camera pose optimization")) {
+        if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
+            optimize_all_callback();
         }
+        if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
+            optimize_position_callback();
+        }
+        if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
+            optimize_rotation_callback();
+        }
+        ImGui::InputFloat("Optim Alpha", &next_best_view_->optim_alpha_);
+        ImGui::InputFloat("Optim Beta", &next_best_view_->optim_beta_);
+        ImGui::Checkbox("Pose camera", &pose_camera_);
+        ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
+        ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
+
+        if (pose_camera_) {
+            // Show gizmo
+            ImGuizmo::Manipulate(gizmo_view.data(),
+                                 viewer->core.proj.data(),
+                                 gizmo_operation_,
+                                 gizmo_mode_,
+                                 camera_gizmo_.data());
+
+            ImGui::Text("Camera options");
+            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+                gizmo_operation_ = ImGuizmo::TRANSLATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+                gizmo_operation_ = ImGuizmo::ROTATE;
+            }
+        }
+        ImGui::TreePop();
+    }
+
+    // Debugging
+    if (ImGui::TreeNodeEx("Debug")) {
+
+        // Other
         if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
             debug_callback();
         }
         ImGui::TreePop();
+    }
+
+    // Set camera transformation
+    if (pose_camera_) {
+        // Camera gizmo -> position and rotation
+        glm::vec3 scale;
+        ImGuizmo::DecomposeMatrixToComponents(
+                camera_gizmo_.data(),
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale));
+    } else {
+        // Position and rotation -> camera gizmo
+        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+        ImGuizmo::RecomposeMatrixFromComponents(
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale),
+                camera_gizmo_.data());
     }
 
     ImGui::End();
@@ -204,18 +225,78 @@ void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
     recompute_callback();
     set_nbv_mesh();
+
+    if (auto_apply_selection_) {
+        apply_selection_callback();
+    }
+    if (auto_show_clusters_) {
+        show_clusters_callback();
+    }
+    if (auto_init_best_view_) {
+        init_best_view_callback();
+    }
+}
+
+void NextBestViewPlugin::apply_selection_callback() {
+    log_stream_ << std::endl;
+
+    // Get bounding box vectors
+    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
+    const Eigen::MatrixXd& bbox_V = viewer->data().V;
+
+    if(!(bbox_V.rows() == 8 && bbox_V.cols() == 3)) {
+        log_stream_ << "NBV selection: Bounding box is not set." << std::endl;
+    } else {
+        Eigen::Vector3d u = bbox_V.row(4) - bbox_V.row(0);
+        Eigen::Vector3d v = bbox_V.row(2) - bbox_V.row(0);
+        Eigen::Vector3d w = bbox_V.row(1) - bbox_V.row(0);
+
+        // Add faces inside bounding box to valid faces
+        std::unordered_set<unsigned int> valid_faces;
+        for (int i = 0; i < next_best_view_->mvs_scene_->mesh.faces.size(); i++) {
+            auto mvs_face = next_best_view_->mvs_scene_->mesh.faces[i];
+
+            bool valid = true;
+            for (int j = 0; j < 3; j++) {
+                auto mvs_vert = next_best_view_->mvs_scene_->mesh.vertices[mvs_face[j]];
+                Eigen::Vector3d x;
+                x << mvs_vert[0], mvs_vert[1], mvs_vert[2];
+
+                double ux = u.dot(x);
+                double vx = v.dot(x);
+                double wx = w.dot(x);
+
+                valid = valid && (ux > u.dot(bbox_V.row(0)) && ux < u.dot(bbox_V.row(4)) &&
+                                  vx > v.dot(bbox_V.row(0)) && vx < v.dot(bbox_V.row(2)) &&
+                                  wx > w.dot(bbox_V.row(0)) && wx < w.dot(bbox_V.row(1)));
+            }
+
+            if (valid) {
+                valid_faces.insert(static_cast<unsigned int>(i));
+            }
+        }
+
+        // Set valid faces in NBV
+        if (valid_faces.empty()) {
+            log_stream_ << "NBV selection: No faces selected - valid faces not set." << std::endl;
+        } else {
+            next_best_view_->SetValidFaces(valid_faces);
+            log_stream_ << "NBV selection: Number of valid faces: " << valid_faces.size() << std::endl;
+        }
+    }
 }
 
 void NextBestViewPlugin::recompute_callback() {
-    log_stream_ << "Computing FA ... " << std::flush;
+    log_stream_ << std::endl;
+    log_stream_ << "NBV: Computing FA ... " << std::flush;
     face_area_ = next_best_view_->FaceArea();
     log_stream_ << "DONE" << std::endl;
 
-    log_stream_ << "Computing PPA ... " << std::flush;
+    log_stream_ << "NBV: Computing PPA ... " << std::flush;
     pixels_per_area_ = next_best_view_->PixelsPerArea();
     log_stream_ << "DONE" << std::endl;
 
-    log_stream_ << "Computing Clusters ... " << std::flush;
+    log_stream_ << "NBV: Computing Clusters ... " << std::flush;
     clusters_ = next_best_view_->FaceClusters(pixels_per_area_);
     log_stream_ << "DONE" << std::endl;
 
@@ -227,6 +308,62 @@ void NextBestViewPlugin::recompute_callback() {
             cluster_id_[face_id] = i;
         }
     }
+}
+
+void NextBestViewPlugin::show_clusters_callback() {
+
+    int num_clusters = clusters_.size();
+    int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
+
+    Eigen::VectorXd tmp = Eigen::VectorXd::Zero(num_faces);
+    for (const auto& cluster_cost : clusters_) {
+        for (const auto& face_id : cluster_cost.first) {
+            tmp(face_id) = cluster_cost.second;
+        }
+    }
+
+    Eigen::MatrixXd color;
+    igl::colormap(igl::ColorMapType::COLOR_MAP_TYPE_JET, tmp, true, color);
+
+    for (int i = 0; i < num_faces; i++) {
+        if (cluster_id_[i] < 0) {
+            color.row(i) = Eigen::RowVector3d(1.0, 1.0, 1.0);
+        }
+    }
+
+    // Set default color
+    // Eigen::MatrixXd color(num_faces, 3);
+    // Eigen::RowVector3d default_color = Eigen::RowVector3d(1.0, 1.0, 1.0);
+    // for (int i = 0; i < num_faces; i++) {
+    //     color.row(i) = default_color;
+    // }
+
+    // Set cluster colors
+    // Eigen::MatrixXd color_palette = (Eigen::MatrixXd::Random(num_clusters, 3).array() + 1.0) / 2.0;
+    // for (int i = 0; i < clusters_.size(); i++) {
+    //     for (const auto& face_id : clusters_[i].first) {
+    //         color.row(face_id) = color_palette.row(i);
+    //     }
+    // }
+
+    // Show colors
+    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
+    viewer->data().set_colors(color);
+}
+
+void NextBestViewPlugin::init_best_view_callback() {
+    glm::mat4 view = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
+    glm::mat4 view_world = glm::inverse(view);
+
+    glm::vec3 scale;
+    ImGuizmo::DecomposeMatrixToComponents(
+            glm::value_ptr(view_world),
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale));
+
+    camera_visible_ = true;
+    log_stream_ << "NBV: Initial best view set." << std::endl;
 }
 
 void NextBestViewPlugin::optimize_all_callback() {
@@ -364,56 +501,8 @@ void NextBestViewPlugin::optimize_rotation_callback() {
     log_stream_ << "Parameters: \n" << param_rot;
 }
 
-void NextBestViewPlugin::apply_selection_callback() {
-
-    // Get bounding box vectors
-    viewer->selected_data_index = VIEWER_DATA_BOUNDING_BOX;
-    const Eigen::MatrixXd& bbox_V = viewer->data().V;
-
-    if(!(bbox_V.rows() == 8 && bbox_V.cols() == 3)) {
-        log_stream_ << "Bounding box has to be visible on selection." << std::endl;
-    }
-
-    Eigen::Vector3d u = bbox_V.row(4) - bbox_V.row(0);
-    Eigen::Vector3d v = bbox_V.row(2) - bbox_V.row(0);
-    Eigen::Vector3d w = bbox_V.row(1) - bbox_V.row(0);
-
-    // Add faces inside bounding box to valid faces
-    std::unordered_set<unsigned int> valid_faces;
-    for (int i = 0; i < next_best_view_->mvs_scene_->mesh.faces.size(); i++) {
-        auto mvs_face = next_best_view_->mvs_scene_->mesh.faces[i];
-
-        bool valid = true;
-        for (int j = 0; j < 3; j++) {
-            auto mvs_vert = next_best_view_->mvs_scene_->mesh.vertices[mvs_face[j]];
-            Eigen::Vector3d x;
-            x << mvs_vert[0], mvs_vert[1], mvs_vert[2];
-
-            double ux = u.dot(x);
-            double vx = v.dot(x);
-            double wx = w.dot(x);
-
-            valid = valid && (ux > u.dot(bbox_V.row(0)) && ux < u.dot(bbox_V.row(4)) &&
-                              vx > v.dot(bbox_V.row(0)) && vx < v.dot(bbox_V.row(2)) &&
-                              wx > w.dot(bbox_V.row(0)) && wx < w.dot(bbox_V.row(1)));
-        }
-
-        if (valid) {
-            valid_faces.insert(static_cast<unsigned int>(i));
-        }
-    }
-
-    // Set valid faces in NBV
-    if (valid_faces.empty()) {
-        log_stream_ << "Valid faces empty: not set." << std::endl;
-    } else {
-        next_best_view_->SetValidFaces(valid_faces);
-        log_stream_ << "Number of valid faces: " << valid_faces.size() << std::endl;
-    }
-}
-
 void NextBestViewPlugin::debug_callback() {
-    log_stream_ << "Debug button pressed" << std::endl;
+    log_stream_ << "NBV: Debug button pressed" << std::endl;
 
     // Camera parameters
     unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
@@ -480,61 +569,6 @@ void NextBestViewPlugin::pick_face_callback() {
                     << "\tPPA: " << ppa
                     << "\tCCost: " << cost << std::endl;
     }
-}
-
-void NextBestViewPlugin::show_clusters_callback() {
-
-    int num_clusters = clusters_.size();
-    int num_faces = next_best_view_->mvs_scene_->mesh.faces.size();
-
-    Eigen::VectorXd tmp = Eigen::VectorXd::Zero(num_faces);
-    for (const auto& cluster_cost : clusters_) {
-        for (const auto& face_id : cluster_cost.first) {
-            tmp(face_id) = cluster_cost.second;
-        }
-    }
-
-    Eigen::MatrixXd color;
-    igl::colormap(igl::ColorMapType::COLOR_MAP_TYPE_JET, tmp, true, color);
-
-    for (int i = 0; i < num_faces; i++) {
-        if (cluster_id_[i] < 0) {
-            color.row(i) = Eigen::RowVector3d(1.0, 1.0, 1.0);
-        }
-    }
-
-    // Set default color
-    // Eigen::MatrixXd color(num_faces, 3);
-    // Eigen::RowVector3d default_color = Eigen::RowVector3d(1.0, 1.0, 1.0);
-    // for (int i = 0; i < num_faces; i++) {
-    //     color.row(i) = default_color;
-    // }
-
-    // Set cluster colors
-    // Eigen::MatrixXd color_palette = (Eigen::MatrixXd::Random(num_clusters, 3).array() + 1.0) / 2.0;
-    // for (int i = 0; i < clusters_.size(); i++) {
-    //     for (const auto& face_id : clusters_[i].first) {
-    //         color.row(face_id) = color_palette.row(i);
-    //     }
-    // }
-
-    // Show colors
-    viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
-    viewer->data().set_colors(color);
-}
-
-void NextBestViewPlugin::init_best_view_callback() {
-    glm::mat4 view = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
-    glm::mat4 view_world = glm::inverse(view);
-
-    glm::vec3 scale;
-    ImGuizmo::DecomposeMatrixToComponents(
-            glm::value_ptr(view_world),
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale));
-
-    log_stream_ << "Initial best view set." << std::endl;
 }
 
 void NextBestViewPlugin::show_camera() {
@@ -625,8 +659,9 @@ void NextBestViewPlugin::show_bounding_box() {
         viewer->data().set_face_based(true);
         viewer->data().set_colors(Eigen::RowVector4d(0, 255, 0, 64)/255.0);
         viewer->data().show_lines = false;
+        viewer->data().show_faces = true;
     } else {
-        viewer->data().clear();
+        viewer->data().show_faces = false;
     }
 }
 

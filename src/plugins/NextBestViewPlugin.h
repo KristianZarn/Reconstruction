@@ -42,11 +42,13 @@ private:
 
     bool camera_visible_ = false;
     bool pose_camera_ = false;
-
     bool bounding_box_visible_ = false;
     bool pose_bounding_box_ = false;
-
     bool nbv_mesh_visible_ = false;
+
+    bool auto_apply_selection_ = true;
+    bool auto_show_clusters_ = true;
+    bool auto_init_best_view_ = true;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
@@ -70,15 +72,17 @@ private:
 
     // Callback functions
     void initialize_callback();
-    void optimize_all_callback();
-    void optimize_position_callback();
-    void optimize_rotation_callback();
 
     void apply_selection_callback();
 
     void recompute_callback();
     void show_clusters_callback();
     void init_best_view_callback();
+
+    void optimize_all_callback();
+    void optimize_position_callback();
+    void optimize_rotation_callback();
+
     void debug_callback();
     void pick_face_callback();
 

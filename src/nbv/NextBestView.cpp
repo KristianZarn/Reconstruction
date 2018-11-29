@@ -310,7 +310,11 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
                     }
                 }
             }
-            clusters.push_back(queue);
+
+            // Add new cluster if big enough
+            if (queue.size() > cluster_min_size_) {
+                clusters.push_back(queue);
+            }
         }
     }
 
@@ -369,6 +373,16 @@ glm::mat4 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<uns
     glm::vec3 eye = cluster_center + cluster_normal * static_cast<float>(camera_distance);
     glm::mat4 view = glm::lookAt(eye, cluster_center, up);
     return view;
+}
+
+double NextBestView::TargetPercentage(const std::vector<double>& quality_measure) {
+    double count = 0;
+    for (const auto& face_id : valid_faces_) {
+        if (quality_measure[face_id] > max_quality_) {
+            count++;
+        }
+    }
+    return (count / valid_faces_.size());
 }
 
 std::unordered_set<unsigned int>

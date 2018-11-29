@@ -204,6 +204,7 @@ void IPCameraPlugin::localize_image_callback() {
         viewer->data().uniform_colors(red_color, red_color, red_color);
     }
     prev_localization_success_ = success;
+    show_camera(true);
 }
 
 void IPCameraPlugin::save_image_callback() {
