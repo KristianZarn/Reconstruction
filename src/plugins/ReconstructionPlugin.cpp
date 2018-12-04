@@ -94,6 +94,10 @@ bool ReconstructionPlugin::post_draw() {
     // Sparse reconstruction
     if (ImGui::TreeNodeEx("Sparse reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Text("Build reconstruction");
+        ImGui::PushItemWidth(100.0f);
+        ImGui::InputInt("Next image index", &parameters_.next_image_idx);
+        ImGui::PopItemWidth();
+
         if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
             initialize_callback();
         }

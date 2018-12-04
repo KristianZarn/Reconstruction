@@ -348,7 +348,7 @@ glm::mat4 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<uns
     });
 
     // TODO: remove after debug
-    std::cout << "Best cluster cost: " << best.second << std::endl;
+    std::cout << "DEBUG: Best cluster cost: " << best.second << std::endl;
 
     // Average center and normal
     const std::vector<unsigned int>& cluster = best.first;

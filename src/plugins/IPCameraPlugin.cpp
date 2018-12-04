@@ -78,27 +78,28 @@ bool IPCameraPlugin::post_draw() {
     float height = width * ((float) image_height / image_width);
     ImGui::Image(reinterpret_cast<GLuint*>(textureID_), ImVec2(width, height));
 
-    // Add a button
+    // Capture
     if (ImGui::Button("Capture image [space]", ImVec2(-1, 0))) {
         capture_image_callback();
     }
 
+    // Localization
     if (ImGui::Button("Localize image", ImVec2(-70, 0))) {
         localize_image_callback();
     }
     ImGui::SameLine();
     ImGui::Checkbox("Auto##localize", &auto_localize_);
+    if (ImGui::Checkbox("Show localization camera", &show_camera_)) {
+        show_camera(show_camera_);
+    }
 
+    // Save
     if (ImGui::Button("Save image [s]", ImVec2(-70, 0))) {
         save_image_callback();
     }
     ImGui::SameLine();
     ImGui::Checkbox("Auto##save", &auto_save_);
-
-    // Display options
-    if (ImGui::Checkbox("Show localization camera", &show_camera_)) {
-        show_camera(show_camera_);
-    }
+    ImGui::InputInt("Next image index", &next_image_idx_);
 
     // Camera model
     transform_camera();
@@ -212,7 +213,7 @@ void IPCameraPlugin::save_image_callback() {
 
         // Prepare filename
         std::stringstream ss;
-        ss << std::setw(3) << std::setfill('0') << std::to_string(saved_frames_count_);
+        ss << std::setw(3) << std::setfill('0') << std::to_string(next_image_idx_);
         std::string filename = "frame" + ss.str() + ".jpg";
         std::string fullname = images_path_ + filename;
 
@@ -228,7 +229,7 @@ void IPCameraPlugin::save_image_callback() {
 
         // Succsessful write
         image_names_->push_back(filename);
-        saved_frames_count_++;
+        next_image_idx_++;
         log_stream_ << "IP Camera: Image saved to: \n\t" + fullname << std::endl;
     }
 }

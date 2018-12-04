@@ -40,7 +40,7 @@ private:
     std::vector<uint8_t> curl_stream_;
     unsigned char* image_data_ = nullptr;
 
-    int saved_frames_count_ = 0;
+    int next_image_idx_ = 0;
     std::string images_path_;
     std::shared_ptr<std::vector<std::string>> image_names_;
 

@@ -223,12 +223,14 @@ bool NextBestViewPlugin::post_draw() {
 
 void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
-    recompute_callback();
-    set_nbv_mesh();
 
     if (auto_apply_selection_) {
         apply_selection_callback();
     }
+
+    recompute_callback();
+    set_nbv_mesh();
+
     if (auto_show_clusters_) {
         show_clusters_callback();
     }
