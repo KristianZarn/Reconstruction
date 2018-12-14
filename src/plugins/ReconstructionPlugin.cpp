@@ -74,10 +74,10 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
-        if (ImGui::Button("Save scene (MVS)", ImVec2(-1, 0))) {
+        if (ImGui::Button("Save MVS scene", ImVec2(-1, 0))) {
             save_scene_callback();
         }
-        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
+        if (ImGui::Button("Load MVS scene", ImVec2(-1, 0))) {
             load_scene_callback();
         }
         if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
@@ -117,7 +117,7 @@ bool ReconstructionPlugin::post_draw() {
         if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
             remove_view_callback(parameters_.view_to_delete);
         }
-        if (ImGui::Button("Remove last view [b]", ImVec2(-1, 0))) {
+        if (ImGui::Button("Remove last view", ImVec2(-1, 0))) {
             remove_last_view_callback();
         }
         if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
@@ -128,7 +128,7 @@ bool ReconstructionPlugin::post_draw() {
 
     // Dense reconstruction
     if (ImGui::TreeNodeEx("Dense reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Reconstruct mesh [m]", ImVec2(-70, 0))) {
+        if (ImGui::Button("Reconstruct mesh", ImVec2(-70, 0))) {
             reconstruct_mesh_callback();
         }
         ImGui::SameLine();
@@ -193,8 +193,6 @@ bool ReconstructionPlugin::post_draw() {
             log_stream_ << "Proj: \n" << viewer->core.proj << std::endl;
             log_stream_ << "Norm: \n" << viewer->core.norm << std::endl;
         }
-
-        ImGui::Text("next_image_idx: %d", parameters_.next_image_idx);
         ImGui::TreePop();
     }
 
@@ -798,16 +796,6 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
             case 'e':
             {
                 extend_callback();
-                return true;
-            }
-            case 'b':
-            {
-                remove_last_view_callback();
-                return true;
-            }
-            case 'm':
-            {
-                reconstruct_mesh_callback();
                 return true;
             }
             case '1':

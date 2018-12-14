@@ -102,31 +102,22 @@ set(LIBRARIES
         ${INTERNAL_LIBRARIES}
         ${EXTERNAL_LIBRARIES})
 
-add_executable(realtime_reconstruction_disk main_disk.cpp ${SOURCE_FILES})
-target_compile_definitions(realtime_reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(realtime_reconstruction_disk PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(realtime_reconstruction_disk ${LIBRARIES})
+add_executable(reconstruction_disk main_disk.cpp ${SOURCE_FILES})
+target_compile_definitions(reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+target_include_directories(reconstruction_disk PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(reconstruction_disk ${LIBRARIES})
 
-add_executable(realtime_reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
-target_compile_definitions(realtime_reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(realtime_reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(realtime_reconstruction_ip_camera ${LIBRARIES})
+add_executable(reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
+target_compile_definitions(reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+target_include_directories(reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(reconstruction_ip_camera ${LIBRARIES})
 
-#add_executable(realtime_reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
-#target_compile_definitions(realtime_reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-#target_include_directories(realtime_reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
-#target_link_libraries(realtime_reconstruction_webcam ${LIBRARIES})
+#add_executable(reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
+#target_compile_definitions(reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+#target_include_directories(reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
+#target_link_libraries(reconstruction_webcam ${LIBRARIES})
 
-#add_executable(retrieval_seq main_retrieval_ref.cpp)
-#target_include_directories(retrieval_seq PUBLIC
-#        ${COLMAP_INCLUDE_DIRS}
-#        ${THEIA_INCLUDE_DIRS})
-#target_link_libraries(retrieval_seq
-#        ${COLMAP_LIBRARIES}
-#        ${THEIA_LIBRARIES}
-#        OpenMP::OpenMP_CXX)
-
-#add_executable(retrieval_test main_retrieval_test.cpp ${SOURCE_FILES})
-#target_compile_definitions(retrieval_test PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-#target_include_directories(retrieval_test PUBLIC ${INCLUDE_DIRS})
-#target_link_libraries(retrieval_test ${LIBRARIES})
+add_executable(reconstruction_render main_render.cpp ${SOURCE_FILES})
+target_compile_definitions(reconstruction_render PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+target_include_directories(reconstruction_render PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(reconstruction_render ${LIBRARIES})

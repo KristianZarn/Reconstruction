@@ -56,12 +56,12 @@ public:
     // Clustering parameters
     int cluster_min_size_ = 10; // min size of cluster
     int cluster_max_size_ = 100; // max size of cluster
-    float cluster_angle_ = 40; // max angle deviation from mean to be considered part of cluster
+    float cluster_angle_ = 100; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
     float init_alpha_ = -1.0f; // mean multiplier for initialization
     float init_beta_ = -3.0f; // standard deviation multiplier for initialization
-    float dist_mult_ = 6.0f;
+    float dist_alpha_ = 2.0f;
 
     // Cost function parameters
     double downscale_factor_ = 4.0;

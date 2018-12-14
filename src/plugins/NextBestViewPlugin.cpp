@@ -57,7 +57,7 @@ bool NextBestViewPlugin::post_draw() {
 
     // NBV object and pose optimization
     if (ImGui::TreeNodeEx("Initialization", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Initialize NBV", ImVec2(-1, 0))) {
+        if (ImGui::Button("Initialize NBV [n]", ImVec2(-1, 0))) {
             initialize_callback();
         }
         if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
@@ -145,7 +145,7 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::Checkbox("Auto##bestviewinit", &auto_init_best_view_);
         ImGui::InputFloat("Init Alpha", &next_best_view_->init_alpha_);
         ImGui::InputFloat("Init Beta", &next_best_view_->init_beta_);
-        ImGui::InputFloat("Dist mult", &next_best_view_->dist_mult_);
+        ImGui::InputFloat("Dist mult", &next_best_view_->dist_alpha_);
         ImGui::Spacing();
 
         ImGui::TreePop();
@@ -742,6 +742,11 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
     if (!ImGui::GetIO().WantTextInput) {
         switch (key) {
+            case 'n':
+            {
+                initialize_callback();
+                return true;
+            }
             case 'r':
             {
                 optimize_rotation_callback();

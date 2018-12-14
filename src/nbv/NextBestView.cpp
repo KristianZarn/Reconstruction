@@ -331,7 +331,7 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
 
         // Cost value
         auto mean_sd = MeanDeviation(face_quality);
-        double weight = (cluster.size() / static_cast<double>(cluster_max_size_));
+        double weight = pow(cluster.size() / static_cast<double>(cluster_max_size_), 2.0);
         double cost = (init_alpha_ * mean_sd.first + init_beta_ * mean_sd.second) * weight;
         cluster_costs.emplace_back(cluster, cost);
     }
@@ -362,11 +362,17 @@ glm::mat4 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<uns
     glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.size());
 
     // Compute camera distance
-    double distance_sum = 0.0;
-    for (const auto& face_id : cluster) {
-        distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
+    // double distance_sum = 0.0;
+    // for (const auto& face_id : cluster) {
+    //     distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
+    // }
+    // double camera_distance = sqrt(distance_sum / cluster.size()) * dist_alpha_ ;
+    std::vector<double> face_area = FaceArea();
+    double cluster_area = 0.0;
+    for (const auto& face_i : cluster) {
+        cluster_area += face_area[face_i];
     }
-    double camera_distance = (distance_sum / cluster.size()) * dist_mult_;
+    double camera_distance = cbrt(cluster_area) * dist_alpha_;
 
     // Generate view matrix
     glm::vec3 up = glm::vec3(0, 1, 0);
@@ -431,7 +437,7 @@ NextBestView::FaceDistances(const std::unordered_set<unsigned int>& faces, const
     return face_distances;
 }
 
-std::pair<double, double>  NextBestView::MeanDeviation(const std::unordered_set<double>& face_quality) {
+std::pair<double, double> NextBestView::MeanDeviation(const std::unordered_set<double>& face_quality) {
 
     // Mean
     double sum = 0.0;

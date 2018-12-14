@@ -7,6 +7,8 @@ set(SUBDIR_SOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/NextBestViewPlugin.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/ReconstructionPlugin.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/ReconstructionPlugin.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/RenderPlugin.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/RenderPlugin.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/WebcamPlugin.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/WebcamPlugin.cpp")
 

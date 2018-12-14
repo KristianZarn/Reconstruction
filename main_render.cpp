@@ -11,20 +11,14 @@
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
 #include "plugins/NextBestViewPlugin.h"
+#include "plugins/RenderPlugin.h"
 
 int main(int argc, char *argv[]) {
 
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vzorci/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
-
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
     std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/amfora/";
-
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
 
     int num_images = 100;
     std::string image_ext = ".png";
@@ -102,8 +96,12 @@ int main(int argc, char *argv[]) {
     // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
-    NextBestViewPlugin nbv_plugin(next_best_view);
-    viewer.plugins.push_back(&nbv_plugin);
+    // NextBestViewPlugin nbv_plugin(next_best_view);
+    // viewer.plugins.push_back(&nbv_plugin);
+
+    // Attach render plugin
+    RenderPlugin render_plugin;
+    viewer.plugins.push_back(&render_plugin);
 
     // Start viewer
     viewer.launch();
