@@ -1,12 +1,10 @@
 #include "Render.h"
 
-#include "stb_image_write.h"
+#include "stb/stb_image_write.h"
 
-void Render::Initialize(const std::string& filename) {
+void Render::Initialize(MVS::Scene& mvs_scene) {
 
     // Load MVS file
-    MVS::Scene mvs_scene;
-    mvs_scene.Load(filename);
     mvs_scene.mesh.ListIncidenteVertices();
     mvs_scene.mesh.ListIncidenteFaces();
     mvs_scene.mesh.ComputeNormalVertices();
@@ -113,9 +111,6 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
     GLfloat depth_clear_val = 1.0f;
     glClearBufferfv(GL_DEPTH, 0, &depth_clear_val);
 
-    // glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // Render configuration
     shader_->use();
 
@@ -159,6 +154,7 @@ void Render::SaveRender(const std::string& filename,
     int image_height = intrinsic.image_height;
     int channels = 3;
 
+    stbi_flip_vertically_on_write(true);
     stbi_write_png(filename.c_str(), image_width, image_height,
                    channels, render_data.data(), image_width * channels);
 }

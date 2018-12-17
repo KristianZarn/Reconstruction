@@ -8,7 +8,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
-#include <igl_stb_image.h>
+#include <stb/stb_image_write.h>
 #include <Eigen/Core>
 
 WebcamPlugin::WebcamPlugin(std::string device, int width, int height, std::string images_path)
@@ -93,7 +93,7 @@ void WebcamPlugin::capture_frame_callback() {
     std::string fullname = images_path_ + filename;
 
     int channels = 3;
-    igl::stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
+    stbi_write_png(fullname.c_str(), image_width_, image_height_, channels, frame.data, image_width_ * channels);
 
     image_names_->push_back(filename);
     camera_message_ = "Image saved to: \n" + fullname;

@@ -10,10 +10,8 @@
 #include <Eigen/Core>
 #include <curl/curl.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb_image_write.h>
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 IPCameraPlugin::IPCameraPlugin(std::string images_path,
                                std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder)

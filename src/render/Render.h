@@ -16,7 +16,7 @@ public:
         double focal_y;
     };
 
-    void Initialize(const std::string& filename);
+    void Initialize(MVS::Scene& mvs_scene);
     std::shared_ptr<TexturedMesh> GetMesh() const;
     std::shared_ptr<SourceShader> GetShader() const;
     CameraIntrinsic GetCameraIntrinsic(int camera_id) const;

@@ -17,10 +17,15 @@
 
 class RenderPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
+    explicit RenderPlugin(std::string images_path,
+                          std::string reconstruction_path,
+                          std::shared_ptr<Render> render);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
     bool pre_draw() override;
     bool post_draw() override;
+
+    std::shared_ptr<std::vector<std::string>> get_rendered_image_names();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -36,19 +41,23 @@ public:
 private:
     // Viewer data
     unsigned int VIEWER_DATA_CAMERA;
+    unsigned int VIEWER_DATA_RENDER_MESH;
 
     bool camera_visible_ = false;
     bool pose_camera_ = false;
+    bool render_mesh_visible_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE gizmo_mode_ = ImGuizmo::LOCAL;
     Eigen::Matrix4f camera_gizmo_;
 
-    // Image output
+    // Image input output
     int next_image_idx_ = 0;
     std::string images_path_;
+    std::string reconstruction_path_;
     std::shared_ptr<std::vector<std::string>> image_names_;
+    char scene_name_[128] = "filename";
 
     // Render
     std::shared_ptr<Render> render_;
@@ -58,8 +67,15 @@ private:
     // Log
     std::ostream& log_stream_ = std::cout;
 
+    // Callback functions
+    void initialize_scene_callback();
+    void render_and_save_callback();
+
     // Helpers
     void show_camera();
+    void set_render_mesh(const MVS::Scene& mvs_scene);
+    void show_render_mesh(bool visible);
+    void center_object();
 };
 
 

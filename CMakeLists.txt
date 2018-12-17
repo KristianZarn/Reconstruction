@@ -25,8 +25,6 @@ add_library(igl::opengl_glfw_imgui STATIC IMPORTED)
 set_property(TARGET igl::opengl_glfw_imgui PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libigl_opengl_glfw_imgui.a)
 add_library(igl::png STATIC IMPORTED)
 set_property(TARGET igl::png PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libigl_png.a)
-add_library(igl::stb_image SHARED IMPORTED)
-set_property(TARGET igl::stb_image PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libigl_stb_image.so)
 add_library(glad STATIC IMPORTED)
 set_property(TARGET glad PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libglad.a)
 add_library(glfw3 STATIC IMPORTED)
@@ -61,8 +59,6 @@ set(INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/libraries
         ${CMAKE_SOURCE_DIR}/src
         ${LIBIGL_PATH}/external/imgui
-        ${LIBIGL_PATH}/external/stb_image
-        ${LIBIGL_PATH}/optional/build/stb_image
         ${LIBIGL_PATH}/external/glad/include
         ${LIBIGL_PATH}/external/glfw/include
         ${LIBIGL_INCLUDE_DIR}
@@ -75,7 +71,6 @@ set(INCLUDE_DIRS
 
 set(EXTERNAL_LIBRARIES
         igl::png
-        igl::stb_image
         igl::opengl_glfw_imgui
         igl::opengl_glfw
         igl::opengl
@@ -96,7 +91,8 @@ set(EXTERNAL_LIBRARIES
 
 set(INTERNAL_LIBRARIES
         webcam
-        ImGuizmo)
+        ImGuizmo
+        stb)
 
 set(LIBRARIES
         ${INTERNAL_LIBRARIES}
