@@ -17,7 +17,6 @@ int main(int argc, char *argv[]) {
 
     std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/render/";
 
-    int num_images = 100;
     std::string image_ext = ".png";
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";

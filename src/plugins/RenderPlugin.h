@@ -41,10 +41,12 @@ public:
 private:
     // Viewer data
     unsigned int VIEWER_DATA_CAMERA;
+    unsigned int VIEWER_DATA_RENDER_CAMERAS;
     unsigned int VIEWER_DATA_RENDER_MESH;
 
     bool camera_visible_ = false;
     bool pose_camera_ = false;
+    bool render_cameras_visible_ = false;
     bool render_mesh_visible_ = false;
 
     // Gizmo
@@ -64,18 +66,27 @@ private:
     glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
     glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
+    std::vector<glm::mat4> render_poses_;
+    int selected_pose_ = 0;
+
     // Log
     std::ostream& log_stream_ = std::cout;
 
     // Callback functions
     void initialize_scene_callback();
     void render_and_save_callback();
+    void set_render_pose_callback();
 
     // Helpers
     void show_camera();
+    void set_camera_pose(const glm::mat4& view_matrix);
+
     void set_render_mesh(const MVS::Scene& mvs_scene);
     void show_render_mesh(bool visible);
     void center_object();
+
+    void set_render_cameras();
+    void show_render_cameras(bool visible);
 };
 
 

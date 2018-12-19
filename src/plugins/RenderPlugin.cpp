@@ -22,7 +22,11 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     viewer->append_mesh();
     VIEWER_DATA_CAMERA = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
-    // Append mesh for mesh
+    // Append mesh for render cameras
+    viewer->append_mesh();
+    VIEWER_DATA_RENDER_CAMERAS = static_cast<unsigned int>(viewer->data_list.size() - 1);
+
+    // Append mesh for render mesh
     viewer->append_mesh();
     VIEWER_DATA_RENDER_MESH = static_cast<unsigned int>(viewer->data_list.size() - 1);
 
@@ -59,14 +63,15 @@ bool RenderPlugin::post_draw() {
         if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
             show_render_mesh(render_mesh_visible_);
         }
+        if (ImGui::Checkbox("Show render cameras", &render_cameras_visible_)) {
+            show_render_cameras(render_cameras_visible_);
+        }
         ImGui::TreePop();
     }
 
-    // Camera pose
-    if (ImGui::TreeNodeEx("Camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Checkbox("Show render camera", &camera_visible_));
-        show_camera();
-
+    // Manual camera pose
+    if (ImGui::TreeNodeEx("Manual camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Show render camera", &camera_visible_);
         ImGui::Checkbox("Pose camera", &pose_camera_);
         ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
         ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
@@ -88,10 +93,20 @@ bool RenderPlugin::post_draw() {
         }
         ImGui::TreePop();
     }
+    show_camera();
+
+    // Generated render poses
+    if (ImGui::TreeNodeEx("Generated render poses", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Set render pose", ImVec2(-1, 0))) {
+            set_render_pose_callback();
+        }
+        ImGui::SliderInt("Pose index", &selected_pose_, 0, render_poses_.size()-1);
+        ImGui::TreePop();
+    }
 
     // Render and save image
     if (ImGui::TreeNodeEx("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Render and save", ImVec2(-1, 0))) {
+        if (ImGui::Button("Render current", ImVec2(-1, 0))) {
             render_and_save_callback();
         }
         ImGui::PushItemWidth(100.0f);
@@ -134,8 +149,14 @@ void RenderPlugin::initialize_scene_callback() {
     std::string fullpath = reconstruction_path_ + tmp + ".mvs";
     MVS::Scene mvs_scene;
     mvs_scene.Load(fullpath);
+
     render_->Initialize(mvs_scene);
     set_render_mesh(mvs_scene);
+    show_render_mesh(true);
+
+    render_poses_ = render_->GenerateRenderPoses(mvs_scene);
+    set_render_cameras();
+    show_render_cameras(true);
 
     log_stream_ << "Render: Scene initialized, loaded from: \n\t"
                 << fullpath << std::endl;
@@ -165,7 +186,16 @@ void RenderPlugin::render_and_save_callback() {
     // Succsessful render
     image_names_->push_back(filename);
     next_image_idx_++;
+    selected_pose_++;
     log_stream_ << "Render: Image saved to: \n\t" + fullname << std::endl;
+}
+
+void RenderPlugin::set_render_pose_callback() {
+    if (selected_pose_ >= render_poses_.size()) {
+        return;
+    }
+    const glm::mat4& view_matrix = render_poses_[selected_pose_];
+    set_camera_pose(view_matrix);
 }
 
 void RenderPlugin::show_camera() {
@@ -212,6 +242,16 @@ void RenderPlugin::show_camera() {
         viewer->data().clear();
     }
 }
+void RenderPlugin::set_camera_pose(const glm::mat4& view_matrix) {
+    glm::mat4 view_world = glm::inverse(view_matrix);
+
+    glm::vec3 scale;
+    ImGuizmo::DecomposeMatrixToComponents(
+            glm::value_ptr(view_world),
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale));
+}
 
 void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
     viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
@@ -244,6 +284,12 @@ void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
     center_object();
 }
 
+void RenderPlugin::show_render_mesh(bool visible) {
+    render_mesh_visible_ = visible;
+    viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
+    viewer->data().show_faces = visible;
+}
+
 void RenderPlugin::center_object() {
     viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
     Eigen::MatrixXd points;
@@ -264,10 +310,64 @@ void RenderPlugin::center_object() {
     viewer->core.camera_zoom = 1.0;
 }
 
-void RenderPlugin::show_render_mesh(bool visible) {
-    render_mesh_visible_ = visible;
-    viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
+void RenderPlugin::set_render_cameras() {
+    viewer->selected_data_index = VIEWER_DATA_RENDER_CAMERAS;
+    viewer->data().clear();
+
+    // Camera in default position
+    int num_vertices = 5;
+    Eigen::MatrixXd default_V(num_vertices, 3);
+    default_V << 0, 0, 0,
+            0.75, 0.5, -1,
+            -0.75, 0.5, -1,
+            -0.75, -0.5, -1,
+            0.75, -0.5, -1;
+
+    int num_faces = 6;
+    Eigen::MatrixXi default_F(num_faces, 3);
+    default_F << 0, 1, 2,
+            0, 2, 3,
+            0, 3, 4,
+            0, 4, 1,
+            1, 3, 2,
+            1, 4, 3;
+
+    // Add cameras
+    int num_views = render_poses_.size();
+    Eigen::MatrixXd cameras_V(num_views * num_vertices, 3);
+    Eigen::MatrixXi cameras_F(num_views * num_faces, 3);
+
+    int i = 0;
+    for (const auto& view_matrix : render_poses_) {
+        // Camera transformation
+        Eigen::Affine3f tmp(Eigen::Matrix4f::Map(glm::value_ptr(view_matrix)));
+        Eigen::Affine3d transformation = tmp.inverse().cast<double>();
+
+        Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.5));
+        transformation = transformation * scale;
+
+        // Apply transformation
+        Eigen::MatrixXd transformed_V = (default_V.rowwise().homogeneous() * transformation.matrix().transpose()).rowwise().hnormalized();
+        Eigen::MatrixXi transformed_F = default_F.array() + i * num_vertices;
+
+        cameras_V.middleRows(i * num_vertices, num_vertices) = transformed_V;
+        cameras_F.middleRows(i * num_faces, num_faces) = transformed_F;
+
+        i++;
+    }
+
+    // Set viewer data
+    viewer->data().set_mesh(cameras_V, cameras_F);
+    viewer->data().set_face_based(true);
+    Eigen::Vector3d gray_color = Eigen::Vector3d(128, 128, 128) / 255.0;
+    viewer->data().uniform_colors(gray_color, gray_color, gray_color);
+}
+
+void RenderPlugin::show_render_cameras(bool visible) {
+    render_cameras_visible_ = visible;
+    viewer->selected_data_index = VIEWER_DATA_RENDER_CAMERAS;
     viewer->data().show_faces = visible;
+    viewer->data().show_lines = visible;
 }
 
 // Mouse IO

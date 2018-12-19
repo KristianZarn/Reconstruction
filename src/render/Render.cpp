@@ -68,6 +68,30 @@ Render::CameraIntrinsic Render::GetCameraIntrinsic(int camera_id) const {
     return camera_intrinsics_[camera_id];
 }
 
+std::vector<glm::mat4> Render::GenerateRenderPoses(const MVS::Scene& mvs_scene) {
+
+    int num_cameras = mvs_scene.images.size();
+    std::vector<glm::mat4> view_matrices;
+    for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
+
+        // Camera view matrix
+        const auto& R = mvs_scene.images[camera_idx].camera.R; // world to view (view coordinates)
+        const auto& T = mvs_scene.images[camera_idx].camera.C; // world coordinates
+
+        glm::mat3 view_R(R(0, 0), R(0, 1), R(0, 2),
+                         -R(1, 0), -R(1, 1), -R(1, 2),
+                         -R(2, 0), -R(2, 1), -R(2, 2));
+        glm::vec3 view_T(T.x, T.y, T.z);
+
+        glm::mat4 tmp_R = glm::mat4(view_R);
+        glm::mat4 tmp_T = glm::translate(glm::mat4(1.0f), view_T);
+        glm::mat4 view_matrix = glm::inverse(tmp_T * tmp_R);
+
+        view_matrices.push_back(view_matrix);
+    }
+    return view_matrices;
+}
+
 std::vector<unsigned int>
 Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic) {
 
