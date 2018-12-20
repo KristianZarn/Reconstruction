@@ -221,6 +221,14 @@ bool NextBestViewPlugin::post_draw() {
     return false;
 }
 
+glm::vec3 NextBestViewPlugin::get_camera_pos() const {
+    return camera_pos_;
+}
+
+glm::vec3 NextBestViewPlugin::get_camera_rot() const {
+    return camera_rot_;
+}
+
 void NextBestViewPlugin::initialize_callback() {
     next_best_view_->Initialize();
 
@@ -507,20 +515,20 @@ void NextBestViewPlugin::debug_callback() {
     log_stream_ << "NBV: Debug button pressed" << std::endl;
 
     // Camera parameters
-    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-
-    glm::mat4 view_matrix;
-    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-    ImGuizmo::RecomposeMatrixFromComponents(
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale),
-            glm::value_ptr(view_matrix));
-    view_matrix = glm::inverse(view_matrix);
-
-    double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
+    // unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+    // unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+    // double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+    //
+    // glm::mat4 view_matrix;
+    // glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+    // ImGuizmo::RecomposeMatrixFromComponents(
+    //         glm::value_ptr(camera_pos_),
+    //         glm::value_ptr(camera_rot_),
+    //         glm::value_ptr(scale),
+    //         glm::value_ptr(view_matrix));
+    // view_matrix = glm::inverse(view_matrix);
+    //
+    // double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
     // double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
 
     // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);

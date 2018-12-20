@@ -14,6 +14,8 @@
 
 #include "imguizmo/ImGuizmo.h"
 #include "render/Render.h"
+#include "plugins/ReconstructionPlugin.h"
+#include "plugins/NextBestViewPlugin.h"
 
 class RenderPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
@@ -27,6 +29,11 @@ public:
 
     std::shared_ptr<std::vector<std::string>> get_rendered_image_names();
 
+    // Callback functions
+    void initialize_scene_callback();
+    void render_and_save_callback();
+    void set_render_pose_callback();
+
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
     bool mouse_up(int button, int modifier) override;
@@ -39,6 +46,10 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
+    // Plugins
+    ReconstructionPlugin* reconstruction_plugin_;
+    NextBestViewPlugin* nbv_plugin_;
+
     // Viewer data
     unsigned int VIEWER_DATA_CAMERA;
     unsigned int VIEWER_DATA_RENDER_CAMERAS;
@@ -71,11 +82,6 @@ private:
 
     // Log
     std::ostream& log_stream_ = std::cout;
-
-    // Callback functions
-    void initialize_scene_callback();
-    void render_and_save_callback();
-    void set_render_pose_callback();
 
     // Helpers
     void show_camera();

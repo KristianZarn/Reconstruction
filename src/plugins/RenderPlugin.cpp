@@ -18,6 +18,18 @@ RenderPlugin::RenderPlugin(
 void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     ViewerPlugin::init(_viewer);
 
+    // Check for plugins
+    for (int i = 0; i < viewer->plugins.size(); i++) {
+        // Reconstruction plugin
+        if (!reconstruction_plugin_) {
+            reconstruction_plugin_ = dynamic_cast<ReconstructionPlugin*>(viewer->plugins[i]);
+        }
+        // NBV plugin
+        if (!nbv_plugin_) {
+            nbv_plugin_ = dynamic_cast<NextBestViewPlugin*>(viewer->plugins[i]);
+        }
+    }
+
     // Append mesh for camera
     viewer->append_mesh();
     VIEWER_DATA_CAMERA = static_cast<unsigned int>(viewer->data_list.size() - 1);
@@ -106,12 +118,49 @@ bool RenderPlugin::post_draw() {
 
     // Render and save image
     if (ImGui::TreeNodeEx("Render", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Render current", ImVec2(-1, 0))) {
+        if (ImGui::Button("Render current pose", ImVec2(-1, 0))) {
             render_and_save_callback();
         }
         ImGui::PushItemWidth(100.0f);
         ImGui::InputInt("Next image index", &next_image_idx_);
         ImGui::PopItemWidth();
+        ImGui::TreePop();
+    }
+
+    // NBV plugin link
+    if (reconstruction_plugin_ && nbv_plugin_) {
+        if (ImGui::TreeNodeEx("Plugin link", ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (ImGui::Button("Initialize reconstruction", ImVec2(-1, 0))) {
+                set_render_pose_callback();
+                render_and_save_callback();
+                set_render_pose_callback();
+                render_and_save_callback();
+                // set_render_pose_callback();
+                // render_and_save_callback();
+
+                reconstruction_plugin_->initialize_callback();
+                // reconstruction_plugin_->extend_callback();
+            }
+            if (ImGui::Button("Compute NBV and extend", ImVec2(-1, 0))) {
+                nbv_plugin_->initialize_callback();
+                nbv_plugin_->init_best_view_callback();
+
+                camera_pos_ = nbv_plugin_->get_camera_pos();
+                camera_rot_ = nbv_plugin_->get_camera_rot();
+                render_and_save_callback();
+
+                reconstruction_plugin_->extend_callback();
+            }
+            ImGui::TreePop();
+        }
+    }
+
+    // Debugging
+    if (ImGui::TreeNodeEx("Debug")) {
+        // Other
+        if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
+            std::cout << "Render: debug button pressed" << std::endl;
+        }
         ImGui::TreePop();
     }
 
@@ -236,8 +285,8 @@ void RenderPlugin::show_camera() {
         viewer->data().clear();
         viewer->data().set_mesh(tmp_V, tmp_F);
         viewer->data().set_face_based(true);
-        Eigen::Vector3d blue_color = Eigen::Vector3d(0, 0, 255) / 255.0;
-        viewer->data().uniform_colors(blue_color, blue_color, blue_color);
+        Eigen::Vector3d color = Eigen::Vector3d(255, 255, 0) / 255.0;
+        viewer->data().uniform_colors(color, color, color);
     } else {
         viewer->data().clear();
     }

@@ -23,6 +23,25 @@ public:
     bool pre_draw() override;
     bool post_draw() override;
 
+    // Getters
+    glm::vec3 get_camera_pos() const;
+    glm::vec3 get_camera_rot() const;
+
+    // Callback functions
+    void initialize_callback();
+    void apply_selection_callback();
+
+    void recompute_callback();
+    void show_clusters_callback();
+    void init_best_view_callback();
+
+    void optimize_all_callback();
+    void optimize_position_callback();
+    void optimize_rotation_callback();
+
+    void debug_callback();
+    void pick_face_callback();
+
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
     bool mouse_up(int button, int modifier) override;
@@ -69,22 +88,6 @@ private:
 
     // Log
     std::ostream& log_stream_ = std::cout;
-
-    // Callback functions
-    void initialize_callback();
-
-    void apply_selection_callback();
-
-    void recompute_callback();
-    void show_clusters_callback();
-    void init_best_view_callback();
-
-    void optimize_all_callback();
-    void optimize_position_callback();
-    void optimize_rotation_callback();
-
-    void debug_callback();
-    void pick_face_callback();
 
     // Helpers
     void show_camera();

@@ -129,6 +129,26 @@ public:
     std::shared_ptr<MVS::Scene> get_mvs_scene_();
     std::shared_ptr<QualityMeasure> get_quality_measure_();
 
+    // Callback functions
+    void save_scene_callback();
+    void load_scene_callback();
+    void reload_mesh_callback();
+
+    void initialize_callback();
+    void extend_callback();
+    void extend_all_callback();
+
+    void remove_view_callback(int view_id);
+    void remove_last_view_callback();
+    void reset_reconstruction_callback();
+
+    void reconstruct_mesh_callback();
+    void refine_mesh_callback();
+    void texture_mesh_callback();
+
+    void pixels_per_area_callback();
+    void center_object_callback();
+
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
     bool mouse_up(int button, int modifier) override;
@@ -169,27 +189,6 @@ private:
     // Log
     // std::ostringstream log_stream_;
     std::ostream& log_stream_ = std::cout;
-
-    // Callback functions
-    void save_scene_callback();
-    void load_scene_callback();
-    void reload_mesh_callback();
-
-    void initialize_callback();
-    void extend_callback();
-    void extend_all_callback();
-
-    void remove_view_callback(int view_id);
-    void remove_last_view_callback();
-    void reset_reconstruction_callback();
-
-    void reconstruct_mesh_callback();
-    void refine_mesh_callback();
-    void texture_mesh_callback();
-
-    void pixels_per_area_callback();
-
-    void center_object_callback();
 
     // Helper functions
     void set_cameras();
