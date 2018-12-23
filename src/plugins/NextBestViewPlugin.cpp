@@ -66,7 +66,7 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::Checkbox("Show NBV camera", &camera_visible_);
         ImGui::TreePop();
     }
-    show_camera();
+    show_nbv_camera();
 
     // Region of interest
     if (ImGui::TreeNodeEx("Region of interest", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -115,10 +115,6 @@ bool NextBestViewPlugin::post_draw() {
 
     // Best view init
     if (ImGui::TreeNodeEx("Camera pose init", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Recompute", ImVec2(-1, 0))) {
-            recompute_callback();
-        }
-        ImGui::Spacing();
 
         // PPA
         if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
@@ -138,15 +134,14 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::Spacing();
 
         // Best view
-        if (ImGui::Button("Best view init", ImVec2(-70, 0))) {
-            init_best_view_callback();
-        }
-        ImGui::SameLine();
-        ImGui::Checkbox("Auto##bestviewinit", &auto_init_best_view_);
         ImGui::InputFloat("Init Alpha", &next_best_view_->init_alpha_);
         ImGui::InputFloat("Init Beta", &next_best_view_->init_beta_);
         ImGui::InputFloat("Dist mult", &next_best_view_->dist_alpha_);
-        ImGui::Spacing();
+
+
+        if (ImGui::SliderInt("Pose index", &selected_view_, 0, best_views_init_.size()-1)) {
+            set_nbv_camera_callback(selected_view_);
+        }
 
         ImGui::TreePop();
     }
@@ -229,22 +224,52 @@ glm::vec3 NextBestViewPlugin::get_camera_rot() const {
     return camera_rot_;
 }
 
+std::vector<glm::mat4> NextBestViewPlugin::get_initial_best_views() const {
+    return best_views_init_;
+}
+
 void NextBestViewPlugin::initialize_callback() {
+    // Initialize NBV object
     next_best_view_->Initialize();
 
+    // Apply selection
     if (auto_apply_selection_) {
         apply_selection_callback();
     }
 
-    recompute_callback();
+    // Compute NBV and other variables
+    log_stream_ << std::endl;
+    log_stream_ << "NBV: Computing PPA ... " << std::flush;
+    pixels_per_area_ = next_best_view_->PixelsPerArea();
+    log_stream_ << "DONE" << std::endl;
+
+    log_stream_ << "NBV: Computing clusters ... " << std::flush;
+    clusters_ = next_best_view_->FaceClusters(pixels_per_area_);
+    log_stream_ << "DONE" << std::endl;
+
+    log_stream_ << "NBV: Computing initial views ... " << std::flush;
+    best_views_init_ = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
+    log_stream_ << "DONE" << std::endl;
+
+    // Set cluster_id for debugging
+    cluster_id_.resize(next_best_view_->mvs_scene_->mesh.faces.size());
+    std::fill(cluster_id_.begin(), cluster_id_.end(), -1);
+    for (int i = 0; i < clusters_.size(); i++) {
+        for (const auto& face_id : clusters_[i].first) {
+            cluster_id_[face_id] = i;
+        }
+    }
+
+    // Set NBV mesh
     set_nbv_mesh();
 
+    // Show clusters
     if (auto_show_clusters_) {
         show_clusters_callback();
     }
-    if (auto_init_best_view_) {
-        init_best_view_callback();
-    }
+
+    // Set NBV camera
+    set_nbv_camera_callback(selected_view_);
 }
 
 void NextBestViewPlugin::apply_selection_callback() {
@@ -296,30 +321,6 @@ void NextBestViewPlugin::apply_selection_callback() {
     }
 }
 
-void NextBestViewPlugin::recompute_callback() {
-    log_stream_ << std::endl;
-    log_stream_ << "NBV: Computing FA ... " << std::flush;
-    face_area_ = next_best_view_->FaceArea();
-    log_stream_ << "DONE" << std::endl;
-
-    log_stream_ << "NBV: Computing PPA ... " << std::flush;
-    pixels_per_area_ = next_best_view_->PixelsPerArea();
-    log_stream_ << "DONE" << std::endl;
-
-    log_stream_ << "NBV: Computing Clusters ... " << std::flush;
-    clusters_ = next_best_view_->FaceClusters(pixels_per_area_);
-    log_stream_ << "DONE" << std::endl;
-
-    // Set cluster_id for debugging
-    cluster_id_.resize(next_best_view_->mvs_scene_->mesh.faces.size());
-    std::fill(cluster_id_.begin(), cluster_id_.end(), -1);
-    for (int i = 0; i < clusters_.size(); i++) {
-        for (const auto& face_id : clusters_[i].first) {
-            cluster_id_[face_id] = i;
-        }
-    }
-}
-
 void NextBestViewPlugin::show_clusters_callback() {
 
     int num_clusters = clusters_.size();
@@ -361,19 +362,21 @@ void NextBestViewPlugin::show_clusters_callback() {
     viewer->data().set_colors(color);
 }
 
-void NextBestViewPlugin::init_best_view_callback() {
-    glm::mat4 view = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
-    glm::mat4 view_world = glm::inverse(view);
+void NextBestViewPlugin::set_nbv_camera_callback(int selected_view) {
+    if (selected_view >= 0 && selected_view < best_views_init_.size()) {
+        glm::mat4 view = best_views_init_[selected_view];
+        glm::mat4 view_world = glm::inverse(view);
 
-    glm::vec3 scale;
-    ImGuizmo::DecomposeMatrixToComponents(
-            glm::value_ptr(view_world),
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale));
+        glm::vec3 scale;
+        ImGuizmo::DecomposeMatrixToComponents(
+                glm::value_ptr(view_world),
+                glm::value_ptr(camera_pos_),
+                glm::value_ptr(camera_rot_),
+                glm::value_ptr(scale));
 
-    camera_visible_ = true;
-    log_stream_ << "NBV: Initial best view set." << std::endl;
+        camera_visible_ = true;
+        log_stream_ << "NBV: Initial best view camera: " << selected_view << std::endl;
+    }
 }
 
 void NextBestViewPlugin::optimize_all_callback() {
@@ -575,13 +578,13 @@ void NextBestViewPlugin::pick_face_callback() {
             cost = clusters_[cid].second;
         }
 
-        log_stream_ << "ID: " << face_id
+        log_stream_ << "FID: " << face_id
                     << "\tPPA: " << ppa
                     << "\tCCost: " << cost << std::endl;
     }
 }
 
-void NextBestViewPlugin::show_camera() {
+void NextBestViewPlugin::show_nbv_camera() {
     viewer->selected_data_index = VIEWER_DATA_CAMERA;
     if (camera_visible_) {
 

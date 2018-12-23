@@ -27,8 +27,8 @@ public:
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
     std::vector<std::pair<std::vector<unsigned int>, double>> FaceClusters(const std::vector<double>& quality_measure);
-    glm::mat4 BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                           const std::vector<double>& quality_measure);
+    std::vector<glm::mat4> BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
+                                        const std::vector<double>& quality_measure);
     double TargetPercentage(const std::vector<double>& quality_measure);
 
     std::unordered_set<unsigned int>
@@ -55,10 +55,11 @@ public:
 
     // Clustering parameters
     int cluster_min_size_ = 20; // min size of cluster
-    int cluster_max_size_ = 100; // max size of cluster
+    int cluster_max_size_ = 300; // max size of cluster
     float cluster_angle_ = 100; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
+    int init_num_views_ = 5; // max number of returned views
     float init_alpha_ = -1.5f; // mean multiplier for initialization
     float init_beta_ = -3.0f; // standard deviation multiplier for initialization
     float dist_alpha_ = 4.0f;

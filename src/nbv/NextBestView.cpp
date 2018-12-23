@@ -1,5 +1,7 @@
 #include "NextBestView.h"
 
+#include <algorithm>
+
 #include <glm/gtc/matrix_access.hpp>
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -336,49 +338,53 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
         cluster_costs.emplace_back(cluster, cost);
     }
 
-    return cluster_costs;
-}
-
-glm::mat4 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                                     const std::vector<double>& quality_measure) {
-
-    // Find min
-    auto best = *std::min_element(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
+    // Sort by cost ascending
+    std::sort(cluster_costs.begin(), cluster_costs.end(), [](auto &left, auto &right) {
         return left.second < right.second;
     });
 
-    // TODO: remove after debug
-    std::cout << "DEBUG: Best cluster cost: " << best.second << std::endl;
+    return cluster_costs;
+}
 
-    // Average center and normal
-    const std::vector<unsigned int>& cluster = best.first;
-    glm::vec3 center_sum = glm::vec3(0);
-    glm::vec3 normal_sum = glm::vec3(0);
-    for (const auto& face_id : cluster) {
-        center_sum += face_centers_[face_id];
-        normal_sum += face_normals_[face_id];
+std::vector<glm::mat4>
+NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
+                           const std::vector<double>& quality_measure) {
+
+    int num_views = std::min(static_cast<int>(cluster_costs.size()), init_num_views_);
+    std::vector<glm::mat4> best_views;
+    for (int i = 0; i < num_views; i++) {
+
+        // Average center and normal
+        const std::vector<unsigned int>& cluster = cluster_costs[i].first;
+        glm::vec3 center_sum = glm::vec3(0);
+        glm::vec3 normal_sum = glm::vec3(0);
+        for (const auto& face_id : cluster) {
+            center_sum += face_centers_[face_id];
+            normal_sum += face_normals_[face_id];
+        }
+        glm::vec3 cluster_center = center_sum / static_cast<float>(cluster.size());
+        glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.size());
+
+        // Compute camera distance
+        // double distance_sum = 0.0;
+        // for (const auto& face_id : cluster) {
+        //     distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
+        // }
+        // double camera_distance = sqrt(distance_sum / cluster.size()) * dist_alpha_ ;
+        std::vector<double> face_area = FaceArea();
+        double cluster_area = 0.0;
+        for (const auto& face_i : cluster) {
+            cluster_area += face_area[face_i];
+        }
+        double camera_distance = cbrt(cluster_area) * dist_alpha_;
+
+        // Generate view matrix
+        glm::vec3 up = glm::vec3(0, 1, 0);
+        glm::vec3 eye = cluster_center + cluster_normal * static_cast<float>(camera_distance);
+        glm::mat4 view = glm::lookAt(eye, cluster_center, up);
+        best_views.push_back(view);
     }
-    glm::vec3 cluster_center = center_sum / static_cast<float>(cluster.size());
-    glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.size());
-
-    // Compute camera distance
-    // double distance_sum = 0.0;
-    // for (const auto& face_id : cluster) {
-    //     distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
-    // }
-    // double camera_distance = sqrt(distance_sum / cluster.size()) * dist_alpha_ ;
-    std::vector<double> face_area = FaceArea();
-    double cluster_area = 0.0;
-    for (const auto& face_i : cluster) {
-        cluster_area += face_area[face_i];
-    }
-    double camera_distance = cbrt(cluster_area) * dist_alpha_;
-
-    // Generate view matrix
-    glm::vec3 up = glm::vec3(0, 1, 0);
-    glm::vec3 eye = cluster_center + cluster_normal * static_cast<float>(camera_distance);
-    glm::mat4 view = glm::lookAt(eye, cluster_center, up);
-    return view;
+    return best_views;
 }
 
 double NextBestView::TargetPercentage(const std::vector<double>& quality_measure) {

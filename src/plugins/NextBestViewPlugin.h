@@ -26,14 +26,14 @@ public:
     // Getters
     glm::vec3 get_camera_pos() const;
     glm::vec3 get_camera_rot() const;
+    std::vector<glm::mat4> get_initial_best_views() const;
 
     // Callback functions
     void initialize_callback();
-    void apply_selection_callback();
 
-    void recompute_callback();
+    void apply_selection_callback();
     void show_clusters_callback();
-    void init_best_view_callback();
+    void set_nbv_camera_callback(int selected_view);
 
     void optimize_all_callback();
     void optimize_position_callback();
@@ -67,7 +67,6 @@ private:
 
     bool auto_apply_selection_ = true;
     bool auto_show_clusters_ = true;
-    bool auto_init_best_view_ = true;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
@@ -80,17 +79,17 @@ private:
     glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
     glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
-    // Debug variables
-    std::vector<double> face_area_;
     std::vector<double> pixels_per_area_;
     std::vector<std::pair<std::vector<unsigned int>, double>> clusters_;
     std::vector<int> cluster_id_;
+    std::vector<glm::mat4> best_views_init_;
+    int selected_view_ = 0;
 
     // Log
     std::ostream& log_stream_ = std::cout;
 
     // Helpers
-    void show_camera();
+    void show_nbv_camera();
     void show_bounding_box();
 
     void set_nbv_mesh();

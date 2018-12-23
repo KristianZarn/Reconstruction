@@ -31,8 +31,13 @@ public:
 
     // Callback functions
     void initialize_scene_callback();
-    void render_and_save_callback();
-    void set_render_pose_callback();
+    void render_callback();
+    void save_render_callback();
+    void set_generated_pose_callback();
+
+    // Plugin link callbacks
+    void initialize_reconstruction_callback();
+    void extend_reconstruction_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -74,10 +79,13 @@ private:
 
     // Render
     std::shared_ptr<Render> render_;
+    std::vector<unsigned int> render_data_;
+    std::vector<glm::mat4> rendered_poses_;
     glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
     glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
-    std::vector<glm::mat4> render_poses_;
+    // Generated poses
+    std::vector<glm::mat4> generated_poses_;
     int selected_pose_ = 0;
 
     // Log
