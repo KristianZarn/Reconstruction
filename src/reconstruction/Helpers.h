@@ -10,7 +10,7 @@
 
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 
-theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions();
+RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions();
 
 theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename);
 

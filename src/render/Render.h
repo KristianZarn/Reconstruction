@@ -23,10 +23,10 @@ public:
 
     std::vector<glm::mat4> GenerateRenderPoses(const MVS::Scene& mvs_scene);
 
-    std::vector<unsigned int> RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic);
+    std::vector<unsigned char> RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic);
     void SaveRender(const std::string& filename,
             const CameraIntrinsic& intrinsic,
-            const std::vector<unsigned int>& render_data);
+            const std::vector<unsigned char>& render_data);
 
 private:
     std::shared_ptr<TexturedMesh> mesh_;

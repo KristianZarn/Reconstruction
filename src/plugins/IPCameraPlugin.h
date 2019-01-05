@@ -12,7 +12,7 @@
 class IPCameraPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
     IPCameraPlugin(std::string images_path,
-                   std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder);
+                   std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder);
     ~IPCameraPlugin();
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
@@ -52,7 +52,7 @@ private:
     bool auto_save_ = false;
 
     // Reconstruction
-    std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
+    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder_;
 
     // Localization
     bool prev_localization_success_ = false;

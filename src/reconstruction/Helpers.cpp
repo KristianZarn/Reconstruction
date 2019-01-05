@@ -4,8 +4,8 @@
 
 #include <theia/util/random.h>
 
-theia::RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions() {
-    theia::RealtimeReconstructionBuilder::Options options;
+RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions() {
+    RealtimeReconstructionBuilder::Options options;
 
     options.rng = std::make_shared<theia::RandomNumberGenerator>(0);
     options.num_threads = 4;

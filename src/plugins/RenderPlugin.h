@@ -14,6 +14,7 @@
 
 #include "imguizmo/ImGuizmo.h"
 #include "render/Render.h"
+#include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/NextBestViewPlugin.h"
 
@@ -21,6 +22,7 @@ class RenderPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
     explicit RenderPlugin(std::string images_path,
                           std::string reconstruction_path,
+                          Render::CameraIntrinsic camera_intrinsics,
                           std::shared_ptr<Render> render);
 
     void init(igl::opengl::glfw::Viewer *_viewer) override;
@@ -33,7 +35,6 @@ public:
     void initialize_scene_callback();
     void render_callback();
     void save_render_callback();
-    void set_generated_pose_callback();
 
     // Plugin link callbacks
     void initialize_reconstruction_callback();
@@ -52,8 +53,8 @@ public:
 
 private:
     // Plugins
-    ReconstructionPlugin* reconstruction_plugin_;
-    NextBestViewPlugin* nbv_plugin_;
+    ReconstructionPlugin* reconstruction_plugin_ = nullptr;
+    NextBestViewPlugin* nbv_plugin_ = nullptr;
 
     // Viewer data
     unsigned int VIEWER_DATA_CAMERA;
@@ -78,11 +79,11 @@ private:
     char scene_name_[128] = "filename";
 
     // Render
+    Render::CameraIntrinsic camera_intrinsics_;
     std::shared_ptr<Render> render_;
-    std::vector<unsigned int> render_data_;
+    std::vector<unsigned char> render_data_;
+    glm::mat4 render_pose_;
     std::vector<glm::mat4> rendered_poses_;
-    glm::vec3 camera_pos_ = glm::vec3(0.0, 0.0, 0.0);
-    glm::vec3 camera_rot_ = glm::vec3(180.0, 0.0, 0.0);
 
     // Generated poses
     std::vector<glm::mat4> generated_poses_;
@@ -93,7 +94,6 @@ private:
 
     // Helpers
     void show_camera();
-    void set_camera_pose(const glm::mat4& view_matrix);
 
     void set_render_mesh(const MVS::Scene& mvs_scene);
     void show_render_mesh(bool visible);

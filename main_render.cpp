@@ -1,3 +1,8 @@
+#include <string>
+#include <ostream>
+#include <vector>
+#include <memory>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui.h>
@@ -8,6 +13,7 @@
 #include "reconstruction/Helpers.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "nbv/QualityMeasure.h"
+#include "render/Render.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/EditMeshPlugin.h"
 #include "plugins/NextBestViewPlugin.h"
@@ -21,6 +27,8 @@ int main(int argc, char *argv[]) {
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
     std::string calibration_file = project_path + "prior_calibration.txt";
+    // std::string calibration_file = project_path + "posterior_calibration.txt";
+    // std::string calibration_file = project_path + "test_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
@@ -60,22 +68,25 @@ int main(int argc, char *argv[]) {
     };
 
     // Setup reconstruction objects
-    theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
-    theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
-    options.intrinsics_prior = intrinsics_prior;
-    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options);
+    theia::CameraIntrinsicsPrior intrinsics = ReadCalibration(calibration_file);
+    RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    // options.reconstruction_estimator_options.intrinsics_to_optimize = theia::OptimizeIntrinsicsType::NONE;
+    options.intrinsics_prior = intrinsics;
+    auto reconstruction_builder = std::make_shared<RealtimeReconstructionBuilder>(options);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
     auto quality_measure = std::make_shared<QualityMeasure>(mvs_scene);
 
     // Attach render plugin
+    Render::CameraIntrinsic render_intrinsics{static_cast<unsigned int>(intrinsics.image_width),
+                                              static_cast<unsigned int>(intrinsics.image_height),
+                                              intrinsics.focal_length.value[0]};
     auto render = std::make_shared<Render>();
-    RenderPlugin render_plugin(images_path, reconstruction_path, render);
+    RenderPlugin render_plugin(images_path, reconstruction_path, render_intrinsics, render);
     viewer.plugins.push_back(&render_plugin);
 
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters reconstruction_parameters;
     std::shared_ptr<std::vector<std::string>> image_names = render_plugin.get_rendered_image_names();
-
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
                                                images_path,
                                                reconstruction_path,

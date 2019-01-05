@@ -14,7 +14,7 @@
 #include <stb/stb_image_write.h>
 
 IPCameraPlugin::IPCameraPlugin(std::string images_path,
-                               std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder)
+                               std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder)
         : images_path_(std::move(images_path)),
           reconstruction_builder_(std::move(reconstruction_builder)),
           image_names_(std::make_shared<std::vector<std::string>>()) {

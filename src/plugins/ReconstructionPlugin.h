@@ -3,6 +3,8 @@
 
 #include <string>
 #include <ostream>
+#include <vector>
+#include <memory>
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
@@ -117,7 +119,7 @@ public:
                          std::string images_path,
                          std::string reconstruction_path,
                          std::shared_ptr<std::vector<std::string>> image_names,
-                         std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
+                         std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder,
                          std::shared_ptr<MVS::Scene> mvs_scene,
                          std::shared_ptr<QualityMeasure> quality_measure);
 
@@ -125,7 +127,7 @@ public:
     bool post_draw() override;
 
     // Accessors
-    std::shared_ptr<theia::RealtimeReconstructionBuilder> get_reconstruction_builder();
+    std::shared_ptr<RealtimeReconstructionBuilder> get_reconstruction_builder();
     std::shared_ptr<MVS::Scene> get_mvs_scene_();
     std::shared_ptr<QualityMeasure> get_quality_measure_();
 
@@ -180,7 +182,7 @@ private:
     std::shared_ptr<std::vector<std::string>> image_names_;
 
     // Reconstruction
-    std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder_;
+    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder_;
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
     // Quality measure

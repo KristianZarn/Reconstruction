@@ -9,10 +9,12 @@
 RenderPlugin::RenderPlugin(
         std::string images_path,
         std::string reconstruction_path,
+        Render::CameraIntrinsic camera_intrinsics,
         std::shared_ptr<Render> render)
         : images_path_(std::move(images_path)),
           reconstruction_path_(std::move(reconstruction_path)),
           image_names_(std::make_shared<std::vector<std::string>>()),
+          camera_intrinsics_(camera_intrinsics),
           render_(std::move(render)) {}
 
 void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
@@ -67,7 +69,7 @@ bool RenderPlugin::post_draw() {
 
 
     // Initialization
-    if (ImGui::TreeNodeEx("Initialization", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", scene_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
         if (ImGui::Button("Initialize scene", ImVec2(-1, 0))) {
             initialize_scene_callback();
@@ -85,8 +87,6 @@ bool RenderPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Manual camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Show render camera", &camera_visible_);
         ImGui::Checkbox("Pose camera", &pose_camera_);
-        ImGui::InputFloat3("Position", glm::value_ptr(camera_pos_));
-        ImGui::InputFloat3("Angles", glm::value_ptr(camera_rot_));
         if (pose_camera_) {
             ImGuizmo::Manipulate(gizmo_view.data(),
                                  viewer->core.proj.data(),
@@ -110,7 +110,9 @@ bool RenderPlugin::post_draw() {
     // Generated render poses
     if (ImGui::TreeNodeEx("Generated render poses", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::SliderInt("Pose index", &selected_pose_, 0, generated_poses_.size()-1)) {
-            set_generated_pose_callback();
+            if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
+                render_pose_ = generated_poses_[selected_pose_];
+            }
         }
         ImGui::TreePop();
     }
@@ -153,21 +155,13 @@ bool RenderPlugin::post_draw() {
 
     // Set camera transformation
     if (pose_camera_) {
-        // Camera gizmo -> position and rotation
-        glm::vec3 scale;
-        ImGuizmo::DecomposeMatrixToComponents(
-                camera_gizmo_.data(),
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale));
+        // Camera gizmo -> render pose
+        Eigen::Matrix4f tmp = camera_gizmo_.inverse();
+        render_pose_ = glm::make_mat4(tmp.data());
     } else {
-        // Position and rotation -> camera gizmo
-        glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-        ImGuizmo::RecomposeMatrixFromComponents(
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale),
-                camera_gizmo_.data());
+        // Render pose -> camera gizmo
+        glm::mat4 tmp = glm::inverse(render_pose_);
+        camera_gizmo_ = Eigen::Map<Eigen::Matrix4f>(glm::value_ptr(tmp));
     }
 
     ImGui::End();
@@ -199,17 +193,7 @@ void RenderPlugin::initialize_scene_callback() {
 }
 
 void RenderPlugin::render_callback() {
-    glm::mat4 view_world = glm::mat4(1.0f);
-    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-    ImGuizmo::RecomposeMatrixFromComponents(
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale),
-            glm::value_ptr(view_world));
-    glm::mat4 view_matrix = glm::inverse(view_world);
-
-    Render::CameraIntrinsic intrinsic = render_->GetCameraIntrinsic(0);
-    render_data_ = render_->RenderFromCamera(view_matrix, intrinsic);
+    render_data_ = render_->RenderFromCamera(render_pose_, camera_intrinsics_);
 }
 
 void RenderPlugin::save_render_callback() {
@@ -220,59 +204,76 @@ void RenderPlugin::save_render_callback() {
     std::string filename = "frame" + ss.str() + ".png";
     std::string fullname = images_path_ + filename;
 
-    Render::CameraIntrinsic intrinsic = render_->GetCameraIntrinsic(0);
-    render_->SaveRender(fullname, intrinsic, render_data_);
-
-    // Compute view matrix again
-    glm::mat4 view_world = glm::mat4(1.0f);
-    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-    ImGuizmo::RecomposeMatrixFromComponents(
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale),
-            glm::value_ptr(view_world));
-    glm::mat4 view_matrix = glm::inverse(view_world);
+    // Save render
+    render_->SaveRender(fullname, camera_intrinsics_, render_data_);
 
     // Succsessful render
     image_names_->push_back(filename);
-    rendered_poses_.push_back(view_matrix);
     next_image_idx_++;
-    selected_pose_++;
     log_stream_ << "Render: Image saved to: \n\t" + fullname << std::endl;
 }
 
-void RenderPlugin::set_generated_pose_callback() {
-    if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
-        const glm::mat4& view_matrix = generated_poses_[selected_pose_];
-        set_camera_pose(view_matrix);
-    }
-}
-
 void RenderPlugin::initialize_reconstruction_callback() {
-    set_generated_pose_callback();
-    render_callback();
-    save_render_callback();
-    set_generated_pose_callback();
-    render_callback();
-    save_render_callback();
+    camera_intrinsics_ = render_->GetCameraIntrinsic(0);
+    if (generated_poses_.size() >= 2) {
 
-    reconstruction_plugin_->initialize_callback();
+        render_pose_ = generated_poses_[0];
+        render_callback();
+        save_render_callback();
+        rendered_poses_.push_back(render_pose_);
+
+        render_pose_ = generated_poses_[1];
+        render_callback();
+        save_render_callback();
+        rendered_poses_.push_back(render_pose_);
+
+        reconstruction_plugin_->initialize_callback();
+    }
 }
 
 void RenderPlugin::extend_reconstruction_callback() {
     nbv_plugin_->initialize_callback();
     std::vector<glm::mat4> best_views = nbv_plugin_->get_initial_best_views();
 
-    const glm::mat4& view_matrix = best_views.front();
+    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
+            reconstruction_plugin_->get_reconstruction_builder();
 
-    set_camera_pose(view_matrix);
-    // camera_pos_ = nbv_plugin_->get_camera_pos();
-    // camera_rot_ = nbv_plugin_->get_camera_rot();
+    bool success = false;
+    int i = 0;
+    for (i = 0; i < best_views.size(); i++) {
+        // Try to localize suggested view
+        render_pose_ = best_views[i];
+        render_callback();
 
-    render_callback();
-    save_render_callback();
-    //
-    // reconstruction_plugin_->extend_callback();
+        // Convert render to theia image
+        int width = camera_intrinsics_.image_width;
+        int height = camera_intrinsics_.image_height;
+        int channels = 3;
+        theia::FloatImage image(width, height, channels);
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < width; col++) {
+                for (int c = 0; c < channels; c++) {
+                    unsigned int val_int = render_data_[c + channels * col  + width * channels * row];
+                    float val_float = static_cast<float>(val_int) / std::numeric_limits<unsigned char>::max();
+                    image.SetRowCol(height - row - 1, col, c, val_float);
+                }
+            }
+        }
+
+        // Localization
+        theia::CalibratedAbsolutePose tmp_pose;
+        success = reconstruction_builder->LocalizeImage(image, tmp_pose);
+        if (success) break;
+    }
+
+    if (success) {
+        log_stream_ << "Render: Extending reconstruction with view number: " << i << std::endl;
+        save_render_callback();
+        reconstruction_plugin_->extend_callback();
+        rendered_poses_.push_back(render_pose_);
+    } else {
+        log_stream_ << "Render: Localization failed." << std::endl;
+    }
 }
 
 void RenderPlugin::show_camera() {
@@ -280,14 +281,13 @@ void RenderPlugin::show_camera() {
     if (camera_visible_) {
 
         // Compute camera transformation
-        Eigen::Matrix4f tmp;
-        glm::vec3 scale = glm::vec3(1.0 / 2.0, 1.0 / 2.0, 1.0 / 2.0);
-        ImGuizmo::RecomposeMatrixFromComponents(
-                glm::value_ptr(camera_pos_),
-                glm::value_ptr(camera_rot_),
-                glm::value_ptr(scale),
-                tmp.data());
-        Eigen::Matrix4d camera_mat_world = tmp.cast<double>();
+        glm::mat4 tmp_glm = glm::inverse(render_pose_);
+        float model_scale = 1.0f / 2.0f;
+        tmp_glm = glm::scale(tmp_glm, glm::vec3(model_scale, model_scale, model_scale));
+
+        Eigen::Matrix4f tmp_eigen;
+        tmp_eigen = Eigen::Map<Eigen::Matrix4f>(glm::value_ptr(tmp_glm));
+        Eigen::Matrix4d camera_world = tmp_eigen.cast<double>();
 
         // Vertices
         Eigen::MatrixXd tmp_V(5, 3);
@@ -307,7 +307,7 @@ void RenderPlugin::show_camera() {
                 1, 4, 3;
 
         // Apply transformation
-        tmp_V = (tmp_V.rowwise().homogeneous() * camera_mat_world.transpose()).rowwise().hnormalized();
+        tmp_V = (tmp_V.rowwise().homogeneous() * camera_world.transpose()).rowwise().hnormalized();
 
         // Set viewer data
         viewer->data().clear();
@@ -318,16 +318,6 @@ void RenderPlugin::show_camera() {
     } else {
         viewer->data().clear();
     }
-}
-void RenderPlugin::set_camera_pose(const glm::mat4& view_matrix) {
-    glm::mat4 view_world = glm::inverse(view_matrix);
-
-    glm::vec3 scale;
-    ImGuizmo::DecomposeMatrixToComponents(
-            glm::value_ptr(view_world),
-            glm::value_ptr(camera_pos_),
-            glm::value_ptr(camera_rot_),
-            glm::value_ptr(scale));
 }
 
 void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {

@@ -92,7 +92,7 @@ std::vector<glm::mat4> Render::GenerateRenderPoses(const MVS::Scene& mvs_scene) 
     return view_matrices;
 }
 
-std::vector<unsigned int>
+std::vector<unsigned char>
 Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic) {
 
     int image_width = intrinsic.image_width;
@@ -158,8 +158,8 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
     mesh_->Draw(*shader_);
 
     // Read frambuffer texture
-    std::vector<unsigned int> render_data(image_width * image_height * 3);
-    glReadPixels(0, 0, image_width, image_height,  GL_RGB, GL_UNSIGNED_BYTE, render_data.data());
+    std::vector<unsigned char> render_data(image_width * image_height * 3, 0);
+    glReadPixels(0, 0, image_width, image_height, GL_RGB, GL_UNSIGNED_BYTE, render_data.data());
 
     // Cleanup
     glDeleteFramebuffers(1, &framebuffer);
@@ -172,7 +172,7 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
 
 void Render::SaveRender(const std::string& filename,
         const CameraIntrinsic& intrinsic,
-        const std::vector<unsigned int>& render_data) {
+        const std::vector<unsigned char>& render_data) {
 
     int image_width = intrinsic.image_width;
     int image_height = intrinsic.image_height;

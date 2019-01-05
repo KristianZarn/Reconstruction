@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <chrono>
 #include <utility>
-#include <vector>
 #include <algorithm>
 #include <fstream>
 
@@ -28,7 +27,7 @@ ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
                                            std::string reconstruction_path,
                                            std::shared_ptr<std::vector<std::string>> image_names,
-                                           std::shared_ptr<theia::RealtimeReconstructionBuilder> reconstruction_builder,
+                                           std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder,
                                            std::shared_ptr<MVS::Scene> mvs_scene,
                                            std::shared_ptr<QualityMeasure> quality_measure)
         : parameters_(parameters),
@@ -200,7 +199,7 @@ bool ReconstructionPlugin::post_draw() {
     return false;
 }
 
-std::shared_ptr<theia::RealtimeReconstructionBuilder> ReconstructionPlugin::get_reconstruction_builder() {
+std::shared_ptr<RealtimeReconstructionBuilder> ReconstructionPlugin::get_reconstruction_builder() {
     return reconstruction_builder_;
 }
 
@@ -276,6 +275,10 @@ void ReconstructionPlugin::initialize_callback() {
         // Convert reconstruction to MVS
         mvs_scene_->Release();
         TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
+
+        // DEBUG:
+        double test = mvs_scene_->images[0].camera.K(1,1);
+        std::cout << "DEBUG: " << test << std::endl;
     } else {
         log_stream_ << "Initialization failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
