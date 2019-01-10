@@ -94,13 +94,10 @@ public:
                          bool print_reconstruction = true,
                          bool print_view_graph = true);
 
-    // Get constant reference to reconstruction
+    // Getters
+    theia::ViewId GetLastAddedViewId();
     const theia::Reconstruction& GetReconstruction();
-
-    // Get options
     Options GetOptions();
-
-    // Get message
     std::string GetMessage();
 
 private:

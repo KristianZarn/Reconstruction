@@ -71,7 +71,7 @@ bool RenderPlugin::post_draw() {
     // Initialization
     if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", scene_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
-        if (ImGui::Button("Initialize scene", ImVec2(-1, 0))) {
+        if (ImGui::Button("Initialize render scene", ImVec2(-1, 0))) {
             initialize_scene_callback();
         }
         if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
@@ -111,7 +111,7 @@ bool RenderPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Generated render poses", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::SliderInt("Pose index", &selected_pose_, 0, generated_poses_.size()-1)) {
             if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
-                render_pose_ = generated_poses_[selected_pose_];
+                render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
             }
         }
         ImGui::TreePop();
@@ -131,22 +131,32 @@ bool RenderPlugin::post_draw() {
         ImGui::TreePop();
     }
 
-    // NBV plugin link
-    if (reconstruction_plugin_ && nbv_plugin_) {
-        if (ImGui::TreeNodeEx("Plugin link", ImGuiTreeNodeFlags_DefaultOpen)) {
+    // Plugin link
+    if (ImGui::TreeNodeEx("Plugin link", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (reconstruction_plugin_) {
             if (ImGui::Button("Initialize reconstruction", ImVec2(-1, 0))) {
                 initialize_reconstruction_callback();
             }
-            if (ImGui::Button("Compute NBV and extend", ImVec2(-1, 0))) {
+            if (ImGui::Button("Extend reconstruction", ImVec2(-1, 0))) {
                 extend_reconstruction_callback();
             }
-            ImGui::TreePop();
+            if (ImGui::Button("Align render mesh", ImVec2(-1, 0))) {
+                align_render_mesh_callback();
+            }
         }
+        if (reconstruction_plugin_ && nbv_plugin_) {
+            if (ImGui::Button("Compute NBV", ImVec2(-1, 0))) {
+                compute_nbv_callback();
+            }
+        }
+        ImGui::TreePop();
     }
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug")) {
-        // Other
+        if (ImGui::Button("Save render stats", ImVec2(-1, 0))) {
+            render_stats_.WriteStatsToFile(reconstruction_path_ + "render_stats.txt");
+        }
         if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
             std::cout << "Render: debug button pressed" << std::endl;
         }
@@ -156,12 +166,10 @@ bool RenderPlugin::post_draw() {
     // Set camera transformation
     if (pose_camera_) {
         // Camera gizmo -> render pose
-        Eigen::Matrix4f tmp = camera_gizmo_.inverse();
-        render_pose_ = glm::make_mat4(tmp.data());
+        render_pose_world_aligned_ = glm::make_mat4(camera_gizmo_.data());
     } else {
         // Render pose -> camera gizmo
-        glm::mat4 tmp = glm::inverse(render_pose_);
-        camera_gizmo_ = Eigen::Map<Eigen::Matrix4f>(glm::value_ptr(tmp));
+        camera_gizmo_ = Eigen::Map<Eigen::Matrix4f>(glm::value_ptr(render_pose_world_aligned_));
     }
 
     ImGui::End();
@@ -177,14 +185,14 @@ void RenderPlugin::initialize_scene_callback() {
 
     std::string tmp(scene_name_);
     std::string fullpath = reconstruction_path_ + tmp + ".mvs";
-    MVS::Scene mvs_scene;
-    mvs_scene.Load(fullpath);
+    mvs_scene_.Release();
+    mvs_scene_.Load(fullpath);
 
-    render_->Initialize(mvs_scene);
-    set_render_mesh(mvs_scene);
+    render_->Initialize(mvs_scene_);
+    set_render_mesh(mvs_scene_);
     show_render_mesh(true);
 
-    generated_poses_ = render_->GenerateRenderPoses(mvs_scene);
+    generated_poses_ = render_->GenerateRenderPoses(mvs_scene_);
     set_render_cameras();
     show_render_cameras(true);
 
@@ -193,7 +201,8 @@ void RenderPlugin::initialize_scene_callback() {
 }
 
 void RenderPlugin::render_callback() {
-    render_data_ = render_->RenderFromCamera(render_pose_, camera_intrinsics_);
+    glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
+    render_data_ = render_->RenderFromCamera(render_pose, camera_intrinsics_);
 }
 
 void RenderPlugin::save_render_callback() {
@@ -214,27 +223,95 @@ void RenderPlugin::save_render_callback() {
 }
 
 void RenderPlugin::initialize_reconstruction_callback() {
-    camera_intrinsics_ = render_->GetCameraIntrinsic(0);
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
     if (generated_poses_.size() >= 2) {
 
-        render_pose_ = generated_poses_[0];
+        glm::mat4 render_pose_0 = generated_poses_[0];
+        render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose_0);
         render_callback();
         save_render_callback();
-        rendered_poses_.push_back(render_pose_);
 
-        render_pose_ = generated_poses_[1];
+        glm::mat4 render_pose_1 = generated_poses_[1];
+        render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose_1);
         render_callback();
         save_render_callback();
-        rendered_poses_.push_back(render_pose_);
 
         reconstruction_plugin_->initialize_callback();
+
+        glm::mat4 render_pose_2 = generated_poses_[2];
+        render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose_2);
+        render_callback();
+        save_render_callback();
+
+        reconstruction_plugin_->extend_callback();
+
+        // Update render stats
+        render_stats_ = RenderStats();
+        Eigen::Matrix4f tmp;
+
+        tmp = reconstruction_plugin_->get_view_matrix(0).cast<float>();
+        glm::mat4 estimated_pose_0 = glm::make_mat4(tmp.data());
+
+        tmp = reconstruction_plugin_->get_view_matrix(1).cast<float>();
+        glm::mat4 estimated_pose_1 = glm::make_mat4(tmp.data());
+
+        tmp = reconstruction_plugin_->get_view_matrix(2).cast<float>();
+        glm::mat4 estimated_pose_2 = glm::make_mat4(tmp.data());
+
+        render_stats_.AddPose(render_pose_0, estimated_pose_0, -1);
+        render_stats_.AddPose(render_pose_1, estimated_pose_1, -1);
+        render_stats_.AddPose(render_pose_2, estimated_pose_2, -1);
     }
 }
 
 void RenderPlugin::extend_reconstruction_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    render_callback();
+    save_render_callback();
+    reconstruction_plugin_->extend_callback();
+
+    // Update render stats
+    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
+            reconstruction_plugin_->get_reconstruction_builder();
+
+    theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
+    Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
+    glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
+
+    glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
+    render_stats_.AddPose(render_pose, estimated_pose, -1);
+}
+
+void RenderPlugin::align_render_mesh_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    if (render_stats_.Size() > 0) {
+        align_transform_ = render_stats_.ComputeTransformation();
+        set_render_mesh(mvs_scene_);
+        set_render_cameras();
+        log_stream_ << "Render: Mesh aligned." << std::endl;
+    }
+}
+
+void RenderPlugin::compute_nbv_callback() {
+    if (!reconstruction_plugin_ || !nbv_plugin_) {
+        log_stream_ << "Render Error: Reconstruction or NBV plugin not present." << std::endl;
+        return;
+    }
+
     nbv_plugin_->initialize_callback();
     std::vector<glm::mat4> best_views = nbv_plugin_->get_initial_best_views();
-
     std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
             reconstruction_plugin_->get_reconstruction_builder();
 
@@ -242,7 +319,7 @@ void RenderPlugin::extend_reconstruction_callback() {
     int i = 0;
     for (i = 0; i < best_views.size(); i++) {
         // Try to localize suggested view
-        render_pose_ = best_views[i];
+        render_pose_world_aligned_ = glm::inverse(best_views[i]);
         render_callback();
 
         // Convert render to theia image
@@ -266,12 +343,7 @@ void RenderPlugin::extend_reconstruction_callback() {
         if (success) break;
     }
 
-    if (success) {
-        log_stream_ << "Render: Extending reconstruction with view number: " << i << std::endl;
-        save_render_callback();
-        reconstruction_plugin_->extend_callback();
-        rendered_poses_.push_back(render_pose_);
-    } else {
+    if (!success) {
         log_stream_ << "Render: Localization failed." << std::endl;
     }
 }
@@ -281,7 +353,7 @@ void RenderPlugin::show_camera() {
     if (camera_visible_) {
 
         // Compute camera transformation
-        glm::mat4 tmp_glm = glm::inverse(render_pose_);
+        glm::mat4 tmp_glm = render_pose_world_aligned_;
         float model_scale = 1.0f / 2.0f;
         tmp_glm = glm::scale(tmp_glm, glm::vec3(model_scale, model_scale, model_scale));
 
@@ -334,6 +406,11 @@ void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
         V(i, 2) = vertex[2];
     }
 
+    // Transform vertices by alignment matrix
+    Eigen::Matrix4f tmp = Eigen::Map<Eigen::Matrix4f>(glm::value_ptr(align_transform_));
+    Eigen::Matrix4d align_mat = tmp.cast<double>();
+    Eigen::MatrixXd V_aligned = (V.rowwise().homogeneous() * align_mat.transpose()).rowwise().hnormalized();
+
     // Add faces
     int num_faces = mvs_scene.mesh.faces.size();
     Eigen::MatrixXi F(num_faces, 3);
@@ -344,7 +421,7 @@ void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
         F(i, 2) = face[2];
     }
 
-    viewer->data().set_mesh(V, F);
+    viewer->data().set_mesh(V_aligned, F);
     viewer->data().show_lines = false;
     viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
     show_render_mesh(true);
@@ -405,16 +482,20 @@ void RenderPlugin::set_render_cameras() {
     Eigen::MatrixXi cameras_F(num_views * num_faces, 3);
 
     int i = 0;
-    for (const auto& view_matrix : generated_poses_) {
+    for (const auto& cam_view : generated_poses_) {
         // Camera transformation
-        Eigen::Affine3f tmp(Eigen::Matrix4f::Map(glm::value_ptr(view_matrix)));
-        Eigen::Affine3d transformation = tmp.inverse().cast<double>();
+        Eigen::Affine3f tmp_view(Eigen::Matrix4f::Map(glm::value_ptr(cam_view)));
+        Eigen::Affine3d cam_world = tmp_view.inverse().cast<double>();
+
+        // Align
+        Eigen::Matrix4f tmp_align(Eigen::Matrix4f::Map(glm::value_ptr(align_transform_)));
+        Eigen::Matrix4d align = tmp_align.cast<double>();
 
         Eigen::Affine3d scale(Eigen::Scaling(1.0 / 2.5));
-        transformation = transformation * scale;
+        Eigen::Matrix4d transform_mat = align * cam_world.matrix() * scale.matrix();
 
         // Apply transformation
-        Eigen::MatrixXd transformed_V = (default_V.rowwise().homogeneous() * transformation.matrix().transpose()).rowwise().hnormalized();
+        Eigen::MatrixXd transformed_V = (default_V.rowwise().homogeneous() * transform_mat.transpose()).rowwise().hnormalized();
         Eigen::MatrixXi transformed_F = default_F.array() + i * num_vertices;
 
         cameras_V.middleRows(i * num_vertices, num_vertices) = transformed_V;

@@ -570,6 +570,25 @@ void ReconstructionPlugin::center_object_callback() {
     viewer->core.camera_zoom = 1.0;
 }
 
+Eigen::Matrix4d ReconstructionPlugin::get_view_matrix(theia::ViewId view_id) {
+
+    // Compute camera view matrix for OpenGL camera
+    const auto& reconstruction = reconstruction_builder_->GetReconstruction();
+    const auto& camera = reconstruction.View(view_id)->Camera();
+
+    Eigen::Vector3d position = camera.GetPosition();
+    Eigen::Matrix3d rotation = camera.GetOrientationAsRotationMatrix();
+    rotation.row(1) *= -1;
+    rotation.row(2) *= -1;
+
+    Eigen::Affine3d camera_world = Eigen::Affine3d::Identity();
+    camera_world.translation() = position;
+    camera_world.linear() = rotation;
+
+    Eigen::Affine3d camera_view = camera_world.inverse();
+    return camera_view.matrix();
+}
+
 void ReconstructionPlugin::set_cameras() {
     viewer->selected_data_index = VIEWER_DATA_CAMERAS;
     viewer->data().clear();

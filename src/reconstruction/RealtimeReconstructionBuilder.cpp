@@ -470,6 +470,16 @@ void RealtimeReconstructionBuilder::PrintStatistics(std::ostream& stream,
     }
 }
 
+theia::ViewId RealtimeReconstructionBuilder::GetLastAddedViewId() {
+    std::vector<theia::ViewId> view_ids = reconstruction_->ViewIds();
+    if (!view_ids.empty()) {
+        theia::ViewId last_view = *std::max_element(view_ids.begin(), view_ids.end());
+        return last_view;
+    } else {
+        return theia::kInvalidViewId;
+    }
+}
+
 const theia::Reconstruction& RealtimeReconstructionBuilder::GetReconstruction() {
     return *reconstruction_;
 }

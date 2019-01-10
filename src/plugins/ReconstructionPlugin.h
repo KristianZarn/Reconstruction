@@ -151,6 +151,9 @@ public:
     void pixels_per_area_callback();
     void center_object_callback();
 
+    // Helper functions
+    Eigen::Matrix4d get_view_matrix(theia::ViewId view_id);
+
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
     bool mouse_up(int button, int modifier) override;

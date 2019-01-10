@@ -1,5 +1,7 @@
 #include "Render.h"
 
+#include "glm/gtx/string_cast.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "stb/stb_image_write.h"
 
 void Render::Initialize(MVS::Scene& mvs_scene) {

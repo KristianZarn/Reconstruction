@@ -26,9 +26,8 @@ int main(int argc, char *argv[]) {
     std::string image_ext = ".png";
     std::string images_path = project_path + "images/";
     std::string reconstruction_path = project_path + "reconstruction/";
-    std::string calibration_file = project_path + "prior_calibration.txt";
-    // std::string calibration_file = project_path + "posterior_calibration.txt";
-    // std::string calibration_file = project_path + "test_calibration.txt";
+    // std::string calibration_file = project_path + "prior_calibration.txt";
+    std::string calibration_file = project_path + "posterior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;

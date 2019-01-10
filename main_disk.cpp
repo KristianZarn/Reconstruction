@@ -103,8 +103,8 @@ int main(int argc, char *argv[]) {
     // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
-    NextBestViewPlugin nbv_plugin(next_best_view);
-    viewer.plugins.push_back(&nbv_plugin);
+    // NextBestViewPlugin nbv_plugin(next_best_view);
+    // viewer.plugins.push_back(&nbv_plugin);
 
     // Start viewer
     viewer.launch();

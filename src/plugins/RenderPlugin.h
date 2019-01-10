@@ -14,6 +14,7 @@
 
 #include "imguizmo/ImGuizmo.h"
 #include "render/Render.h"
+#include "render/RenderStats.h"
 #include "reconstruction/RealtimeReconstructionBuilder.h"
 #include "plugins/ReconstructionPlugin.h"
 #include "plugins/NextBestViewPlugin.h"
@@ -39,6 +40,8 @@ public:
     // Plugin link callbacks
     void initialize_reconstruction_callback();
     void extend_reconstruction_callback();
+    void align_render_mesh_callback();
+    void compute_nbv_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -79,11 +82,14 @@ private:
     char scene_name_[128] = "filename";
 
     // Render
+    MVS::Scene mvs_scene_;
+    glm::mat4 align_transform_ = glm::mat4(1.0f);
+
     Render::CameraIntrinsic camera_intrinsics_;
     std::shared_ptr<Render> render_;
     std::vector<unsigned char> render_data_;
-    glm::mat4 render_pose_;
-    std::vector<glm::mat4> rendered_poses_;
+    glm::mat4 render_pose_world_aligned_;
+    RenderStats render_stats_;
 
     // Generated poses
     std::vector<glm::mat4> generated_poses_;
