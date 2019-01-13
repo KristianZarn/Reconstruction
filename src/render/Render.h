@@ -21,7 +21,8 @@ public:
     std::shared_ptr<SourceShader> GetShader() const;
     CameraIntrinsic GetCameraIntrinsic(int camera_id) const;
 
-    std::vector<glm::mat4> GenerateRenderPoses(const MVS::Scene& mvs_scene);
+    std::vector<glm::mat4> RenderPosesRec(const MVS::Scene& mvs_scene);
+    std::vector<glm::mat4> RenderPosesDome(const MVS::Scene& mvs_scene, const glm::mat4& transform);
 
     std::vector<unsigned char> RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic);
     void SaveRender(const std::string& filename,

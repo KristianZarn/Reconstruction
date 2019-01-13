@@ -70,8 +70,7 @@ Render::CameraIntrinsic Render::GetCameraIntrinsic(int camera_id) const {
     return camera_intrinsics_[camera_id];
 }
 
-std::vector<glm::mat4> Render::GenerateRenderPoses(const MVS::Scene& mvs_scene) {
-
+std::vector<glm::mat4> Render::RenderPosesRec(const MVS::Scene& mvs_scene) {
     int num_cameras = mvs_scene.images.size();
     std::vector<glm::mat4> view_matrices;
     for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
@@ -92,6 +91,43 @@ std::vector<glm::mat4> Render::GenerateRenderPoses(const MVS::Scene& mvs_scene) 
         view_matrices.push_back(view_matrix);
     }
     return view_matrices;
+}
+
+std::vector<glm::mat4> Render::RenderPosesDome(const MVS::Scene& mvs_scene, const glm::mat4& transform) {
+
+    // Decompose transformation matrix
+    glm::vec3 translation = transform[3];
+
+    float scale_x = glm::length(transform[0]);
+    float scale_y = glm::length(transform[1]);
+    float scale_z = glm::length(transform[2]);
+
+    glm::mat3 rotation = glm::mat3(glm::vec3(transform[0]) / scale_x,
+                                   glm::vec3(transform[1]) / scale_y,
+                                   glm::vec3(transform[2]) / scale_z);
+
+    // Generate camera positions
+    glm::vec3 center(0.0f, 0.0f, 0.0f);
+    glm::vec3 up = transform[1] / scale_y;
+    glm::vec3 v1(1.0f, 0.0f, 0.0f);
+    glm::vec3 v2(0.0f, 0.0f, 1.0f);
+
+    float r = glm::max(glm::max(scale_x, scale_y), scale_z);
+    float t_max = 2.0f * M_PI;
+    int num_cameras = 36;
+    float step = t_max / num_cameras;
+
+    std::vector<glm::mat4> render_poses;
+    for (int i = 0; i < num_cameras; i++) {
+        float t = i * step;
+
+        glm::vec3 position = center + r * cos(t) * v1 + r * sin(t) * v2;
+        position = rotation * position + translation;
+
+        glm::mat4 view_matrix = glm::lookAt(position, translation, up);
+        render_poses.push_back(view_matrix);
+    }
+    return render_poses;
 }
 
 std::vector<unsigned char>

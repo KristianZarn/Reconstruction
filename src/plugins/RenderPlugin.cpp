@@ -46,6 +46,9 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
 
     // Initial gizmo pose
     camera_gizmo_ = Eigen::Matrix4f::Identity();
+    // render_cameras_gizmo_ = Eigen::Matrix4f::Identity();
+    Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
+    render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
 }
 
 bool RenderPlugin::pre_draw() {
@@ -94,7 +97,7 @@ bool RenderPlugin::post_draw() {
                                  gizmo_mode_,
                                  camera_gizmo_.data());
 
-            ImGui::Text("Camera options");
+            ImGui::Text("Transformation options");
             if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
                 gizmo_operation_ = ImGuizmo::TRANSLATE;
             }
@@ -109,6 +112,32 @@ bool RenderPlugin::post_draw() {
 
     // Generated render poses
     if (ImGui::TreeNodeEx("Generated render poses", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Pose render cameras", &pose_render_cameras_);
+        if (pose_render_cameras_) {
+            ImGuizmo::Manipulate(gizmo_view.data(),
+                    viewer->core.proj.data(),
+                    gizmo_operation_,
+                    gizmo_mode_,
+                    render_cameras_gizmo_.data());
+
+            ImGui::Text("Transformation options");
+            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+                gizmo_operation_ = ImGuizmo::TRANSLATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+                gizmo_operation_ = ImGuizmo::ROTATE;
+            }
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Scale", gizmo_operation_ == ImGuizmo::SCALE)) {
+                gizmo_operation_ = ImGuizmo::SCALE;
+            }
+
+            // Update render poses
+            glm::mat4 transform = glm::make_mat4(render_cameras_gizmo_.data());
+            generated_poses_ = render_->RenderPosesDome(mvs_scene_, transform);
+            set_render_cameras();
+        }
         if (ImGui::SliderInt("Pose index", &selected_pose_, 0, generated_poses_.size()-1)) {
             if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
                 render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
@@ -157,8 +186,10 @@ bool RenderPlugin::post_draw() {
         if (ImGui::Button("Save render stats", ImVec2(-1, 0))) {
             render_stats_.WriteStatsToFile(reconstruction_path_ + "render_stats.txt");
         }
-        if (ImGui::Button("Debug [d]", ImVec2(-1, 0))) {
+        if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             std::cout << "Render: debug button pressed" << std::endl;
+            glm::mat4 transform = glm::make_mat4(render_cameras_gizmo_.data());
+            std::cout << "render_cameras_gizmo_ : " << glm::to_string(transform) << std::endl;
         }
         ImGui::TreePop();
     }
@@ -192,7 +223,9 @@ void RenderPlugin::initialize_scene_callback() {
     set_render_mesh(mvs_scene_);
     show_render_mesh(true);
 
-    generated_poses_ = render_->GenerateRenderPoses(mvs_scene_);
+    // generated_poses_ = render_->RenderPosesRec(mvs_scene_);
+    glm::mat4 transform = glm::make_mat4(render_cameras_gizmo_.data());
+    generated_poses_ = render_->RenderPosesDome(mvs_scene_, transform);
     set_render_cameras();
     show_render_cameras(true);
 

@@ -67,12 +67,14 @@ private:
     bool camera_visible_ = false;
     bool pose_camera_ = false;
     bool render_cameras_visible_ = false;
+    bool pose_render_cameras_ = false;
     bool render_mesh_visible_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
     ImGuizmo::MODE gizmo_mode_ = ImGuizmo::LOCAL;
     Eigen::Matrix4f camera_gizmo_;
+    Eigen::Matrix4f render_cameras_gizmo_;
 
     // Image input output
     int next_image_idx_ = 0;
