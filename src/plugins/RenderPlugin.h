@@ -36,6 +36,7 @@ public:
     void initialize_scene_callback();
     void render_callback();
     void save_render_callback();
+    void render_all_poses_callback();
 
     // Plugin link callbacks
     void initialize_reconstruction_callback();
@@ -94,6 +95,7 @@ private:
     RenderStats render_stats_;
 
     // Generated poses
+    int camera_density_ = 20;
     std::vector<glm::mat4> generated_poses_;
     int selected_pose_ = 0;
 
@@ -107,6 +109,7 @@ private:
     void show_render_mesh(bool visible);
     void center_object();
 
+    void update_render_cameras();
     void set_render_cameras();
     void show_render_cameras(bool visible);
 };

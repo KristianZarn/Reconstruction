@@ -93,7 +93,8 @@ std::vector<glm::mat4> Render::RenderPosesRec(const MVS::Scene& mvs_scene) {
     return view_matrices;
 }
 
-std::vector<glm::mat4> Render::RenderPosesDome(const MVS::Scene& mvs_scene, const glm::mat4& transform) {
+std::vector<glm::mat4>
+Render::RenderPosesDome(const MVS::Scene& mvs_scene, const glm::mat4& transform, int camera_density) {
 
     // Decompose transformation matrix
     glm::vec3 translation = transform[3];
@@ -106,27 +107,40 @@ std::vector<glm::mat4> Render::RenderPosesDome(const MVS::Scene& mvs_scene, cons
                                    glm::vec3(transform[1]) / scale_y,
                                    glm::vec3(transform[2]) / scale_z);
 
-    // Generate camera positions
-    glm::vec3 center(0.0f, 0.0f, 0.0f);
+    // Vectors
     glm::vec3 up = transform[1] / scale_y;
     glm::vec3 v1(1.0f, 0.0f, 0.0f);
-    glm::vec3 v2(0.0f, 0.0f, 1.0f);
+    glm::vec3 v2(0.0f, 1.0f, 0.0f);
+    glm::vec3 v3(0.0f, 0.0f, 1.0f);
 
-    float r = glm::max(glm::max(scale_x, scale_y), scale_z);
-    float t_max = 2.0f * M_PI;
-    int num_cameras = 36;
-    float step = t_max / num_cameras;
+    // Camera dome parameters
+    double circ_step = 2.0 * M_PI / camera_density;
+    int num_levels = static_cast<int>((M_PI / 2.0) / circ_step);
+    double angle_step = (M_PI / 2.0) / num_levels;
 
+    // Generate render poses
     std::vector<glm::mat4> render_poses;
-    for (int i = 0; i < num_cameras; i++) {
-        float t = i * step;
+    for (int i = 0; i < num_levels; i++) {
 
-        glm::vec3 position = center + r * cos(t) * v1 + r * sin(t) * v2;
-        position = rotation * position + translation;
+        double level_angle = i * angle_step;
+        double level_circ = 2.0 * M_PI * cos(level_angle);
+        int level_cameras = static_cast<int>(level_circ / circ_step);
+        double level_step = 2.0 * M_PI / level_cameras;
+        for (int j = 0; j < level_cameras; j++) {
 
-        glm::mat4 view_matrix = glm::lookAt(position, translation, up);
-        render_poses.push_back(view_matrix);
+            // Local position
+            double t = j * level_step;
+            glm::vec3 position = static_cast<float>(scale_y * sin(level_angle)) * v2 +
+                    static_cast<float>(scale_x * cos(level_angle) * cos(t)) * v1 +
+                    static_cast<float>(scale_z * cos(level_angle) * sin(t)) * v3;
+
+            // Transformed position
+            position = rotation * position + translation;
+            glm::mat4 view_matrix = glm::lookAt(position, translation, up);
+            render_poses.push_back(view_matrix);
+        }
     }
+
     return render_poses;
 }
 
