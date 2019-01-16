@@ -94,7 +94,7 @@ std::vector<glm::mat4> Render::RenderPosesRec(const MVS::Scene& mvs_scene) {
 }
 
 std::vector<glm::mat4>
-Render::RenderPosesDome(const MVS::Scene& mvs_scene, const glm::mat4& transform, int camera_density) {
+Render::RenderPosesDome(const glm::mat4& transform, int camera_density) {
 
     // Decompose transformation matrix
     glm::vec3 translation = transform[3];

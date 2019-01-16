@@ -121,6 +121,36 @@ theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename) {
     return camera_intrinsics_prior;
 }
 
+bool WriteCalibration(const std::string& filename, const theia::Camera& camera) {
+    std::ofstream outfile(filename);
+
+    if (!outfile) {
+        return false;
+    }
+
+    outfile << "# image width and height\n";
+    int width = camera.ImageWidth();
+    int height = camera.ImageHeight();
+    outfile << width << " " << height << "\n\n";
+
+    outfile << "# focal length\n";
+    double focal = camera.FocalLength();
+    outfile << focal << "\n\n";
+
+    outfile << "# principal point\n";
+    double p_x = camera.PrincipalPointX();
+    double p_y = camera.PrincipalPointY();
+    outfile << p_x << " " << p_y << "\n\n";
+
+    outfile << "# aspect ratio\n";
+    outfile << "1.0\n\n";
+
+    outfile << "# skew\n";
+    outfile << "0.0\n\n";
+
+    return true;
+}
+
 bool TheiaToMVS(const theia::Reconstruction &reconstruction,
                 const std::string &images_path,
                 MVS::Scene &mvs_scene) {

@@ -110,7 +110,7 @@ public:
         bool show_texture = false;
         bool show_wireframe = false;
         char filename_buffer[64] = "filename";
-        // bool compute_mesh_ppa = true;
+        bool auto_ply = false;
         bool auto_reconstruct = true;
         bool auto_compute_ppa = true;
     };
@@ -134,6 +134,7 @@ public:
     // Callback functions
     void save_scene_callback();
     void load_scene_callback();
+    void save_calibration_callback();
     void reload_mesh_callback();
 
     void initialize_callback();

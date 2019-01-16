@@ -348,7 +348,8 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
 
 std::vector<glm::mat4>
 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                           const std::vector<double>& quality_measure) {
+                           const std::vector<double>& quality_measure,
+                           const glm::vec3& up) {
 
     int num_views = std::min(static_cast<int>(cluster_costs.size()), init_num_views_);
     std::vector<glm::mat4> best_views;
@@ -379,7 +380,6 @@ NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>
         double camera_distance = cbrt(cluster_area) * dist_alpha_;
 
         // Generate view matrix
-        glm::vec3 up = glm::vec3(0, 1, 0);
         glm::vec3 eye = cluster_center + cluster_normal * static_cast<float>(camera_distance);
         glm::mat4 view = glm::lookAt(eye, cluster_center, up);
         best_views.push_back(view);

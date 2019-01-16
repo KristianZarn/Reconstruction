@@ -14,6 +14,8 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
 
 theia::CameraIntrinsicsPrior ReadCalibration(const std::string &filename);
 
+bool WriteCalibration(const std::string& filename, const theia::Camera& camera);
+
 bool TheiaToMVS(const theia::Reconstruction &reconstruction,
                 const std::string &images_path,
                 MVS::Scene &mvs_scene);

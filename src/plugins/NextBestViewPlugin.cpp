@@ -228,7 +228,7 @@ std::vector<glm::mat4> NextBestViewPlugin::get_initial_best_views() const {
     return best_views_init_;
 }
 
-void NextBestViewPlugin::initialize_callback() {
+void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
     // Initialize NBV object
     next_best_view_->Initialize();
 
@@ -248,7 +248,7 @@ void NextBestViewPlugin::initialize_callback() {
     log_stream_ << "DONE" << std::endl;
 
     log_stream_ << "NBV: Computing initial views ... " << std::flush;
-    best_views_init_ = next_best_view_->BestViewInit(clusters_, pixels_per_area_);
+    best_views_init_ = next_best_view_->BestViewInit(clusters_, pixels_per_area_, up);
     log_stream_ << "DONE" << std::endl;
 
     // Set cluster_id for debugging

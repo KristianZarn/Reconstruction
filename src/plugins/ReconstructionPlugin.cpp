@@ -73,11 +73,16 @@ bool ReconstructionPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
-        if (ImGui::Button("Save MVS scene", ImVec2(-1, 0))) {
+        if (ImGui::Button("Save scene (MVS)", ImVec2(-70, 0))) {
             save_scene_callback();
         }
-        if (ImGui::Button("Load MVS scene", ImVec2(-1, 0))) {
+        ImGui::SameLine();
+        ImGui::Checkbox("Ply##reconstruct", &parameters_.auto_ply);
+        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
             load_scene_callback();
+        }
+        if (ImGui::Button("Save calibration", ImVec2(-1, 0))) {
+            save_calibration_callback();
         }
         if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
             reload_mesh_callback();
@@ -216,11 +221,13 @@ void ReconstructionPlugin::save_scene_callback() {
 
     std::string filename_mvs = std::string(parameters_.filename_buffer) + ".mvs";
     mvs_scene_->Save(reconstruction_path_ + filename_mvs);
-    log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+    log_stream_ << "Scene written to: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
 
-    std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
-    mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
-    log_stream_ << "Written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+    if (parameters_.auto_ply) {
+        std::string filename_ply = std::string(parameters_.filename_buffer) + ".ply";
+        mvs_scene_->mesh.Save(reconstruction_path_ + filename_ply);
+        log_stream_ << "Scene written to: \n\t" << (reconstruction_path_ + filename_ply) << std::endl;
+    }
 }
 
 void ReconstructionPlugin::load_scene_callback() {
@@ -233,7 +240,21 @@ void ReconstructionPlugin::load_scene_callback() {
     show_mesh(true);
     show_point_cloud(false);
     center_object_callback();
-    log_stream_ << "Loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+    log_stream_ << "Scene loaded from: \n\t" << (reconstruction_path_ + filename_mvs) << std::endl;
+}
+
+void ReconstructionPlugin::save_calibration_callback() {
+    std::string filename_calib = reconstruction_path_ + "../posterior_calibration.txt";
+
+    const theia::Reconstruction& reconstruction = reconstruction_builder_->GetReconstruction();
+    if (reconstruction.NumCameraIntrinsicGroups() == 1) {
+        theia::ViewId first_view = reconstruction.ViewIds().front();
+        const theia::Camera& camera = reconstruction.View(first_view)->Camera();
+        WriteCalibration(filename_calib, camera);
+        log_stream_ << "Calibration written to: \n\t" << filename_calib << std::endl;
+    } else {
+        log_stream_ << "Calibration not valid." << std::endl;
+    }
 }
 
 void ReconstructionPlugin::reload_mesh_callback() {

@@ -33,16 +33,17 @@ public:
     std::shared_ptr<std::vector<std::string>> get_rendered_image_names();
 
     // Callback functions
-    void initialize_scene_callback();
+    void load_scene_callback();
     void render_callback();
     void save_render_callback();
     void render_all_poses_callback();
 
     // Plugin link callbacks
-    void initialize_reconstruction_callback();
-    void extend_reconstruction_callback();
-    void align_render_mesh_callback();
-    void compute_nbv_callback();
+    void initialize_generated_callback();
+    void extend_generated_callback();
+    void extend_nbv_callback();
+    void extend_manual_callback();
+    void align_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -87,6 +88,7 @@ private:
     // Render
     MVS::Scene mvs_scene_;
     glm::mat4 align_transform_ = glm::mat4(1.0f);
+    bool auto_align_ = true;
 
     Render::CameraIntrinsic camera_intrinsics_;
     std::shared_ptr<Render> render_;

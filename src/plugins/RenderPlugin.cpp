@@ -47,9 +47,14 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     // Initial gizmo pose
     camera_gizmo_ = Eigen::Matrix4f::Identity();
 
-    // Eigen::Vector4f s(4.0f, -4.0f, 4.0f, 1.0f);
-    Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
-    render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
+
+    // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
+    // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
+    render_cameras_gizmo_ <<
+         5.56,         0,         0,         0,
+            0,  -4.67593,    3.0082, -0.558036,
+            0,   -3.0082,  -4.67593,   4.02713,
+            0,         0,         0,         1;
 }
 
 bool RenderPlugin::pre_draw() {
@@ -75,8 +80,8 @@ bool RenderPlugin::post_draw() {
     // Initialization
     if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", scene_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
-        if (ImGui::Button("Initialize render scene", ImVec2(-1, 0))) {
-            initialize_scene_callback();
+        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
+            load_scene_callback();
         }
         if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
             show_render_mesh(render_mesh_visible_);
@@ -167,28 +172,25 @@ bool RenderPlugin::post_draw() {
     // Plugin link
     if (ImGui::TreeNodeEx("Plugin link", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (reconstruction_plugin_) {
-            if (ImGui::Button("Initialize rec (generated)", ImVec2(-1, 0))) {
-                initialize_reconstruction_callback();
-                align_render_mesh_callback();
+            if (ImGui::Button("Initialize (generated)", ImVec2(-1, 0))) {
+                initialize_generated_callback();
             }
-            if (ImGui::Button("Extend rec (generated)", ImVec2(-1, 0))) {
-                glm::mat4 render_pose = generated_poses_[next_image_idx_];
-                render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose);
-                extend_reconstruction_callback();
-                align_render_mesh_callback();
+            if (ImGui::Button("Extend (generated)", ImVec2(-1, 0))) {
+                extend_generated_callback();
             }
-            if (ImGui::Button("Extend rec (manual)", ImVec2(-1, 0))) {
-                extend_reconstruction_callback();
+            if (nbv_plugin_) {
+                if (ImGui::Button("Extend (NBV)", ImVec2(-1, 0))) {
+                    extend_nbv_callback();
+                }
             }
-            if (ImGui::Button("Align render mesh", ImVec2(-1, 0))) {
-                align_render_mesh_callback();
+            if (ImGui::Button("Extend (manual)", ImVec2(-1, 0))) {
+                extend_manual_callback();
             }
-        }
-        ImGui::Spacing();
-        if (reconstruction_plugin_ && nbv_plugin_) {
-            if (ImGui::Button("Compute NBV", ImVec2(-1, 0))) {
-                compute_nbv_callback();
+            if (ImGui::Button("Align render mesh", ImVec2(-70, 0))) {
+                align_callback();
             }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##align", &auto_align_);
         }
         ImGui::TreePop();
     }
@@ -199,9 +201,8 @@ bool RenderPlugin::post_draw() {
             render_stats_.WriteStatsToFile(reconstruction_path_ + "render_stats.txt");
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
-            std::cout << "Render: debug button pressed" << std::endl;
-            glm::mat4 transform = glm::make_mat4(render_cameras_gizmo_.data());
-            std::cout << "render_cameras_gizmo_ : " << glm::to_string(transform) << std::endl;
+            log_stream_ << "Render: debug button pressed" << std::endl;
+            log_stream_ << "Render cameras gizmo: \n" << render_cameras_gizmo_ << std::endl;
         }
         ImGui::TreePop();
     }
@@ -223,7 +224,7 @@ std::shared_ptr<std::vector<std::string>> RenderPlugin::get_rendered_image_names
     return image_names_;
 }
 
-void RenderPlugin::initialize_scene_callback() {
+void RenderPlugin::load_scene_callback() {
     log_stream_ << std::endl;
 
     std::string tmp(scene_name_);
@@ -276,7 +277,7 @@ void RenderPlugin::render_all_poses_callback() {
 
 }
 
-void RenderPlugin::initialize_reconstruction_callback() {
+void RenderPlugin::initialize_generated_callback() {
     if (!reconstruction_plugin_) {
         log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
         return;
@@ -319,52 +320,31 @@ void RenderPlugin::initialize_reconstruction_callback() {
         render_stats_.AddPose(render_pose_0, estimated_pose_0, -1);
         render_stats_.AddPose(render_pose_1, estimated_pose_1, -1);
         render_stats_.AddPose(render_pose_2, estimated_pose_2, -1);
+
+        if (auto_align_) {
+            align_callback();
+        }
     }
 }
 
-void RenderPlugin::extend_reconstruction_callback() {
-    if (!reconstruction_plugin_) {
-        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
-        return;
-    }
-
-    render_callback();
-    save_render_callback();
-    reconstruction_plugin_->extend_callback();
-
-    // Update render stats
-    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
-            reconstruction_plugin_->get_reconstruction_builder();
-
-    theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
-    Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
-    glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
-
-    glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
-    render_stats_.AddPose(render_pose, estimated_pose, -1);
+void RenderPlugin::extend_generated_callback() {
+    glm::mat4 render_pose = generated_poses_[next_image_idx_];
+    render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose);
+    extend_manual_callback();
 }
 
-void RenderPlugin::align_render_mesh_callback() {
-    if (!reconstruction_plugin_) {
-        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
-        return;
-    }
-
-    if (render_stats_.Size() > 0) {
-        align_transform_ = render_stats_.ComputeTransformation();
-        set_render_mesh(mvs_scene_);
-        set_render_cameras();
-        log_stream_ << "Render: Mesh aligned." << std::endl;
-    }
-}
-
-void RenderPlugin::compute_nbv_callback() {
+void RenderPlugin::extend_nbv_callback() {
     if (!reconstruction_plugin_ || !nbv_plugin_) {
         log_stream_ << "Render Error: Reconstruction or NBV plugin not present." << std::endl;
         return;
     }
 
-    nbv_plugin_->initialize_callback();
+    // Compute up vector for NBV
+    glm::mat4 cameras_transform = glm::make_mat4(render_cameras_gizmo_.data());
+    glm::vec4 up = glm::normalize(cameras_transform[1]);
+    glm::vec3 up_aligned = align_transform_ * up;
+
+    nbv_plugin_->initialize_callback(up_aligned);
     std::vector<glm::mat4> best_views = nbv_plugin_->get_initial_best_views();
     std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
             reconstruction_plugin_->get_reconstruction_builder();
@@ -399,8 +379,49 @@ void RenderPlugin::compute_nbv_callback() {
 
     if (success) {
         log_stream_ << "Render: NBV pose set to view number: " << i << std::endl;
+        extend_manual_callback();
     } else {
-        log_stream_ << "Render: Localization failed." << std::endl;
+        log_stream_ << "Render: NBV Localization failed." << std::endl;
+    }
+}
+
+void RenderPlugin::extend_manual_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    render_callback();
+    save_render_callback();
+    reconstruction_plugin_->extend_callback();
+
+    // Update render stats
+    std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
+            reconstruction_plugin_->get_reconstruction_builder();
+
+    theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
+    Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
+    glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
+
+    glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
+    render_stats_.AddPose(render_pose, estimated_pose, -1);
+
+    if (auto_align_) {
+        align_callback();
+    }
+}
+
+void RenderPlugin::align_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    if (render_stats_.Size() > 0) {
+        align_transform_ = render_stats_.ComputeTransformation();
+        set_render_mesh(mvs_scene_);
+        set_render_cameras();
+        log_stream_ << "Render: Mesh aligned." << std::endl;
     }
 }
 
@@ -511,7 +532,7 @@ void RenderPlugin::center_object() {
 
 void RenderPlugin::update_render_cameras() {
     glm::mat4 transform = glm::make_mat4(render_cameras_gizmo_.data());
-    generated_poses_ = render_->RenderPosesDome(mvs_scene_, transform, camera_density_);
+    generated_poses_ = render_->RenderPosesDome(transform, camera_density_);
     set_render_cameras();
 }
 

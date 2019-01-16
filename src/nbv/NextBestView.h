@@ -28,7 +28,8 @@ public:
     std::vector<double> PixelsPerArea();
     std::vector<std::pair<std::vector<unsigned int>, double>> FaceClusters(const std::vector<double>& quality_measure);
     std::vector<glm::mat4> BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                                        const std::vector<double>& quality_measure);
+                                        const std::vector<double>& quality_measure,
+                                        const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
     double TargetPercentage(const std::vector<double>& quality_measure);
 
     std::unordered_set<unsigned int>
