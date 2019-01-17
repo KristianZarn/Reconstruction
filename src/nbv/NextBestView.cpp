@@ -327,7 +327,7 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
         // Get faces quality
         std::unordered_set<double> face_quality;
         for (const auto& face_id : cluster) {
-            double q = std::min(quality_measure[face_id], max_quality_);
+            double q = std::min(quality_measure[face_id], static_cast<double>(max_quality_));
             face_quality.insert(q);
         }
 

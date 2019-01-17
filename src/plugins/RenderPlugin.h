@@ -42,7 +42,7 @@ public:
     void initialize_generated_callback();
     void extend_generated_callback();
     void extend_nbv_callback();
-    void extend_manual_callback();
+    void extend_manual_callback(int best_view_pick = -1);
     void align_callback();
 
     // Mouse IO

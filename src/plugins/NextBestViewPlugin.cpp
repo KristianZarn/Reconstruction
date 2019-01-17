@@ -128,6 +128,8 @@ bool NextBestViewPlugin::post_draw() {
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##showclusters", &auto_show_clusters_);
+
+        ImGui::InputFloat("Max quality", &next_best_view_->max_quality_);
         ImGui::InputInt("Min size", &next_best_view_->cluster_min_size_);
         ImGui::InputInt("Max size", &next_best_view_->cluster_max_size_);
         ImGui::InputFloat("Angle", &next_best_view_->cluster_angle_);

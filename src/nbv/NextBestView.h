@@ -52,7 +52,7 @@ public:
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
     // General parameters
-    double max_quality_ = 1500;
+    float max_quality_ = 1500;
 
     // Clustering parameters
     int cluster_min_size_ = 20; // min size of cluster

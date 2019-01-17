@@ -379,13 +379,13 @@ void RenderPlugin::extend_nbv_callback() {
 
     if (success) {
         log_stream_ << "Render: NBV pose set to view number: " << i << std::endl;
-        extend_manual_callback();
+        extend_manual_callback(i);
     } else {
         log_stream_ << "Render: NBV Localization failed." << std::endl;
     }
 }
 
-void RenderPlugin::extend_manual_callback() {
+void RenderPlugin::extend_manual_callback(int best_view_pick) {
     if (!reconstruction_plugin_) {
         log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
         return;
@@ -404,7 +404,7 @@ void RenderPlugin::extend_manual_callback() {
     glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
 
     glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
-    render_stats_.AddPose(render_pose, estimated_pose, -1);
+    render_stats_.AddPose(render_pose, estimated_pose, best_view_pick);
 
     if (auto_align_) {
         align_callback();
