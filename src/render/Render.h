@@ -16,23 +16,19 @@ public:
         double focal_y;
     };
 
-    void Initialize(MVS::Scene& mvs_scene);
+    void Initialize(MVS::Mesh& mvs_mesh);
     std::shared_ptr<TexturedMesh> GetMesh() const;
     std::shared_ptr<SourceShader> GetShader() const;
-    CameraIntrinsic GetCameraIntrinsic(int camera_id) const;
 
-    std::vector<glm::mat4> RenderPosesRec(const MVS::Scene& mvs_scene);
-    std::vector<glm::mat4> RenderPosesDome(const glm::mat4& transform, int camera_density);
-
+    std::vector<glm::mat4> RenderPosesDome(const glm::mat4& transform, int camera_density) const;
     std::vector<unsigned char> RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& intrinsic);
     void SaveRender(const std::string& filename,
             const CameraIntrinsic& intrinsic,
-            const std::vector<unsigned char>& render_data);
+            const std::vector<unsigned char>& render_data) const;
 
 private:
     std::shared_ptr<TexturedMesh> mesh_;
     std::shared_ptr<SourceShader> shader_;
-    std::vector<CameraIntrinsic> camera_intrinsics_;
 
     // Shaders
     const std::string vert_source =

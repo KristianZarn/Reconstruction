@@ -4,29 +4,23 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "stb/stb_image_write.h"
 
-void Render::Initialize(MVS::Scene& mvs_scene) {
+void Render::Initialize(MVS::Mesh& mvs_mesh) {
 
-    // Load MVS file
-    mvs_scene.mesh.ListIncidenteVertices();
-    mvs_scene.mesh.ListIncidenteFaces();
-    mvs_scene.mesh.ComputeNormalVertices();
-
-    // Fill camera intrinsics
-    for (const auto& mvs_image : mvs_scene.images) {
-        CameraIntrinsic tmp = {mvs_image.width, mvs_image.height, mvs_image.camera.K(1,1)};
-        camera_intrinsics_.push_back(tmp);
-    }
+    // Load mesh file
+    mvs_mesh.ListIncidenteVertices();
+    mvs_mesh.ListIncidenteFaces();
+    mvs_mesh.ComputeNormalVertices();
 
     // Fill vertices
     std::vector<Vertex> vertices;
-    vertices.reserve(mvs_scene.mesh.faces.size() * 3);
-    for (int face_i = 0; face_i < mvs_scene.mesh.faces.size(); face_i++) {
-        const auto& mvs_face = mvs_scene.mesh.faces[face_i];
+    vertices.reserve(mvs_mesh.faces.size() * 3);
+    for (int face_i = 0; face_i < mvs_mesh.faces.size(); face_i++) {
+        const auto& mvs_face = mvs_mesh.faces[face_i];
 
         for (int vert_i = 0; vert_i < 3; vert_i++) {
-            const auto& mvs_vert = mvs_scene.mesh.vertices[mvs_face[vert_i]];
-            const auto& mvs_normal = mvs_scene.mesh.vertexNormals[mvs_face[vert_i]];
-            const auto& mvs_tex_coord = mvs_scene.mesh.faceTexcoords[face_i * 3 + vert_i];
+            const auto& mvs_vert = mvs_mesh.vertices[mvs_face[vert_i]];
+            const auto& mvs_normal = mvs_mesh.vertexNormals[mvs_face[vert_i]];
+            const auto& mvs_tex_coord = mvs_mesh.faceTexcoords[face_i * 3 + vert_i];
 
             Vertex vertex;
             vertex.Position = glm::vec3(mvs_vert.x, mvs_vert.y, mvs_vert.z);
@@ -37,14 +31,14 @@ void Render::Initialize(MVS::Scene& mvs_scene) {
     }
 
     // Fill texture
-    int width = mvs_scene.mesh.textureDiffuse.width();
-    int height = mvs_scene.mesh.textureDiffuse.height();
+    int width = mvs_mesh.textureDiffuse.width();
+    int height = mvs_mesh.textureDiffuse.height();
 
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, mvs_scene.mesh.textureDiffuse.data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, mvs_mesh.textureDiffuse.data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -65,36 +59,8 @@ std::shared_ptr<SourceShader> Render::GetShader() const {
     return shader_;
 }
 
-Render::CameraIntrinsic Render::GetCameraIntrinsic(int camera_id) const {
-    assert(camera_id < camera_intrinsics_.size());
-    return camera_intrinsics_[camera_id];
-}
-
-std::vector<glm::mat4> Render::RenderPosesRec(const MVS::Scene& mvs_scene) {
-    int num_cameras = mvs_scene.images.size();
-    std::vector<glm::mat4> view_matrices;
-    for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
-
-        // Camera view matrix
-        const auto& R = mvs_scene.images[camera_idx].camera.R; // world to view (view coordinates)
-        const auto& T = mvs_scene.images[camera_idx].camera.C; // world coordinates
-
-        glm::mat3 view_R(R(0, 0), R(0, 1), R(0, 2),
-                         -R(1, 0), -R(1, 1), -R(1, 2),
-                         -R(2, 0), -R(2, 1), -R(2, 2));
-        glm::vec3 view_T(T.x, T.y, T.z);
-
-        glm::mat4 tmp_R = glm::mat4(view_R);
-        glm::mat4 tmp_T = glm::translate(glm::mat4(1.0f), view_T);
-        glm::mat4 view_matrix = glm::inverse(tmp_T * tmp_R);
-
-        view_matrices.push_back(view_matrix);
-    }
-    return view_matrices;
-}
-
 std::vector<glm::mat4>
-Render::RenderPosesDome(const glm::mat4& transform, int camera_density) {
+Render::RenderPosesDome(const glm::mat4& transform, int camera_density) const {
 
     // Decompose transformation matrix
     glm::vec3 translation = transform[3];
@@ -224,7 +190,7 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
 
 void Render::SaveRender(const std::string& filename,
         const CameraIntrinsic& intrinsic,
-        const std::vector<unsigned char>& render_data) {
+        const std::vector<unsigned char>& render_data) const {
 
     int image_width = intrinsic.image_width;
     int image_height = intrinsic.image_height;

@@ -86,13 +86,13 @@ private:
     std::shared_ptr<std::vector<std::string>> image_names_;
 
     std::string reconstruction_folder_;
-    char scene_name_[128] = "filename";
+    char mesh_name_[128] = "filename.ext";
 
     std::string evaluation_folder_;
     bool auto_save_mesh_ = true;
 
     // Render
-    MVS::Scene mvs_scene_;
+    MVS::Mesh mvs_mesh_;
     glm::mat4 align_transform_ = glm::mat4(1.0f);
     bool auto_align_ = true;
 
@@ -113,7 +113,7 @@ private:
     // Helpers
     void show_camera();
 
-    void set_render_mesh(const MVS::Scene& mvs_scene);
+    void set_render_mesh(const MVS::Mesh& mvs_mesh);
     void show_render_mesh(bool visible);
     void center_object();
 

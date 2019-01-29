@@ -81,8 +81,8 @@ bool RenderPlugin::post_draw() {
 
     // Initialization
     if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::InputText("Filename", scene_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
-        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
+        ImGui::InputText("Filename", mesh_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
+        if (ImGui::Button("Load mesh (PLY, OBJ)", ImVec2(-1, 0))) {
             load_scene_callback();
         }
         if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
@@ -212,13 +212,6 @@ bool RenderPlugin::post_draw() {
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
-
-            int i = next_image_idx_;
-            MVS::Mesh::Vertex v = mvs_scene_.mesh.vertices[i];
-            MVS::Mesh::Face f = mvs_scene_.mesh.faces[i];
-
-            std::cout << "Vertex " << i << ": \n" << v << std::endl;
-            std::cout << "Face " << i << ": \n" << f << std::endl;
         }
         ImGui::TreePop();
     }
@@ -243,13 +236,13 @@ std::shared_ptr<std::vector<std::string>> RenderPlugin::get_rendered_image_names
 void RenderPlugin::load_scene_callback() {
     log_stream_ << std::endl;
 
-    std::string tmp(scene_name_);
-    std::string fullpath = reconstruction_folder_ + tmp + ".mvs";
-    mvs_scene_.Release();
-    mvs_scene_.Load(fullpath);
+    std::string tmp(mesh_name_);
+    std::string fullpath = reconstruction_folder_ + tmp;
+    mvs_mesh_.Release();
+    mvs_mesh_.Load(fullpath);
 
-    render_->Initialize(mvs_scene_);
-    set_render_mesh(mvs_scene_);
+    render_->Initialize(mvs_mesh_);
+    set_render_mesh(mvs_mesh_);
     show_render_mesh(true);
 
     update_render_cameras();
@@ -441,7 +434,7 @@ void RenderPlugin::align_callback() {
 
     if (render_stats_.Size() > 0) {
         align_transform_ = render_stats_.ComputeTransformation();
-        set_render_mesh(mvs_scene_);
+        set_render_mesh(mvs_mesh_);
         set_render_cameras();
         log_stream_ << "Render: Mesh aligned." << std::endl;
     }
@@ -530,15 +523,15 @@ void RenderPlugin::show_camera() {
     }
 }
 
-void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
+void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
     viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
     viewer->data().clear();
 
     // Add vertices
-    int num_vertices = mvs_scene.mesh.vertices.size();
+    int num_vertices = mvs_mesh.vertices.size();
     Eigen::MatrixXd V(num_vertices, 3);
     for (int i = 0; i < num_vertices; i++) {
-        MVS::Mesh::Vertex vertex = mvs_scene.mesh.vertices[i];
+        MVS::Mesh::Vertex vertex = mvs_mesh.vertices[i];
         V(i, 0) = vertex[0];
         V(i, 1) = vertex[1];
         V(i, 2) = vertex[2];
@@ -550,10 +543,10 @@ void RenderPlugin::set_render_mesh(const MVS::Scene& mvs_scene) {
     Eigen::MatrixXd V_aligned = (V.rowwise().homogeneous() * align_mat.transpose()).rowwise().hnormalized();
 
     // Add faces
-    int num_faces = mvs_scene.mesh.faces.size();
+    int num_faces = mvs_mesh.faces.size();
     Eigen::MatrixXi F(num_faces, 3);
     for (int i = 0; i < num_faces; i++) {
-        MVS::Mesh::Face face = mvs_scene.mesh.faces[i];
+        MVS::Mesh::Face face = mvs_mesh.faces[i];
         F(i, 0) = face[0];
         F(i, 1) = face[1];
         F(i, 2) = face[2];
