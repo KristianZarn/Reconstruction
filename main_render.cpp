@@ -21,13 +21,16 @@
 
 int main(int argc, char *argv[]) {
 
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/render/";
+    std::string project_folder =
+            "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/sod/";
 
+    std::string images_folder = project_folder + "images_gen/";
     std::string image_ext = ".png";
-    std::string images_path = project_path + "images/";
-    std::string reconstruction_path = project_path + "reconstruction/";
-    // std::string calibration_file = project_path + "prior_calibration.txt";
-    std::string calibration_file = project_path + "posterior_calibration.txt";
+
+    std::string reconstruction_folder = project_folder + "reconstruction/";
+    std::string calibration_file = project_folder + "posterior_calibration.txt";
+
+    std::string evaluation_folder = reconstruction_folder + "evaluation_gen/";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
@@ -80,15 +83,19 @@ int main(int argc, char *argv[]) {
                                               static_cast<unsigned int>(intrinsics.image_height),
                                               intrinsics.focal_length.value[0]};
     auto render = std::make_shared<Render>();
-    RenderPlugin render_plugin(images_path, reconstruction_path, render_intrinsics, render);
+    RenderPlugin render_plugin(images_folder,
+                               reconstruction_folder,
+                               evaluation_folder,
+                               render_intrinsics,
+                               render);
     viewer.plugins.push_back(&render_plugin);
 
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters reconstruction_parameters;
     std::shared_ptr<std::vector<std::string>> image_names = render_plugin.get_rendered_image_names();
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
-                                               images_path,
-                                               reconstruction_path,
+                                               images_folder,
+                                               reconstruction_folder,
                                                image_names,
                                                reconstruction_builder,
                                                mvs_scene,
@@ -96,9 +103,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach next best view plugin
-    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
-    NextBestViewPlugin nbv_plugin(next_best_view);
-    viewer.plugins.push_back(&nbv_plugin);
+    // auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    // NextBestViewPlugin nbv_plugin(next_best_view);
+    // viewer.plugins.push_back(&nbv_plugin);
 
     // Attach edit mesh plugin
     // EditMeshPlugin::Parameters edit_mesh_parameters;

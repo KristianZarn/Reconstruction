@@ -9,10 +9,12 @@
 RenderPlugin::RenderPlugin(
         std::string images_path,
         std::string reconstruction_path,
+        std::string evaluation_folder,
         Render::CameraIntrinsic camera_intrinsics,
         std::shared_ptr<Render> render)
-        : images_path_(std::move(images_path)),
-          reconstruction_path_(std::move(reconstruction_path)),
+        : images_folder_(std::move(images_path)),
+          reconstruction_folder_(std::move(reconstruction_path)),
+          evaluation_folder_(std::move(evaluation_folder)),
           image_names_(std::make_shared<std::vector<std::string>>()),
           camera_intrinsics_(camera_intrinsics),
           render_(std::move(render)) {}
@@ -186,11 +188,19 @@ bool RenderPlugin::post_draw() {
             if (ImGui::Button("Extend (manual)", ImVec2(-1, 0))) {
                 extend_manual_callback();
             }
+
+            ImGui::Spacing();
+
             if (ImGui::Button("Align render mesh", ImVec2(-70, 0))) {
                 align_callback();
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##align", &auto_align_);
+            if (ImGui::Button("Save aligned mesh", ImVec2(-70, 0))) {
+                save_aligned_callback();
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##savemesh", &auto_save_mesh_);
         }
         ImGui::TreePop();
     }
@@ -198,11 +208,17 @@ bool RenderPlugin::post_draw() {
     // Debugging
     if (ImGui::TreeNodeEx("Debug")) {
         if (ImGui::Button("Save render stats", ImVec2(-1, 0))) {
-            render_stats_.WriteStatsToFile(reconstruction_path_ + "render_stats.txt");
+            render_stats_.WriteStatsToFile(reconstruction_folder_ + "render_stats.txt");
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
-            log_stream_ << "Render cameras gizmo: \n" << render_cameras_gizmo_ << std::endl;
+
+            int i = next_image_idx_;
+            MVS::Mesh::Vertex v = mvs_scene_.mesh.vertices[i];
+            MVS::Mesh::Face f = mvs_scene_.mesh.faces[i];
+
+            std::cout << "Vertex " << i << ": \n" << v << std::endl;
+            std::cout << "Face " << i << ": \n" << f << std::endl;
         }
         ImGui::TreePop();
     }
@@ -228,7 +244,7 @@ void RenderPlugin::load_scene_callback() {
     log_stream_ << std::endl;
 
     std::string tmp(scene_name_);
-    std::string fullpath = reconstruction_path_ + tmp + ".mvs";
+    std::string fullpath = reconstruction_folder_ + tmp + ".mvs";
     mvs_scene_.Release();
     mvs_scene_.Load(fullpath);
 
@@ -255,7 +271,7 @@ void RenderPlugin::save_render_callback() {
     std::stringstream ss;
     ss << std::setw(3) << std::setfill('0') << std::to_string(next_image_idx_);
     std::string filename = "frame" + ss.str() + ".png";
-    std::string fullname = images_path_ + filename;
+    std::string fullname = images_folder_ + filename;
 
     // Save render
     render_->SaveRender(fullname, camera_intrinsics_, render_data_);
@@ -323,6 +339,9 @@ void RenderPlugin::initialize_generated_callback() {
 
         if (auto_align_) {
             align_callback();
+        }
+        if (auto_save_mesh_) {
+            save_aligned_callback();
         }
     }
 }
@@ -409,6 +428,9 @@ void RenderPlugin::extend_manual_callback(int best_view_pick) {
     if (auto_align_) {
         align_callback();
     }
+    if (auto_save_mesh_) {
+        save_aligned_callback();
+    }
 }
 
 void RenderPlugin::align_callback() {
@@ -423,6 +445,45 @@ void RenderPlugin::align_callback() {
         set_render_cameras();
         log_stream_ << "Render: Mesh aligned." << std::endl;
     }
+}
+
+void RenderPlugin::save_aligned_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    // Get reconstruction mesh from reconstruction plugin
+    std::shared_ptr<MVS::Scene> reconstruction_scene = reconstruction_plugin_->get_mvs_scene_();
+    MVS::Mesh reconstruction_mesh = reconstruction_scene->mesh;
+
+    // Align reconstruction mesh to render mesh
+    glm::mat4 align_inverse = glm::inverse(align_transform_);
+
+    MVS::Mesh aligned_mesh;
+    aligned_mesh.faces = reconstruction_mesh.faces;
+    for (const auto& v_mvs : reconstruction_mesh.vertices) {
+
+        // Convert vertex to glm
+        glm::vec4 v_glm(v_mvs.x, v_mvs.y, v_mvs.z, 1.0f);
+
+        // Transform vertex
+        glm::vec4 v_aligned_glm = align_inverse * v_glm;
+
+        // Convert back to mvs
+        aligned_mesh.vertices.AddConstruct(v_aligned_glm[0], v_aligned_glm[1], v_aligned_glm[2]);
+    }
+
+    // Prepare filename
+    int num_cameras = reconstruction_scene->images.size();
+    std::stringstream ss;
+    ss << std::setw(3) << std::setfill('0') << std::to_string(num_cameras);
+    std::string filename = ss.str() + ".ply";
+    std::string fullname = evaluation_folder_ + filename;
+
+    // Save mesh
+    aligned_mesh.Save(fullname);
+    log_stream_ << "Render: Mesh written to: \n\t" << fullname << std::endl;
 }
 
 void RenderPlugin::show_camera() {
