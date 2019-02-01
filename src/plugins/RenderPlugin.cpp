@@ -78,7 +78,6 @@ bool RenderPlugin::post_draw() {
     Eigen::Affine3f scale_zoom(Eigen::Scaling(1.0f / viewer->core.camera_zoom));
     Eigen::Matrix4f gizmo_view = scale_base_zoom * scale_zoom * viewer->core.view;
 
-
     // Initialization
     if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputText("Filename", mesh_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
@@ -128,11 +127,6 @@ bool RenderPlugin::post_draw() {
                 render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
             }
         }
-
-        if (ImGui::Button("Render all poses", ImVec2(-1, 0))) {
-            render_all_poses_callback();
-        }
-
         ImGui::TreePop();
     }
 
@@ -273,17 +267,6 @@ void RenderPlugin::save_render_callback() {
     image_names_->push_back(filename);
     next_image_idx_++;
     log_stream_ << "Render: Image saved to: \n\t" + fullname << std::endl;
-}
-
-void RenderPlugin::render_all_poses_callback() {
-    render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
-
-    for (const auto& render_pose : generated_poses_) {
-        render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose);
-        render_callback();
-        save_render_callback();
-    }
-
 }
 
 void RenderPlugin::initialize_generated_callback() {

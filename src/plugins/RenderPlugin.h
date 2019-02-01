@@ -37,7 +37,6 @@ public:
     void load_scene_callback();
     void render_callback();
     void save_render_callback();
-    void render_all_poses_callback();
 
     // Plugin link callbacks
     void initialize_generated_callback();
