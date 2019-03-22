@@ -10,7 +10,7 @@
 #include <igl/jet.h>
 #include <igl/unproject_onto_mesh.h>
 
-#include "nbv/Helpers.h"
+#include "util/Helpers.h"
 #include "nbv/HelpersOptim.h"
 
 NextBestViewPlugin::NextBestViewPlugin(std::shared_ptr<NextBestView> nbv)

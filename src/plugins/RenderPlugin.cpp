@@ -6,6 +6,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "util/Helpers.h"
+
 RenderPlugin::RenderPlugin(
         std::string images_path,
         std::string reconstruction_path,
@@ -53,10 +55,10 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
     // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
     render_cameras_gizmo_ <<
-         5.56,         0,         0,         0,
-            0,  -4.67593,    3.0082, -0.558036,
-            0,   -3.0082,  -4.67593,   4.02713,
-            0,         0,         0,         1;
+        12.6392, 0,       0,       0,
+        0, 12.6392,       0, 2.90833,
+        0,       0, 12.6392,       0,
+        0,       0,       0,       1;
 }
 
 bool RenderPlugin::pre_draw() {
@@ -174,6 +176,9 @@ bool RenderPlugin::post_draw() {
             if (ImGui::Button("Extend (generated)", ImVec2(-1, 0))) {
                 extend_generated_callback();
             }
+            if (ImGui::Button("Extend all (generated)", ImVec2(-1, 0))) {
+                extend_all_generated_callback();
+            }
             if (nbv_plugin_) {
                 if (ImGui::Button("Extend (NBV)", ImVec2(-1, 0))) {
                     extend_nbv_callback();
@@ -190,11 +195,18 @@ bool RenderPlugin::post_draw() {
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##align", &auto_align_);
+
             if (ImGui::Button("Save aligned mesh", ImVec2(-70, 0))) {
                 save_aligned_callback();
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##savemesh", &auto_save_mesh_);
+
+            if (ImGui::Button("Save mesh quality", ImVec2(-70, 0))) {
+                save_quality_callback();
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##savequality", &auto_save_quality_);
         }
         ImGui::TreePop();
     }
@@ -203,6 +215,9 @@ bool RenderPlugin::post_draw() {
     if (ImGui::TreeNodeEx("Debug")) {
         if (ImGui::Button("Save render stats", ImVec2(-1, 0))) {
             render_stats_.WriteStatsToFile(reconstruction_folder_ + "render_stats.txt");
+        }
+        if (ImGui::Button("Outout cameras gizmo", ImVec2(-1, 0))) {
+            log_stream_ << "render_cameras_gizmo_:\n" << render_cameras_gizmo_ << std::endl;
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
@@ -319,6 +334,9 @@ void RenderPlugin::initialize_generated_callback() {
         if (auto_save_mesh_) {
             save_aligned_callback();
         }
+        if (auto_save_quality_) {
+            save_quality_callback();
+        }
     }
 }
 
@@ -326,6 +344,12 @@ void RenderPlugin::extend_generated_callback() {
     glm::mat4 render_pose = generated_poses_[next_image_idx_];
     render_pose_world_aligned_ = align_transform_ * glm::inverse(render_pose);
     extend_manual_callback();
+}
+
+void RenderPlugin::extend_all_generated_callback() {
+    while (next_image_idx_ < generated_poses_.size()) {
+        extend_generated_callback();
+    }
 }
 
 void RenderPlugin::extend_nbv_callback() {
@@ -407,6 +431,9 @@ void RenderPlugin::extend_manual_callback(int best_view_pick) {
     if (auto_save_mesh_) {
         save_aligned_callback();
     }
+    if (auto_save_quality_) {
+        save_quality_callback();
+    }
 }
 
 void RenderPlugin::align_callback() {
@@ -460,6 +487,52 @@ void RenderPlugin::save_aligned_callback() {
     // Save mesh
     aligned_mesh.Save(fullname);
     log_stream_ << "Render: Mesh written to: \n\t" << fullname << std::endl;
+}
+
+void RenderPlugin::save_quality_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    // Update measure internal representation
+    auto quality_measure = reconstruction_plugin_->get_quality_measure_();
+    quality_measure->updateMesh();
+
+    // Prepare filename number
+    std::shared_ptr<MVS::Scene> reconstruction_scene = reconstruction_plugin_->get_mvs_scene_();
+    int num_cameras = reconstruction_scene->images.size();
+    std::stringstream ss;
+    ss << std::setw(3) << std::setfill('0') << std::to_string(num_cameras);
+    std::string filename;
+    std::string fullname;
+
+    // Save PPA measure
+    log_stream_ << "Render: Computing PPA ..." << std::endl;
+    std::vector<double> ppa = quality_measure->pixelsPerArea();
+    filename = ss.str() + ".ppa";
+    fullname = evaluation_folder_ + filename;
+    if (writeVectorToFile(fullname, ppa)) {
+        log_stream_ << "Render: PPA written to: \n\t" << fullname << std::endl;
+    }
+
+    // Save GSD measure
+    log_stream_ << "Render: Computing GSD ..." << std::endl;
+    std::vector<double> gsd = quality_measure->groundSamplingDistance();
+    filename = ss.str() + ".gsd";
+    fullname = evaluation_folder_ + filename;
+    if (writeVectorToFile(fullname, gsd)) {
+        log_stream_ << "Render: GSD written to: \n\t" << fullname << std::endl;
+    }
+
+    // Save MPA measure
+    log_stream_ << "Render: Computing MPA ..." << std::endl;
+    std::vector<double> mpa = quality_measure->meanPixelsPerArea();
+    filename = ss.str() + ".mpa";
+    fullname = evaluation_folder_ + filename;
+    if (writeVectorToFile(fullname, mpa)) {
+        log_stream_ << "Render: MPA written to: \n\t" << fullname << std::endl;
+    }
 }
 
 void RenderPlugin::show_camera() {

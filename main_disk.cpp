@@ -19,6 +19,7 @@ int main(int argc, char *argv[]) {
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vzorci/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/medvedek/";
 
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
     std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
@@ -98,9 +99,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
     // NextBestViewPlugin nbv_plugin(next_best_view);

@@ -23,6 +23,7 @@ public:
     std::vector<double> groundSamplingDistance();
     std::vector<unsigned int> degreeOfRedundancy();
     std::vector<double> pixelsPerArea();
+    std::vector<double> meanPixelsPerArea();
     std::vector<double> faceArea();
 
 private:

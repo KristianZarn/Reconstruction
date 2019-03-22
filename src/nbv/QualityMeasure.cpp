@@ -119,7 +119,46 @@ std::vector<unsigned int> QualityMeasure::renderFromCamera(int camera_id) {
 }
 
 std::vector<double> QualityMeasure::groundSamplingDistance() {
+    assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
 
+    int num_cameras = mvs_scene_->images.size();
+    int num_faces = mvs_scene_->mesh.faces.size();
+
+    std::vector<double> face_area = faceArea();
+    std::vector<std::vector<double>> gsd_candidates(num_faces);
+
+    // Count visible pixels
+    for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
+
+        // Pixel count for current camera
+        std::vector<int> pixel_count(num_faces, 0);
+        std::vector<unsigned int> render_data = renderFromCamera(camera_idx);
+        for (const auto face_id : render_data) {
+            if (face_id > 0) {
+                pixel_count[face_id-1]++; // face_id start at 1
+            }
+        }
+
+        // GSD of faces for current camera
+        for (int i = 0; i < num_faces; i++) {
+            if (pixel_count[i] > 0) {
+                double face_gsd = sqrt(face_area[i] / static_cast<double>(pixel_count[i]));
+                gsd_candidates[i].push_back(face_gsd);
+            }
+        }
+    }
+
+    // Pick min value from gsd candidates
+    std::vector<double> gsd(num_faces, 0.0);
+    for (int i = 0; i < num_faces; i++) {
+        if (!gsd_candidates[i].empty()) {
+            gsd[i] = *std::min_element(gsd_candidates[i].begin(), gsd_candidates[i].end());
+        }
+    }
+    return gsd;
+}
+
+/*std::vector<double> QualityMeasure::groundSamplingDistance() {
     assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
     int num_cameras = mvs_scene_->images.size();
     int num_faces = mvs_scene_->mesh.faces.size();
@@ -155,7 +194,7 @@ std::vector<double> QualityMeasure::groundSamplingDistance() {
         }
     }
     return gsd;
-}
+}*/
 
 std::vector<unsigned int> QualityMeasure::degreeOfRedundancy() {
     int num_cameras = mvs_scene_->images.size();
@@ -185,8 +224,8 @@ std::vector<unsigned int> QualityMeasure::degreeOfRedundancy() {
 }
 
 std::vector<double> QualityMeasure::pixelsPerArea() {
-
     assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
+
     int num_cameras = mvs_scene_->images.size();
     int num_faces = mvs_scene_->mesh.faces.size();
 
@@ -211,6 +250,51 @@ std::vector<double> QualityMeasure::pixelsPerArea() {
         }
     }
     return ppa;
+}
+
+std::vector<double> QualityMeasure::meanPixelsPerArea() {
+    assert(mesh_->getVertices().size() == 3 * mvs_scene_->mesh.faces.size());
+
+    int num_cameras = mvs_scene_->images.size();
+    int num_faces = mvs_scene_->mesh.faces.size();
+
+    std::vector<double> face_area = faceArea();
+    std::vector<std::vector<double>> pixels_per_camera(num_faces);
+
+    // Count visible pixels
+    for (int camera_idx = 0; camera_idx < num_cameras; camera_idx++) {
+
+        // Pixel count for current camera
+        std::vector<int> pixel_count(num_faces, 0);
+        std::vector<unsigned int> render_data = renderFromCamera(camera_idx);
+        for (const auto face_id : render_data) {
+            if (face_id > 0) {
+                pixel_count[face_id-1]++; // face_id start at 1
+            }
+        }
+
+        // Measure of faces for current camera
+        for (int i = 0; i < num_faces; i++) {
+            if (pixel_count[i] > 0) {
+                double face_measure = sqrt(static_cast<double>(pixel_count[i]) / face_area[i]);
+                pixels_per_camera[i].push_back(face_measure);
+            }
+        }
+    }
+
+    // Compute mean values
+    int view_treshold = 2;
+    std::vector<double> mpa(num_faces, 0.0);
+    for (int i = 0; i < num_faces; i++) {
+        if (pixels_per_camera[i].size() >= view_treshold) {
+            double sum = 0.0;
+            for (double value : pixels_per_camera[i]) {
+                sum += value;
+            }
+            mpa[i] = sum / pixels_per_camera[i].size();
+        }
+    }
+    return mpa;
 }
 
 std::vector<double> QualityMeasure::faceArea() {

@@ -1,7 +1,6 @@
 set(SUBDIR_SOURCE_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/FaceIdMesh.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/FaceIdMesh.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Helpers.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/HelpersOptim.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/MeasureMesh.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/MeasureMesh.cpp"

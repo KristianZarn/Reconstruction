@@ -21,7 +21,7 @@
 #include <theia/util/filesystem.h>
 
 #include "reconstruction/Helpers.h"
-#include "nbv/Helpers.h"
+#include "util/Helpers.h"
 
 ReconstructionPlugin::ReconstructionPlugin(Parameters parameters,
                                            std::string images_path,
@@ -155,6 +155,14 @@ bool ReconstructionPlugin::post_draw() {
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##compute_ppa", &parameters_.auto_compute_ppa);
+
+        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
+            ground_sampling_distance_callback();
+        }
+
+        if (ImGui::Button("Mean pixels per area", ImVec2(-1, 0))) {
+            mean_pixels_per_area_callback();
+        }
         ImGui::TreePop();
     }
 
@@ -190,6 +198,27 @@ bool ReconstructionPlugin::post_draw() {
     }
 
     if (ImGui::TreeNodeEx("Debug")) {
+        if (ImGui::Button("Print focal length", ImVec2(-1, 0))) {
+            log_stream_ << "Focal length" << std::endl;
+            theia::Reconstruction reconstruction = reconstruction_builder_->GetReconstruction();
+            for (const auto& view_id : reconstruction.ViewIds()) {
+                double focal_length = reconstruction.View(view_id)->Camera().FocalLength();
+                log_stream_ << focal_length << " ";
+            }
+            log_stream_ << std::endl;
+        }
+        if (ImGui::Button("Save GSD", ImVec2(-1, 0))) {
+            quality_measure_->updateMesh();
+            std::vector<double> gsd = quality_measure_->groundSamplingDistance();
+
+            // Open file
+            std::ofstream outf(reconstruction_path_ + "test.dat");
+
+            // Write data to file
+            for (double face_value : gsd) {
+                outf << face_value << "\n";
+            }
+        }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Debug button pressed" << std::endl;
 
@@ -537,7 +566,7 @@ void ReconstructionPlugin::texture_mesh_callback() {
 void ReconstructionPlugin::pixels_per_area_callback() {
     log_stream_ << std::endl;
 
-    // Update NBV internal representation
+    // Update measure internal representation
     quality_measure_->updateMesh();
 
     log_stream_ << "Computing ppa measure ..." << std::endl;
@@ -558,6 +587,90 @@ void ReconstructionPlugin::pixels_per_area_callback() {
         Eigen::VectorXd measure(num_faces);
         for (int i = 0; i < num_faces; i++) {
             measure(i) = ppa[i];
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::ground_sampling_distance_callback() {
+    log_stream_ << std::endl;
+
+    // Update measure internal representation
+    quality_measure_->updateMesh();
+
+    log_stream_ << "Computing gsd measure ..." << std::endl;
+    auto time_begin = std::chrono::steady_clock::now();
+
+    // Compute measure
+    std::vector<double> gsd = quality_measure_->groundSamplingDistance();
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Computation time: " << time_elapsed.count() << " s" << std::endl;
+
+    // Copy original vector and sort it
+    auto distances_copy = gsd;
+    std::sort(distances_copy.begin(), distances_copy.end());
+
+    // Get value
+    double percentage = 0.90;
+    int idx = static_cast<int>(floor(distances_copy.size() * percentage));
+    double percentile = distances_copy[idx];
+
+    // Set color
+    if (!gsd.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == gsd.size());
+        auto num_faces = viewer->data().F.rows();
+
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            if (gsd[i] > percentile) {
+                measure(i) = percentile;
+            } else if (gsd[i] == 0.0) {
+                measure(i) = percentile;
+            } else {
+                measure(i) = gsd[i];
+            }
+
+            // Flip colors
+            measure(i) = percentile - measure(i);
+        }
+
+        Eigen::MatrixXd color;
+        igl::jet(measure, true, color);
+        viewer->data().set_colors(color);
+    }
+}
+
+void ReconstructionPlugin::mean_pixels_per_area_callback() {
+    log_stream_ << std::endl;
+
+    // Update measure internal representation
+    quality_measure_->updateMesh();
+
+    log_stream_ << "Computing mpa measure ..." << std::endl;
+    auto time_begin = std::chrono::steady_clock::now();
+
+    // Compute measure
+    std::vector<double> mpa = quality_measure_->meanPixelsPerArea();
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "Computation time: " << time_elapsed.count() << " s" << std::endl;
+
+    // Set color
+    if (!mpa.empty()) {
+        viewer->selected_data_index = VIEWER_DATA_MESH;
+        assert(viewer->data().F.rows() == mpa.size());
+
+        auto num_faces = viewer->data().F.rows();
+        Eigen::VectorXd measure(num_faces);
+        for (int i = 0; i < num_faces; i++) {
+            measure(i) = mpa[i];
         }
 
         Eigen::MatrixXd color;

@@ -15,7 +15,8 @@
 int main(int argc, char *argv[]) {
 
     // Initialization
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
+    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
+    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/medvedek/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/zoga/";
     // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
@@ -61,9 +62,9 @@ int main(int argc, char *argv[]) {
 
     // Setup reconstruction objects
     theia::CameraIntrinsicsPrior intrinsics_prior = ReadCalibration(calibration_file);
-    theia::RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
+    RealtimeReconstructionBuilder::Options options = SetRealtimeReconstructionBuilderOptions();
     options.intrinsics_prior = intrinsics_prior;
-    auto reconstruction_builder = std::make_shared<theia::RealtimeReconstructionBuilder>(options);
+    auto reconstruction_builder = std::make_shared<RealtimeReconstructionBuilder>(options);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
     auto quality_measure = std::make_shared<QualityMeasure>(mvs_scene);
 
@@ -90,9 +91,9 @@ int main(int argc, char *argv[]) {
     // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
-    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
-    NextBestViewPlugin nbv_plugin(next_best_view);
-    viewer.plugins.push_back(&nbv_plugin);
+    // auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    // NextBestViewPlugin nbv_plugin(next_best_view);
+    // viewer.plugins.push_back(&nbv_plugin);
 
     // Start viewer
     viewer.launch();

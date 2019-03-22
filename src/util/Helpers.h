@@ -8,14 +8,14 @@
 #include <vector>
 
 template <typename T>
-void writeBufferToFile(const std::string& filename, int width, int height, const std::vector<T>& data) {
+bool writeBufferToFile(const std::string& filename, int width, int height, const std::vector<T>& data) {
     assert((width * height) == data.size());
 
     // Open file
     std::ofstream outf(filename);
     if (!outf) {
         std::cerr << "Could not open file: " << filename << std::endl;
-        exit(1);
+        return false;
     }
 
     // Write data to file
@@ -25,21 +25,23 @@ void writeBufferToFile(const std::string& filename, int width, int height, const
         }
         outf << "\n";
     }
+    return true;
 }
 
 template <typename T>
-void writeVectorToFile(const std::string& filename, const std::vector<T>& data) {
+bool writeVectorToFile(const std::string& filename, const std::vector<T>& data) {
     // Open file
     std::ofstream outf(filename);
     if (!outf) {
         std::cerr << "Could not open file: " << filename << std::endl;
-        exit(1);
+        return false;
     }
 
     // Write data to file
-    for (double face_value : data) {
+    for (T face_value : data) {
         outf << face_value << "\n";
     }
+    return true;
 }
 
 #endif //SANDBOX_NBV_HELPERS_H

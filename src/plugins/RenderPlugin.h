@@ -41,10 +41,12 @@ public:
     // Plugin link callbacks
     void initialize_generated_callback();
     void extend_generated_callback();
+    void extend_all_generated_callback();
     void extend_nbv_callback();
     void extend_manual_callback(int best_view_pick = -1);
     void align_callback();
     void save_aligned_callback();
+    void save_quality_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -89,6 +91,7 @@ private:
 
     std::string evaluation_folder_;
     bool auto_save_mesh_ = true;
+    bool auto_save_quality_ = true;
 
     // Render
     MVS::Mesh mvs_mesh_;

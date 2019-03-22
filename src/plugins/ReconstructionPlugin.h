@@ -150,6 +150,8 @@ public:
     void texture_mesh_callback();
 
     void pixels_per_area_callback();
+    void ground_sampling_distance_callback();
+    void mean_pixels_per_area_callback();
     void center_object_callback();
 
     // Helper functions

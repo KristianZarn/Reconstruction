@@ -549,3 +549,54 @@ void NextBestViewPlugin::show_clusters_callback() {
     viewer->selected_data_index = VIEWER_DATA_NBV_MESH;
     viewer->data().set_colors(color);
 }
+
+void ReconstructionPlugin::debug_write_pc_ppa() {
+
+    // Compute ppa
+    quality_measure_->updateMesh();
+    std::vector<double> ppa = quality_measure_->pixelsPerArea();
+
+    // Pick mesh
+    viewer->selected_data_index = VIEWER_DATA_MESH;
+
+    // Colect face quality per vertex
+    auto num_vertices = viewer->data().V.rows();
+    std::vector<std::vector<double>> vertex_quality(num_vertices);
+
+    auto num_faces = viewer->data().F.rows();
+    for (int i = 0; i < num_faces; i++) {
+        Eigen::Vector3i face = viewer->data().F.row(i);
+        double face_quality = ppa[i];
+        for (int j = 0; j < face.size(); j++) {
+            vertex_quality[face[j]].push_back(face_quality);
+        }
+    }
+
+    // Average quality of faces in vertex neighborhood
+    std::vector<double> vertex_quality_mean(num_vertices);
+    for (int i = 0; i < num_vertices; i++) {
+        double num_neighbors = vertex_quality[i].size();
+        double sum = 0.0;
+        for (int j = 0; j < num_neighbors; j++) {
+            sum += vertex_quality[i][j];
+        }
+        vertex_quality_mean[i] = sum / num_neighbors;
+    }
+
+    // Open file
+    std::string filename = reconstruction_path_ + "point_cloud_with_ppa.dat";
+    std::ofstream outf(filename);
+    if (!outf) {
+        log_stream_ << "Could not open file: " << filename << std::endl;
+        return;
+    }
+
+    // Write data to file
+    log_stream_ << "Writing point cloud with ppa ..." << std::endl;
+    for (int i = 0; i < vertex_quality_mean.size(); i++) {
+        Eigen::Vector3d vertex = viewer->data().V.row(i);
+        outf << vertex.x() << " " << vertex.y() << " " << vertex.z() << " " << vertex_quality_mean[i];
+        outf << "\n";
+    }
+    log_stream_ << "Written to \n\t" << filename << std::endl;
+}
