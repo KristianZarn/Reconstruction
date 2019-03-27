@@ -25,6 +25,11 @@ void NextBestView::Initialize() {
     UpdateFaceIdMesh();
     ppa_ = PixelsPerArea();
 
+    double percentage = TargetPercentage(ppa_);
+    if (percentage > percentage_increment_) {
+        target_quality_ += target_quality_increment_;
+    }
+
     // Precompute face centers and normals
     mvs_scene_->mesh.ComputeNormalFaces();
     int num_faces = mvs_scene_->mesh.faces.size();
@@ -275,7 +280,7 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
 
     // Clamp quality to max value and discard invalid faces
     for (unsigned int face_i = 0; face_i < num_faces; face_i++) {
-        if ((quality_measure[face_i] > max_quality_) || (valid_faces_.find(face_i) == valid_faces_.end())) {
+        if ((quality_measure[face_i] > target_quality_) || (valid_faces_.find(face_i) == valid_faces_.end())) {
             processed[face_i] = true;
         }
     }
@@ -328,7 +333,7 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
         // Get faces quality
         std::unordered_set<double> face_quality;
         for (const auto& face_id : cluster) {
-            double q = std::min(quality_measure[face_id], static_cast<double>(max_quality_));
+            double q = std::min(quality_measure[face_id], static_cast<double>(target_quality_));
             face_quality.insert(q);
         }
 
@@ -408,7 +413,7 @@ NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>
 double NextBestView::TargetPercentage(const std::vector<double>& quality_measure) {
     double count = 0;
     for (const auto& face_id : valid_faces_) {
-        if (quality_measure[face_id] > max_quality_) {
+        if (quality_measure[face_id] > target_quality_) {
             count++;
         }
     }
@@ -580,8 +585,8 @@ double NextBestView::CostFunction2(const glm::mat4& view_matrix, int image_heigh
     std::vector<double> face_area = FaceArea();
     for (const auto& face_id : visible_faces) {
         double q = ppa_[face_id];
-        if (q > max_quality_) {
-            face_quality.insert(max_quality_);
+        if (q > target_quality_) {
+            face_quality.insert(target_quality_);
         } else {
             face_quality.insert(q);
         }

@@ -81,6 +81,7 @@ private:
     std::vector<int> cluster_id_;
     std::vector<glm::mat4> best_views_init_;
     int selected_view_ = 0;
+    double target_quality_percentage_ = 0.0;
 
     // Log
     std::ostream& log_stream_ = std::cout;

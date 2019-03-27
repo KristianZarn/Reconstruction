@@ -102,13 +102,9 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::SameLine();
         ImGui::Checkbox("Auto##applyselection", &auto_apply_selection_);
 
-        double percentage = 0;
-        if (!pixels_per_area_.empty()) {
-            percentage = next_best_view_->TargetPercentage(pixels_per_area_);
-        }
         std::ostringstream os;
         os << "Faces at target quality: "
-           << "\t" << percentage << " %";
+           << "\t" << target_quality_percentage_ * 100.0 << " %";
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
@@ -130,7 +126,11 @@ bool NextBestViewPlugin::post_draw() {
         ImGui::SameLine();
         ImGui::Checkbox("Auto##showclusters", &auto_show_clusters_);
 
-        ImGui::InputFloat("Max quality", &next_best_view_->max_quality_);
+        ImGui::InputFloat("Target quality", &next_best_view_->target_quality_);
+        ImGui::InputFloat("Percentage increment", &next_best_view_->percentage_increment_);
+        ImGui::InputFloat("Target quality increment", &next_best_view_->target_quality_increment_);
+        ImGui::Spacing();
+
         ImGui::InputInt("Min size", &next_best_view_->cluster_min_size_);
         ImGui::InputInt("Max size", &next_best_view_->cluster_max_size_);
         ImGui::InputFloat("Angle", &next_best_view_->cluster_angle_);
@@ -145,12 +145,11 @@ bool NextBestViewPlugin::post_draw() {
         if (ImGui::SliderInt("Pose index", &selected_view_, 0, best_views_init_.size()-1)) {
             set_nbv_camera_callback(selected_view_);
         }
-
         ImGui::TreePop();
     }
 
     // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Camera pose optimization")) {
         if (ImGui::Button("Optimize [t]", ImVec2(-1, 0))) {
             optimize_callback();
         }
@@ -239,7 +238,8 @@ void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
     // Compute NBV and other variables
     log_stream_ << std::endl;
     log_stream_ << "NBV: Computing PPA ... " << std::flush;
-    pixels_per_area_ = next_best_view_->PixelsPerArea();
+    pixels_per_area_ = next_best_view_->ppa_;
+    target_quality_percentage_ = next_best_view_->TargetPercentage(pixels_per_area_);
     log_stream_ << "DONE" << std::endl;
 
     log_stream_ << "NBV: Computing clusters ... " << std::flush;

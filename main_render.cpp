@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
-    std::string project_folder = root_folder + "boat/";
+    std::string project_folder = root_folder + "hydrant/";
     std::string images_folder = project_folder + "images_nbv/";
     std::string image_ext = ".png";
     std::string reconstruction_folder = project_folder + "reconstruction/";

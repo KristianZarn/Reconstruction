@@ -55,10 +55,10 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
     // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
     render_cameras_gizmo_ <<
-                          9.44328,       0,       0,       0,
-            0, 9.44328,       0, 2.44004,
-            0,       0, 9.44328,       0,
-            0,       0,       0,       1;
+                          23.4815,         0,         0, -0.217392,
+            0,   23.4815,         0,   6.10873,
+            0,         0,   23.4815,         0,
+            0,         0,         0,         1;
 }
 
 bool RenderPlugin::pre_draw() {
@@ -207,15 +207,18 @@ bool RenderPlugin::post_draw() {
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##savequality", &auto_save_quality_);
+
+            if (ImGui::Button("Save render stats", ImVec2(-70, 0))) {
+                save_render_stats_callback();
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##saverenderstats", &auto_save_render_stats_);
         }
         ImGui::TreePop();
     }
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug")) {
-        if (ImGui::Button("Save render stats", ImVec2(-1, 0))) {
-            render_stats_.WriteStatsToFile(reconstruction_folder_ + "render_stats.txt");
-        }
         if (ImGui::Button("Outout cameras gizmo", ImVec2(-1, 0))) {
             log_stream_ << "render_cameras_gizmo_:\n" << render_cameras_gizmo_ << std::endl;
         }
@@ -337,6 +340,9 @@ void RenderPlugin::initialize_generated_callback() {
         if (auto_save_quality_) {
             save_quality_callback();
         }
+        if (auto_save_render_stats_) {
+            save_render_stats_callback();
+        }
     }
 }
 
@@ -433,6 +439,9 @@ void RenderPlugin::extend_manual_callback(int best_view_pick) {
     }
     if (auto_save_quality_) {
         save_quality_callback();
+    }
+    if (auto_save_render_stats_) {
+        save_render_stats_callback();
     }
 }
 
@@ -533,6 +542,12 @@ void RenderPlugin::save_quality_callback() {
     if (writeVectorToFile(fullname, mpa)) {
         log_stream_ << "Render: MPA written to: \n\t" << fullname << std::endl;
     }
+}
+
+void RenderPlugin::save_render_stats_callback() {
+    std::string filename = images_folder_ + "render_stats.txt";
+    render_stats_.WriteStatsToFile(filename);
+    log_stream_ << "Render: Render stats saved to: \n\t" << filename << std::endl;
 }
 
 void RenderPlugin::show_camera() {

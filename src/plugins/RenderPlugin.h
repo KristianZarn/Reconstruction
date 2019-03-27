@@ -47,6 +47,7 @@ public:
     void align_callback();
     void save_aligned_callback();
     void save_quality_callback();
+    void save_render_stats_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -92,6 +93,7 @@ private:
     std::string evaluation_folder_;
     bool auto_save_mesh_ = true;
     bool auto_save_quality_ = false;
+    bool auto_save_render_stats_ = true;
 
     // Render
     MVS::Mesh mvs_mesh_;

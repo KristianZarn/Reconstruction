@@ -55,13 +55,18 @@ public:
     // Reconstruction members
     std::shared_ptr<MVS::Scene> mvs_scene_;
 
+    // Optimization
+    std::vector<double> ppa_;
+
     // General parameters
-    float max_quality_ = 1500;
+    float target_quality_ = 1500.0f;
+    float percentage_increment_ = 0.85f;
+    float target_quality_increment_ = 500.0f;
 
     // Clustering parameters
     int cluster_min_size_ = 100; // min size of cluster
     int cluster_max_size_ = 300; // max size of cluster
-    float cluster_angle_ = 100; // max angle deviation from mean to be considered part of cluster
+    float cluster_angle_ = 100.0f; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
     int init_num_views_ = 10; // max number of returned views
@@ -85,9 +90,6 @@ private:
     // Speedup variables
     std::vector<glm::vec3> face_centers_;
     std::vector<glm::vec3> face_normals_;
-
-    // Optimization
-    std::vector<double> ppa_;
 
     // Shaders
     const std::string faceid_vert_source =
