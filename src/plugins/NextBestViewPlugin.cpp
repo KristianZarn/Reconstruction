@@ -1,6 +1,6 @@
 #include "NextBestViewPlugin.h"
 
-#include <cmath>
+#include <math.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
@@ -12,6 +12,7 @@
 
 #include "util/Helpers.h"
 #include "nbv/HelpersOptim.h"
+#include "nelder_mead/nelder_mead.h"
 
 NextBestViewPlugin::NextBestViewPlugin(std::shared_ptr<NextBestView> nbv)
         : next_best_view_(std::move(nbv)) {}
@@ -149,16 +150,12 @@ bool NextBestViewPlugin::post_draw() {
     }
 
     // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization")) {
-        if (ImGui::Button("Optimize all", ImVec2(-1, 0))) {
-            optimize_all_callback();
+    if (ImGui::TreeNodeEx("Camera pose optimization", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Optimize [t]", ImVec2(-1, 0))) {
+            optimize_callback();
         }
-        if (ImGui::Button("Optimize position [t]", ImVec2(-1, 0))) {
-            optimize_position_callback();
-        }
-        if (ImGui::Button("Optimize rotation [r]", ImVec2(-1, 0))) {
-            optimize_rotation_callback();
-        }
+        ImGui::InputFloat("Faces thresh", &next_best_view_->visible_faces_tresh_);
+        ImGui::InputFloat("Dist thresh", &next_best_view_->distance_tresh_);
         ImGui::InputFloat("Optim Alpha", &next_best_view_->optim_alpha_);
         ImGui::InputFloat("Optim Beta", &next_best_view_->optim_beta_);
         ImGui::Checkbox("Pose camera", &pose_camera_);
@@ -250,7 +247,7 @@ void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
     log_stream_ << "DONE" << std::endl;
 
     log_stream_ << "NBV: Computing initial views ... " << std::flush;
-    best_views_init_ = next_best_view_->BestViewInit(clusters_, pixels_per_area_, up);
+    best_views_init_ = next_best_view_->BestViewInit(clusters_, up);
     log_stream_ << "DONE" << std::endl;
 
     // Set cluster_id for debugging
@@ -381,173 +378,80 @@ void NextBestViewPlugin::set_nbv_camera_callback(int selected_view) {
     }
 }
 
-void NextBestViewPlugin::optimize_all_callback() {
+void NextBestViewPlugin::optimize_callback() {
 
-    // Camera parameters
+    // Initial point
+    int n = 6;
+    point_t start;
+    start.x = (double*) malloc(n * sizeof(double));
+    start.x[0] = camera_pos_[0];
+    start.x[1] = camera_pos_[1];
+    start.x[2] = camera_pos_[2];
+    start.x[3] = camera_pos_[0];
+    start.x[4] = camera_rot_[1];
+    start.x[5] = camera_rot_[2];
+
+    // Optimisation settings
+    optimset_t optim_set;
+    optim_set.tolx = 0.01;
+    optim_set.tolf = 0.1;
+    optim_set.max_iter = 50;
+    optim_set.max_eval = 1000;
+    optim_set.verbose = 1;
+
+    // Cost function parameters
+    auto cluster = next_best_view_->ClusterCenterNormal(clusters_[selected_view_]);
     unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
     unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
     double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-
-    // Optimization parameters
-    arma::vec param = arma::zeros(6, 1);
-    param(0) = camera_pos_[0];
-    param(1) = camera_pos_[1];
-    param(2) = camera_pos_[2];
-    param(3) = camera_rot_[0];
-    param(4) = camera_rot_[1];
-    param(5) = camera_rot_[2];
-
-    double d_pos = 0.1;
-    double d_rot = 1.0;
-    arma::vec param_lo = arma::zeros(6, 1);
-    param_lo(0) = param_lo(0) - d_pos;
-    param_lo(1) = param_lo(1) - d_pos;
-    param_lo(2) = param_lo(2) - d_pos;
-    param_lo(3) = param_lo(3) - d_rot;
-    param_lo(4) = param_lo(4) - d_rot;
-    param_lo(5) = param_lo(5) - d_rot;
-
-    arma::vec param_hi = arma::zeros(6, 1);
-    param_hi(0) = param_hi(0) + d_pos;
-    param_hi(1) = param_hi(1) + d_pos;
-    param_hi(2) = param_hi(2) + d_pos;
-    param_hi(3) = param_hi(3) + d_rot;
-    param_hi(4) = param_hi(4) + d_rot;
-    param_hi(5) = param_hi(5) + d_rot;
-
-    optim::algo_settings_t optim_settings;
-    optim_settings.iter_max = 1;
-    optim_settings.vals_bound = true;
-    optim_settings.lower_bounds = param_lo;
-    optim_settings.upper_bounds = param_hi;
-
-    OptimData optim_data{next_best_view_.get(), image_width, image_height, focal_y};
-
-    // Run optimization
-    auto time_begin = std::chrono::steady_clock::now();
-    bool success = optim::de(param, optim_function, &optim_data, optim_settings);
-    camera_pos_[0] = param(0);
-    camera_pos_[1] = param(1);
-    camera_pos_[2] = param(2);
-    camera_rot_[0] = param(3);
-    camera_rot_[1] = param(4);
-    camera_rot_[2] = param(5);
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
-
-    // Debug
-    log_stream_ << "Parameters: \n" << param;
-}
-
-void NextBestViewPlugin::optimize_position_callback() {
-
-    // Camera parameters
-    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-
-    // Optimization parameters
-    arma::vec param_pos = arma::zeros(3, 1);
-    param_pos(0) = camera_pos_[0];
-    param_pos(1) = camera_pos_[1];
-    param_pos(2) = camera_pos_[2];
-
-    optim::algo_settings_t optim_pos_settings;
-    optim_pos_settings.iter_max = 1;
-    optim_pos_settings.gd_method = 0;
-    optim::gd_settings_t gd_settings_pos;
-    gd_settings_pos.step_size = 0.001;
-    optim_pos_settings.gd_settings = gd_settings_pos;
-
-    OptimPosData optim_pos_data{next_best_view_.get(), camera_rot_, image_width, image_height, focal_y};
+    OptimData optim_data{next_best_view_.get(), image_width, image_height, focal_y, cluster.first, cluster.second};
 
     // Run optimization
     auto time_begin = std::chrono::steady_clock::now();
 
-    bool success = optim::gd(param_pos, optim_pos_function, &optim_pos_data, optim_pos_settings);
-    camera_pos_[0] = param_pos(0);
-    camera_pos_[1] = param_pos(1);
-    camera_pos_[2] = param_pos(2);
+    point_t solution;
+    nelder_mead(n, &start, &solution, &optim_function, &optim_data, &optim_set);
+    camera_pos_[0] = static_cast<float>(solution.x[0]);
+    camera_pos_[1] = static_cast<float>(solution.x[1]);
+    camera_pos_[2] = static_cast<float>(solution.x[2]);
+    camera_rot_[0] = static_cast<float>(solution.x[3]);
+    camera_rot_[1] = static_cast<float>(solution.x[4]);
+    camera_rot_[2] = static_cast<float>(solution.x[5]);
 
     auto time_end = std::chrono::steady_clock::now();
     std::chrono::duration<double> time_elapsed = time_end - time_begin;
     log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
 
     // Debug
-    log_stream_ << "Parameters: \n" << param_pos;
-}
-
-void NextBestViewPlugin::optimize_rotation_callback() {
-
-    // Camera parameters
-    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-
-    // Optimization parameters
-    arma::vec param_rot = arma::zeros(3, 1);
-    param_rot(0) = camera_rot_[0];
-    param_rot(1) = camera_rot_[1];
-    param_rot(2) = camera_rot_[2];
-
-    optim::algo_settings_t optim_rot_settings;
-    optim_rot_settings.iter_max = 1;
-    optim_rot_settings.gd_method = 0;
-    optim::gd_settings_t gd_settings_rot;
-    gd_settings_rot.step_size = 300;
-    optim_rot_settings.gd_settings = gd_settings_rot;
-
-    OptimRotData optim_rot_data{next_best_view_.get(), camera_pos_, image_width, image_height, focal_y};
-
-    // Run optimization
-    auto time_begin = std::chrono::steady_clock::now();
-
-    bool success = optim::gd(param_rot, optim_rot_function, &optim_rot_data, optim_rot_settings);
-    camera_rot_[0] = param_rot(0);
-    camera_rot_[1] = param_rot(1);
-    camera_rot_[2] = param_rot(2);
-
-    auto time_end = std::chrono::steady_clock::now();
-    std::chrono::duration<double> time_elapsed = time_end - time_begin;
-    log_stream_ << "Elapsed time: " << time_elapsed.count() << " s" << std::endl;
-
-    // Debug
-    log_stream_ << "Parameters: \n" << param_rot;
+    // log_stream_ << "Parameters: \n" << param;
 }
 
 void NextBestViewPlugin::debug_callback() {
     log_stream_ << "NBV: Debug button pressed" << std::endl;
 
-    // Camera parameters
-    // unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
-    // unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
-    // double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
-    //
-    // glm::mat4 view_matrix;
-    // glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
-    // ImGuizmo::RecomposeMatrixFromComponents(
-    //         glm::value_ptr(camera_pos_),
-    //         glm::value_ptr(camera_rot_),
-    //         glm::value_ptr(scale),
-    //         glm::value_ptr(view_matrix));
-    // view_matrix = glm::inverse(view_matrix);
-    //
-    // double cost_pos = next_best_view_->CostFunctionPosition(view_matrix, image_width, image_height, focal_y);
-    // double cost_rot = next_best_view_->CostFunctionRotation(view_matrix, image_width, image_height, focal_y);
+    unsigned int image_width = next_best_view_->mvs_scene_->images.front().width;
+    unsigned int image_height = next_best_view_->mvs_scene_->images.front().height;
+    double focal_y = next_best_view_->mvs_scene_->images.front().camera.K(1, 1);
+
+    glm::mat4 view_matrix;
+    glm::vec3 scale = glm::vec3(1.0, 1.0, 1.0);
+    ImGuizmo::RecomposeMatrixFromComponents(
+            glm::value_ptr(camera_pos_),
+            glm::value_ptr(camera_rot_),
+            glm::value_ptr(scale),
+            glm::value_ptr(view_matrix));
+    view_matrix = glm::inverse(view_matrix);
+
+    // auto cluster = next_best_view_->ClusterCenterNormal(clusters_[selected_view_]);
+    // double cost = next_best_view_->CostFunction(
+    //         view_matrix, image_height, focal_y, image_width, cluster.first, cluster.second);
+    // log_stream_ << "Cost: " << cost << std::endl;
+    double cost = next_best_view_->CostFunction2(view_matrix, image_height, focal_y, image_width);
+    log_stream_ << "Cost: " << cost << std::endl;
 
     // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
     // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
     //         image_width, image_height, render_data);
-
-    // log_stream_ << "Cost position: " << cost_pos << std::endl;
-    // log_stream_ << "Cost rotation: " << cost_rot << std::endl;
-
-    // log_stream_ << "Camera gizmo data: ";
-    // for (int i = 0; i < camera_gizmo_.size(); i++) {
-    //     log_stream_ << *(camera_gizmo_.data() + i) << "  ";
-    // }
-    // log_stream_ << std::endl;
 }
 
 void NextBestViewPlugin::pick_face_callback() {
@@ -705,8 +609,8 @@ void NextBestViewPlugin::set_nbv_mesh() {
     }
 
     viewer->data().set_mesh(V, F);
-    viewer->data().show_lines = true;
-    show_nbv_mesh(true);
+    // viewer->data().show_lines = true;
+    // show_nbv_mesh(true);
 }
 
 void NextBestViewPlugin::set_nbv_mesh_color(const std::vector<double>& face_values) {
@@ -760,14 +664,9 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
                 initialize_callback();
                 return true;
             }
-            case 'r':
-            {
-                optimize_rotation_callback();
-                return true;
-            }
             case 't':
             {
-                optimize_position_callback();
+                optimize_callback();
                 return true;
             }
             case 'd':

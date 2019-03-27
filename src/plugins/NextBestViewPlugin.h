@@ -30,14 +30,11 @@ public:
 
     // Callback functions
     void initialize_callback(const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
-
     void apply_selection_callback();
     void show_clusters_callback();
     void set_nbv_camera_callback(int selected_view);
 
-    void optimize_all_callback();
-    void optimize_position_callback();
-    void optimize_rotation_callback();
+    void optimize_callback();
 
     void debug_callback();
     void pick_face_callback();

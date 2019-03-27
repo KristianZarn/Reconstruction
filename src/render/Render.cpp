@@ -145,7 +145,7 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
     // Render configuration
     glViewport(0, 0, image_width, image_height);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    // glEnable(GL_CULL_FACE);
 
     // Clear the buffers
     GLfloat color_clear_val[4] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -183,7 +183,7 @@ Render::RenderFromCamera(const glm::mat4& view_matrix, const CameraIntrinsic& in
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteTextures(1, &framebufferTexture);
     glDeleteRenderbuffers(1, &framebufferDepthStencil);
-    glDisable(GL_CULL_FACE);
+    // glDisable(GL_CULL_FACE);
 
     return render_data;
 }

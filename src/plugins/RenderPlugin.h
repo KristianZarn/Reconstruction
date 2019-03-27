@@ -91,7 +91,7 @@ private:
 
     std::string evaluation_folder_;
     bool auto_save_mesh_ = true;
-    bool auto_save_quality_ = true;
+    bool auto_save_quality_ = false;
 
     // Render
     MVS::Mesh mvs_mesh_;

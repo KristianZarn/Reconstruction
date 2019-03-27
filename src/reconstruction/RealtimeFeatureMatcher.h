@@ -31,7 +31,7 @@ public:
         theia::TwoViewMatchGeometricVerification::Options geometric_verification_options;
 
         // Only images that contain more feature matches than this number will be returned.
-        int min_num_feature_matches = 30;
+        int min_num_feature_matches = 200;
     };
 
     RealtimeFeatureMatcher(const Options& matcher_options, const theia::CameraIntrinsicsPrior& intrinsics);

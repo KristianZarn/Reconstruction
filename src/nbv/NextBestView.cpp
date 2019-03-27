@@ -1,5 +1,6 @@
 #include "NextBestView.h"
 
+#include <cmath>
 #include <algorithm>
 
 #include <glm/gtc/matrix_access.hpp>
@@ -348,11 +349,13 @@ NextBestView::FaceClusters(const std::vector<double>& quality_measure) {
 
 std::vector<glm::mat4>
 NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                           const std::vector<double>& quality_measure,
                            const glm::vec3& up) {
 
-    int num_views = std::min(static_cast<int>(cluster_costs.size()), init_num_views_);
     std::vector<glm::mat4> best_views;
+
+    // Initial views
+    std::vector<double> face_area = FaceArea();
+    int num_views = std::min(static_cast<int>(cluster_costs.size()), init_num_views_);
     for (int i = 0; i < num_views; i++) {
 
         // Average center and normal
@@ -361,18 +364,12 @@ NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>
         glm::vec3 normal_sum = glm::vec3(0);
         for (const auto& face_id : cluster) {
             center_sum += face_centers_[face_id];
-            normal_sum += face_normals_[face_id];
+            normal_sum += face_normals_[face_id] * static_cast<float>(sqrt(face_area[face_id]));
         }
         glm::vec3 cluster_center = center_sum / static_cast<float>(cluster.size());
-        glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.size());
+        glm::vec3 cluster_normal = glm::normalize(normal_sum / static_cast<float>(cluster.size()));
 
         // Compute camera distance
-        // double distance_sum = 0.0;
-        // for (const auto& face_id : cluster) {
-        //     distance_sum += glm::distance(cluster_center, face_centers_[face_id]);
-        // }
-        // double camera_distance = sqrt(distance_sum / cluster.size()) * dist_alpha_ ;
-        std::vector<double> face_area = FaceArea();
         double cluster_area = 0.0;
         for (const auto& face_i : cluster) {
             cluster_area += face_area[face_i];
@@ -384,7 +381,28 @@ NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>
         glm::mat4 view = glm::lookAt(eye, cluster_center, up);
         best_views.push_back(view);
     }
-    return best_views;
+
+    // Sort by cost function
+    unsigned int image_width = mvs_scene_->images.front().width;
+    unsigned int image_height = mvs_scene_->images.front().height;
+    double focal_y = mvs_scene_->images.front().camera.K(1, 1);
+
+    std::vector<std::pair<int, double>> best_views_cost;
+    for (int i = 0; i < num_views; i++) {
+        double view_cost = CostFunction2(best_views[i], image_height, focal_y, image_width);
+        best_views_cost.emplace_back(i, view_cost);
+    }
+    std::sort(best_views_cost.begin(), best_views_cost.end(), [](auto &left, auto &right) {
+        return left.second < right.second;
+    });
+
+    std::vector<glm::mat4> best_views_sorted;
+    for (int i = 0; i < num_views; i++) {
+        int idx = best_views_cost[i].first;
+        best_views_sorted.push_back(best_views[idx]);
+    }
+
+    return best_views_sorted;
 }
 
 double NextBestView::TargetPercentage(const std::vector<double>& quality_measure) {
@@ -443,7 +461,34 @@ NextBestView::FaceDistances(const std::unordered_set<unsigned int>& faces, const
     return face_distances;
 }
 
+std::pair<glm::vec3, glm::vec3> NextBestView::ClusterCenterNormal(
+        const std::pair<std::vector<unsigned int>, double>& cluster) {
+    glm::vec3 center_sum = glm::vec3(0.0f);
+    glm::vec3 normal_sum = glm::vec3(0.0f);
+    for (const auto& face_id : cluster.first) {
+        center_sum += face_centers_[face_id];
+        normal_sum += face_normals_[face_id];
+    }
+    glm::vec3 cluster_center = center_sum / static_cast<float>(cluster.first.size());
+    glm::vec3 cluster_normal = normal_sum / static_cast<float>(cluster.first.size());
+
+    return std::make_pair(cluster_center, glm::normalize(cluster_normal));
+}
+
+double NextBestView::CameraToTargetAngle(const glm::mat4& view_matrix, const glm::vec3& target) {
+    glm::mat4 camera_world = glm::inverse(view_matrix);
+    glm::vec3 camera_center = glm::column(camera_world, 3);
+    glm::vec3 camera_front = -glm::column(camera_world, 2);
+
+    glm::vec3 target_direction = glm::normalize(target - camera_center);
+    double phi = glm::angle(target_direction, camera_front);
+    return phi;
+}
+
 std::pair<double, double> NextBestView::MeanDeviation(const std::unordered_set<double>& face_quality) {
+    if (face_quality.size() <= 1) {
+        return std::make_pair(0.0, 0.0);
+    }
 
     // Mean
     double sum = 0.0;
@@ -462,8 +507,18 @@ std::pair<double, double> NextBestView::MeanDeviation(const std::unordered_set<d
     return std::make_pair(mean, sd);
 }
 
-double NextBestView::CostFunctionPosition(
-        const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
+double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width,
+                                  const glm::vec3& cluster_center, const glm::vec3& cluster_normal) {
+    glm::mat4 camera_world = glm::inverse(view_matrix);
+    glm::vec3 camera_center = glm::column(camera_world, 3);
+    glm::vec3 camera_front = -glm::column(camera_world, 2);
+
+    // Cluster angle
+    double cluster_normal_angle = glm::angle(cluster_normal, -camera_front);
+    double cluster_target_angle = CameraToTargetAngle(view_matrix, cluster_center);
+
+    // Cluster distance
+    double cluster_distance = glm::distance(camera_center, cluster_center);
 
     // Visible faces
     auto visible_faces = VisibleFaces(
@@ -472,56 +527,66 @@ double NextBestView::CostFunctionPosition(
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
-    assert(!visible_faces.empty());
-    // if (visible_faces.size() < visible_faces_target_) {
-        // return std::numeric_limits<double>::max();
-        // return 5000;
-    // }
+    double visibility_weight = 1.0 / (1.0 + exp(-1.0 * (visible_faces.size() - visible_faces_tresh_)));
 
-    // Get face quality
+    // Quality cost
     std::unordered_set<double> face_quality;
+    std::vector<double> face_area = FaceArea();
     for (const auto& face_id : visible_faces) {
         double q = ppa_[face_id];
         face_quality.insert(q);
     }
-
-    // Cost value (minimization)
     auto mean_sd = MeanDeviation(face_quality);
-    double cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
-    std::cout << "Cost T: " << cost << " (M: " << mean_sd.first << " SD: " << mean_sd.second << ")" << std::endl;
+    double face_cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
+
+    // Combined cost (minimization)
+    double target_angle_component = (1 - visibility_weight) * (cluster_target_angle) * 100;
+    double normal_angle_component = -cos(cluster_normal_angle) * 50;
+    double distance_component = pow(cluster_distance - distance_tresh_, 2.0) * 100;
+    double face_component = visibility_weight * face_cost;
+    double visibility_component = (visible_faces_tresh_ / 5.0) /
+            (visible_faces.size() + (visible_faces_tresh_ / 5.0)) * 2000;
+    // double cost = target_angle_component + distance_component + face_component;
+    double cost = face_component;
+
+    // Debug
+    std::cout << "Cost: " << cost
+              // << " F: " << visible_faces.size()
+              << " M: " << mean_sd.first
+              << " SD: " << mean_sd.second
+              // << " TAC: " << target_angle_component
+              // << " CAC: " << normal_angle_component
+              // << " DC: " << distance_component
+              // << " VC: " << visibility_component
+              << " FC: " << face_component
+              << std::endl;
+
     return cost;
 }
 
-double NextBestView::CostFunctionRotation(
-        const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
+double NextBestView::CostFunction2(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width) {
 
-    // Get visible faces
+    // TODO: upostevaj meje rekonstrukcije
+
+    // Visible faces
     auto visible_faces = VisibleFaces(
             view_matrix,
             static_cast<int>(image_width / downscale_factor_),
             static_cast<int>(image_height / downscale_factor_),
             focal_y / downscale_factor_);
 
-    // Add all faces if threshold not met
-    assert(!visible_faces.empty());
-    // if (visible_faces.size() < visible_faces_target_) {
-    //     visible_faces.clear();
-    //     for (const auto& face_id : valid_faces_) {
-    //         visible_faces.insert(face_id);
-    //     }
-    // }
-
-    // Compute average angle
-    auto face_angles = FaceAngles(visible_faces, view_matrix);
-    double angle_sum = 0;
-    for (const auto& [face_id, face_angle] : face_angles) {
-        angle_sum += face_angle;
+    // Quality cost
+    std::unordered_set<double> face_quality;
+    std::vector<double> face_area = FaceArea();
+    for (const auto& face_id : visible_faces) {
+        double q = ppa_[face_id];
+        if (q > max_quality_) {
+            face_quality.insert(max_quality_);
+        } else {
+            face_quality.insert(q);
+        }
     }
-    double angle_avg = angle_sum / face_angles.size();
-
-    // Cost value
-    std::cout << "Cost R: " << angle_avg << std::endl;
-    return angle_avg;
+    auto mean_sd = MeanDeviation(face_quality);
+    double face_cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
+    return face_cost;
 }
-
-

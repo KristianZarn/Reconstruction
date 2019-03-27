@@ -23,11 +23,11 @@ int main(int argc, char *argv[]) {
 
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
-    std::string project_folder = root_folder + "frank/";
-    std::string images_folder = project_folder + "images_gen/";
+    std::string project_folder = root_folder + "boat/";
+    std::string images_folder = project_folder + "images_nbv/";
     std::string image_ext = ".png";
     std::string reconstruction_folder = project_folder + "reconstruction/";
-    std::string evaluation_folder = reconstruction_folder + "evaluation_gen/";
+    std::string evaluation_folder = reconstruction_folder + "evaluation_nbv/";
     std::string calibration_file = project_folder + "prior_calibration.txt";
 
     // Initialize the viewer
@@ -101,9 +101,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach next best view plugin
-    // auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
-    // NextBestViewPlugin nbv_plugin(next_best_view);
-    // viewer.plugins.push_back(&nbv_plugin);
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    NextBestViewPlugin nbv_plugin(next_best_view);
+    viewer.plugins.push_back(&nbv_plugin);
 
     // Attach edit mesh plugin
     // EditMeshPlugin::Parameters edit_mesh_parameters;

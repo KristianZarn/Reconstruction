@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h>
 #include <OpenMVS/MVS.h>
 #include <glm/glm.hpp>
-#include <optim.hpp>
 
 #include "SourceShader.h"
 #include "MeasureMesh.h"
@@ -24,24 +23,29 @@ public:
     std::vector<unsigned int>
     RenderFaceIdFromCamera(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
 
+    // Initialization functions
     std::vector<double> FaceArea();
     std::vector<double> PixelsPerArea();
     std::vector<std::pair<std::vector<unsigned int>, double>> FaceClusters(const std::vector<double>& quality_measure);
     std::vector<glm::mat4> BestViewInit(const std::vector<std::pair<std::vector<unsigned int>, double>>& cluster_costs,
-                                        const std::vector<double>& quality_measure,
                                         const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
-    double TargetPercentage(const std::vector<double>& quality_measure);
 
+    // Helpers
+    double TargetPercentage(const std::vector<double>& quality_measure);
     std::unordered_set<unsigned int>
     VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
     std::unordered_map<unsigned int, double>
     FaceAngles(const std::unordered_set<unsigned int>& faces, const glm::mat4& view_matrix);
     std::unordered_map<unsigned int, double>
     FaceDistances(const std::unordered_set<unsigned int>& faces, const glm::mat4& view_matrix);
+    std::pair<glm::vec3, glm::vec3> ClusterCenterNormal(const std::pair<std::vector<unsigned int>, double>& cluster);
+    double CameraToTargetAngle(const glm::mat4& view_matrix, const glm::vec3& target);
 
+    // Optimization functions
     std::pair<double, double> MeanDeviation(const std::unordered_set<double>& face_quality);
-    double CostFunctionPosition(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
-    double CostFunctionRotation(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y);
+    double CostFunction(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width,
+                        const glm::vec3& cluster_center, const glm::vec3& cluster_normal);
+    double CostFunction2(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width);
 
 private:
     void UpdateFaceIdMesh();
@@ -55,21 +59,22 @@ public:
     float max_quality_ = 1500;
 
     // Clustering parameters
-    int cluster_min_size_ = 20; // min size of cluster
+    int cluster_min_size_ = 100; // min size of cluster
     int cluster_max_size_ = 300; // max size of cluster
     float cluster_angle_ = 100; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
-    int init_num_views_ = 5; // max number of returned views
-    float init_alpha_ = -1.5f; // mean multiplier for initialization
-    float init_beta_ = -3.0f; // standard deviation multiplier for initialization
+    int init_num_views_ = 10; // max number of returned views
+    float init_alpha_ = 1.0f; // mean multiplier for initialization
+    float init_beta_ = -5.0f; // standard deviation multiplier for initialization
     float dist_alpha_ = 4.0f;
 
     // Cost function parameters
-    double downscale_factor_ = 4.0;
-    int visible_faces_target_ = 50;
+    double downscale_factor_ = 2.0;
+    float visible_faces_tresh_ = 500.0f;
+    float distance_tresh_ = 4.0f;
     float optim_alpha_ = 1.0f; // mean multiplier for optimization
-    float optim_beta_ = -3.0f; // standard deviation multiplier for optimization
+    float optim_beta_ = -5.0f; // standard deviation multiplier for optimization
 
 private:
     // Rendering members

@@ -29,8 +29,12 @@ std::vector<colmap::retrieval::ImageScore> ImageRetrieval::QueryImage(
         const std::vector<theia::Keypoint>& keypoints,
         const std::vector<Eigen::VectorXf>& descriptors) {
 
-    assert(!keypoints.empty());
     assert(keypoints.size() == descriptors.size());
+
+    std::vector<colmap::retrieval::ImageScore> image_scores;
+    if (keypoints.empty()) {
+        return image_scores;
+    }
 
     // Convert from Theia to Colmap
     colmap::FeatureKeypoints colmap_keypoints;
@@ -38,7 +42,6 @@ std::vector<colmap::retrieval::ImageScore> ImageRetrieval::QueryImage(
     convertFromTheiaToColmap(keypoints, descriptors, &colmap_keypoints, &colmap_descriptors);
 
     // Query
-    std::vector<colmap::retrieval::ImageScore> image_scores;
     visual_index_.Query(options_.query_options, colmap_keypoints, colmap_descriptors, &image_scores);
     return image_scores;
 }

@@ -53,7 +53,8 @@ private:
             "uniform sampler2D texture_diffuse;\n"
             "void main()\n"
             "{\n"
-            "    FragColor = texture(texture_diffuse, TexCoords);\n"
+            "    if (gl_FrontFacing) FragColor = texture(texture_diffuse, TexCoords);\n"
+            "    else FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
             "}\n";
 };
 

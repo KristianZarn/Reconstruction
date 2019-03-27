@@ -20,7 +20,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
     // Matching options
     options.matching_options.rng = options.rng;
     options.matching_options.num_threads = 4;
-    options.matching_options.min_num_feature_matches = 30;
+    options.matching_options.min_num_feature_matches = 100;
     options.matching_options.lowes_ratio = 0.8;
     options.matching_options.perform_geometric_verification = true;
 

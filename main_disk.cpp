@@ -78,7 +78,6 @@ int main(int argc, char *argv[]) {
     auto reconstruction_builder = std::make_shared<RealtimeReconstructionBuilder>(options);
     auto mvs_scene = std::make_shared<MVS::Scene>(options.num_threads);
     auto quality_measure = std::make_shared<QualityMeasure>(mvs_scene);
-    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
 
     // Attach reconstruction plugin
     ReconstructionPlugin::Parameters reconstruction_parameters;
@@ -99,13 +98,14 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    viewer.plugins.push_back(&edit_mesh_plugin);
+    // EditMeshPlugin::Parameters edit_mesh_parameters;
+    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
-    // NextBestViewPlugin nbv_plugin(next_best_view);
-    // viewer.plugins.push_back(&nbv_plugin);
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    NextBestViewPlugin nbv_plugin(next_best_view);
+    viewer.plugins.push_back(&nbv_plugin);
 
     // Start viewer
     viewer.launch();

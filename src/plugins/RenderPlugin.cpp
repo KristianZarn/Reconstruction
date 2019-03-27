@@ -55,10 +55,10 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
     // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
     render_cameras_gizmo_ <<
-        12.6392, 0,       0,       0,
-        0, 12.6392,       0, 2.90833,
-        0,       0, 12.6392,       0,
-        0,       0,       0,       1;
+                          9.44328,       0,       0,       0,
+            0, 9.44328,       0, 2.44004,
+            0,       0, 9.44328,       0,
+            0,       0,       0,       1;
 }
 
 bool RenderPlugin::pre_draw() {
