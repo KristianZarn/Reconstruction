@@ -399,7 +399,7 @@ bool RealtimeReconstructionBuilder::LocalizeImage(const std::vector<theia::Keypo
     }
 
     // Return if number of putative matches is too small
-    if (pose_match.size() < options_.matching_options.min_num_feature_matches) {
+    if (pose_match.size() < options_.reconstruction_estimator_options.min_num_absolute_pose_inliers) {
         return false;
     }
 
@@ -420,7 +420,7 @@ bool RealtimeReconstructionBuilder::LocalizeImage(const std::vector<theia::Keypo
     theia::RansacSummary ransac_summary;
     EstimateCalibratedAbsolutePose(ransac_parameters, theia::RansacType::RANSAC, pose_match, &pose, &ransac_summary);
 
-    return ransac_summary.inliers.size() >= options_.matching_options.min_num_feature_matches;
+    return (ransac_summary.inliers.size() >= options_.reconstruction_estimator_options.min_num_absolute_pose_inliers);
 }
 
 bool RealtimeReconstructionBuilder::IsInitialized() {
@@ -468,6 +468,10 @@ void RealtimeReconstructionBuilder::PrintStatistics(std::ostream& stream,
         }
         stream << "\n";
     }
+}
+
+bool RealtimeReconstructionBuilder::AllEstimated() {
+    return (reconstruction_->NumViews() == NumEstimatedViews(*reconstruction_));
 }
 
 theia::ViewId RealtimeReconstructionBuilder::GetLastAddedViewId() {

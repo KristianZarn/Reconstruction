@@ -20,7 +20,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
     // Matching options
     options.matching_options.rng = options.rng;
     options.matching_options.num_threads = 4;
-    options.matching_options.min_num_feature_matches = 100;
+    options.matching_options.min_num_feature_matches = 30;
     options.matching_options.lowes_ratio = 0.8;
     options.matching_options.perform_geometric_verification = true;
 
@@ -45,7 +45,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
 
     // Incremental SfM Options.
     reconstruction_estimator_options.absolute_pose_reprojection_error_threshold = 4.0;
-    reconstruction_estimator_options.min_num_absolute_pose_inliers = 30;
+    reconstruction_estimator_options.min_num_absolute_pose_inliers = 100;
     reconstruction_estimator_options.full_bundle_adjustment_growth_percent = 5.0;
     reconstruction_estimator_options.partial_bundle_adjustment_num_views = 20;
 

@@ -394,7 +394,7 @@ NextBestView::BestViewInit(const std::vector<std::pair<std::vector<unsigned int>
 
     std::vector<std::pair<int, double>> best_views_cost;
     for (int i = 0; i < num_views; i++) {
-        double view_cost = CostFunction2(best_views[i], image_height, focal_y, image_width);
+        double view_cost = CostFunctionInit(best_views[i], image_height, focal_y, image_width);
         best_views_cost.emplace_back(i, view_cost);
     }
     std::sort(best_views_cost.begin(), best_views_cost.end(), [](auto &left, auto &right) {
@@ -569,7 +569,7 @@ double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_height
     return cost;
 }
 
-double NextBestView::CostFunction2(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width) {
+double NextBestView::CostFunctionInit(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width) {
 
     // TODO: upostevaj meje rekonstrukcije
 
@@ -592,6 +592,7 @@ double NextBestView::CostFunction2(const glm::mat4& view_matrix, int image_heigh
         }
     }
     auto mean_sd = MeanDeviation(face_quality);
-    double face_cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
+    // double face_cost = optim_alpha_ * mean_sd.first + optim_beta_ * mean_sd.second;
+    double face_cost = init_alpha_ * mean_sd.first + init_beta_ * mean_sd.second;
     return face_cost;
 }

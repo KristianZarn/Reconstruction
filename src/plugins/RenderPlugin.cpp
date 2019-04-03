@@ -55,10 +55,10 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
     // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
     render_cameras_gizmo_ <<
-                          23.4815,         0,         0, -0.217392,
-            0,   23.4815,         0,   6.10873,
-            0,         0,   23.4815,         0,
-            0,         0,         0,         1;
+                          9.44328,       0,       0,       0,
+            0, 9.44328,       0, 2.44004,
+            0,       0, 9.44328,       0,
+            0,       0,       0,       1;
 }
 
 bool RenderPlugin::pre_draw() {
@@ -182,6 +182,15 @@ bool RenderPlugin::post_draw() {
             if (nbv_plugin_) {
                 if (ImGui::Button("Extend (NBV)", ImVec2(-1, 0))) {
                     extend_nbv_callback();
+                }
+            }
+            if (nbv_plugin_) {
+                ImGui::PushItemWidth(100.0f);
+                ImGui::InputInt("##nbvextend", &nbv_extend_count_);
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                if (ImGui::Button("Extend many (NBV)", ImVec2(-1, 0))) {
+                    extend_many_nbv_callback();
                 }
             }
             if (ImGui::Button("Extend (manual)", ImVec2(-1, 0))) {
@@ -410,6 +419,36 @@ void RenderPlugin::extend_nbv_callback() {
     }
 }
 
+void RenderPlugin::extend_many_nbv_callback() {
+    if (!reconstruction_plugin_ || !nbv_plugin_) {
+        log_stream_ << "Render Error: Reconstruction or NBV plugin not present." << std::endl;
+        return;
+    }
+
+    for (int i = 0; i < nbv_extend_count_; i++) {
+
+        // Extend NBV
+        extend_nbv_callback();
+
+        // Check if all views estimated
+        std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
+                reconstruction_plugin_->get_reconstruction_builder();
+        if (!reconstruction_builder->AllEstimated()) {
+            log_stream_ << "Render: Not all views are estimated" << std::endl;
+            break;
+        }
+
+
+        // Check if MSE too big
+        glm::mat4 transform = render_stats_.ComputeTransformation();
+        double mse = render_stats_.ComputeMSE(transform);
+        if (mse > 0.1) {
+            log_stream_ << "Render: MSE too big: " << mse << std::endl;
+            break;
+        }
+    }
+}
+
 void RenderPlugin::extend_manual_callback(int best_view_pick) {
     if (!reconstruction_plugin_) {
         log_stream_ << "Render Error: Reconstruction plugin not present." << std::endl;
@@ -424,24 +463,26 @@ void RenderPlugin::extend_manual_callback(int best_view_pick) {
     std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
             reconstruction_plugin_->get_reconstruction_builder();
 
-    theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
-    Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
-    glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
+    if (reconstruction_builder->AllEstimated()) {
+        theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
+        Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
+        glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
 
-    glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
-    render_stats_.AddPose(render_pose, estimated_pose, best_view_pick);
+        glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
+        render_stats_.AddPose(render_pose, estimated_pose, best_view_pick);
 
-    if (auto_align_) {
-        align_callback();
-    }
-    if (auto_save_mesh_) {
-        save_aligned_callback();
-    }
-    if (auto_save_quality_) {
-        save_quality_callback();
-    }
-    if (auto_save_render_stats_) {
-        save_render_stats_callback();
+        if (auto_align_) {
+            align_callback();
+        }
+        if (auto_save_mesh_) {
+            save_aligned_callback();
+        }
+        if (auto_save_quality_) {
+            save_quality_callback();
+        }
+        if (auto_save_render_stats_) {
+            save_render_stats_callback();
+        }
     }
 }
 

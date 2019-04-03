@@ -446,7 +446,7 @@ void NextBestViewPlugin::debug_callback() {
     // double cost = next_best_view_->CostFunction(
     //         view_matrix, image_height, focal_y, image_width, cluster.first, cluster.second);
     // log_stream_ << "Cost: " << cost << std::endl;
-    double cost = next_best_view_->CostFunction2(view_matrix, image_height, focal_y, image_width);
+    double cost = next_best_view_->CostFunctionInit(view_matrix, image_height, focal_y, image_width);
     log_stream_ << "Cost: " << cost << std::endl;
 
     // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);

@@ -94,6 +94,9 @@ public:
                          bool print_reconstruction = true,
                          bool print_view_graph = true);
 
+    // Utility functions
+    bool AllEstimated();
+
     // Getters
     theia::ViewId GetLastAddedViewId();
     const theia::Reconstruction& GetReconstruction();

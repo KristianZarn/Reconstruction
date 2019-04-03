@@ -45,7 +45,7 @@ public:
     std::pair<double, double> MeanDeviation(const std::unordered_set<double>& face_quality);
     double CostFunction(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width,
                         const glm::vec3& cluster_center, const glm::vec3& cluster_normal);
-    double CostFunction2(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width);
+    double CostFunctionInit(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width);
 
 private:
     void UpdateFaceIdMesh();

@@ -43,6 +43,7 @@ public:
     void extend_generated_callback();
     void extend_all_generated_callback();
     void extend_nbv_callback();
+    void extend_many_nbv_callback();
     void extend_manual_callback(int best_view_pick = -1);
     void align_callback();
     void save_aligned_callback();
@@ -94,6 +95,7 @@ private:
     bool auto_save_mesh_ = true;
     bool auto_save_quality_ = false;
     bool auto_save_render_stats_ = true;
+    int nbv_extend_count_ = 69;
 
     // Render
     MVS::Mesh mvs_mesh_;
