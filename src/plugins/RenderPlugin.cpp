@@ -52,13 +52,8 @@ void RenderPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     camera_gizmo_ = Eigen::Matrix4f::Identity();
 
 
-    // Eigen::Vector4f s(4.0f, 4.0f, 4.0f, 1.0f);
-    // render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
-    render_cameras_gizmo_ <<
-                          9.44328,       0,       0,       0,
-            0, 9.44328,       0, 2.44004,
-            0,       0, 9.44328,       0,
-            0,       0,       0,       1;
+    Eigen::Vector4f s(10.0f, 10.0f, 10.0f, 1.0f);
+    render_cameras_gizmo_ = Eigen::Matrix4f::Identity() * Eigen::Scaling(s);
 }
 
 bool RenderPlugin::pre_draw() {
@@ -86,11 +81,15 @@ bool RenderPlugin::post_draw() {
         if (ImGui::Button("Load mesh (PLY, OBJ)", ImVec2(-1, 0))) {
             load_scene_callback();
         }
+        if (ImGui::Checkbox("Show render cameras", &render_cameras_visible_)) {
+            show_render_cameras(render_cameras_visible_);
+        }
         if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
             show_render_mesh(render_mesh_visible_);
         }
-        if (ImGui::Checkbox("Show render cameras", &render_cameras_visible_)) {
-            show_render_cameras(render_cameras_visible_);
+        if (ImGui::Checkbox("Show texture", &mesh_texture_visible_)) {
+            viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
+            viewer->data().show_texture = mesh_texture_visible_;
         }
         ImGui::TreePop();
     }
@@ -128,6 +127,12 @@ bool RenderPlugin::post_draw() {
             if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
                 render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
             }
+        }
+        if (ImGui::Button("Save render cameras pose", ImVec2(-1, 0))) {
+            save_render_cameras_gizmo();
+        }
+        if (ImGui::Button("Load render cameras pose", ImVec2(-1, 0))) {
+            load_render_cameras_gizmo();
         }
         ImGui::TreePop();
     }
@@ -663,10 +668,51 @@ void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
         F(i, 1) = face[1];
         F(i, 2) = face[2];
     }
-
     viewer->data().set_mesh(V_aligned, F);
     viewer->data().show_lines = false;
     viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
+
+    // Add texture if available
+    if (!mvs_mesh_.faceTexcoords.IsEmpty()) {
+
+        // Set UVs
+        int num_texcoords = mvs_mesh_.faceTexcoords.size();
+        Eigen::MatrixXd TC(num_texcoords, 2);
+        for (int i = 0; i < num_texcoords; i++) {
+            MVS::Mesh::TexCoord texcoord = mvs_mesh_.faceTexcoords[i];
+            TC(i, 0) = texcoord[0];
+            TC(i, 1) = texcoord[1];
+        }
+        Eigen::MatrixXi FTC(num_faces, 3);
+        for (int i = 0; i < num_faces; i++) {
+            FTC(i, 0) = i * 3 + 0;
+            FTC(i, 1) = i * 3 + 1;
+            FTC(i, 2) = i * 3 + 2;
+        }
+        viewer->data().set_uv(TC, FTC);
+
+        // Set texture
+        SEACAVE::Image8U3 img = mvs_mesh_.textureDiffuse;
+        int width = img.width();
+        int height = img.height();
+
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> R(width, height);
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> G(width, height);
+        Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> B(width, height);
+
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                Pixel8U pixel = img.getPixel(j, i);
+                R(i, j) = pixel.r;
+                G(i, j) = pixel.g;
+                B(i, j) = pixel.b;
+            }
+        }
+
+        viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
+        viewer->data().show_texture = mesh_texture_visible_;
+    }
+
     center_object();
 }
 
@@ -755,7 +801,7 @@ void RenderPlugin::set_render_cameras() {
     // Set viewer data
     viewer->data().set_mesh(cameras_V, cameras_F);
     viewer->data().set_face_based(true);
-    Eigen::Vector3d gray_color = Eigen::Vector3d(128, 128, 128) / 255.0;
+    Eigen::Vector3d gray_color = Eigen::Vector3d(64, 64, 64) / 255.0;
     viewer->data().uniform_colors(gray_color, gray_color, gray_color);
 }
 
@@ -764,6 +810,53 @@ void RenderPlugin::show_render_cameras(bool visible) {
     viewer->selected_data_index = VIEWER_DATA_RENDER_CAMERAS;
     viewer->data().show_faces = visible;
     viewer->data().show_lines = visible;
+}
+
+void RenderPlugin::save_render_cameras_gizmo() {
+    std::string filename = "render_cameras_gizmo.txt";
+    std::string fullname = reconstruction_folder_ + filename;
+
+    // Open file
+    std::ofstream outf(fullname);
+    if (!outf) {
+        log_stream_ << "Render: Could not open file: \n\t" << fullname << std::endl;
+        return;
+    }
+
+    // Write data to file
+    int cols = render_cameras_gizmo_.cols();
+    int rows = render_cameras_gizmo_.rows();
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            outf << render_cameras_gizmo_(i, j) << " ";
+        }
+        outf << "\n";
+    }
+    log_stream_ << "Render: Render cameras gizmo saved to: \n\t" << fullname << std::endl;
+}
+
+void RenderPlugin::load_render_cameras_gizmo() {
+    std::string filename = "render_cameras_gizmo.txt";
+    std::string fullname = reconstruction_folder_ + filename;
+
+    // Open file
+    std::ifstream infile(fullname);
+    if (!infile) {
+        log_stream_ << "Render: Could not open file: \n\t" << fullname << std::endl;
+        return;
+    }
+
+    double value;
+    int cols = render_cameras_gizmo_.cols();
+    int rows = render_cameras_gizmo_.rows();
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (infile.eof()) break;
+            infile >> value;
+            render_cameras_gizmo_(i, j) = value;
+        }
+    }
+    log_stream_ << "Render: Loaded render cameras gizmo from: \n\t" << fullname << std::endl;
 }
 
 // Mouse IO

@@ -789,7 +789,7 @@ void ReconstructionPlugin::set_cameras() {
     // Set viewer data
     viewer->data().set_mesh(cameras_V, cameras_F);
     viewer->data().set_face_based(true);
-    Eigen::Vector3d gray_color = Eigen::Vector3d(128, 128, 128) / 255.0;
+    Eigen::Vector3d gray_color = Eigen::Vector3d(64, 64, 64) / 255.0;
     viewer->data().uniform_colors(gray_color, gray_color, gray_color);
 }
 

@@ -76,6 +76,7 @@ private:
     bool render_cameras_visible_ = false;
     bool pose_render_cameras_ = false;
     bool render_mesh_visible_ = false;
+    bool mesh_texture_visible_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;
@@ -126,6 +127,9 @@ private:
     void update_render_cameras();
     void set_render_cameras();
     void show_render_cameras(bool visible);
+
+    void save_render_cameras_gizmo();
+    void load_render_cameras_gizmo();
 };
 
 

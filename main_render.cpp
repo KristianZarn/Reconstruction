@@ -23,11 +23,14 @@ int main(int argc, char *argv[]) {
 
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
-    std::string project_folder = root_folder + "boat_crop/";
-    std::string images_folder = project_folder + "images_nbv/";
+    // dataset setting
+    std::string project_folder = root_folder + "testing/";
+    std::string label = "gen_20";
+
+    std::string images_folder = project_folder + "images_" + label + "/";
     std::string image_ext = ".png";
     std::string reconstruction_folder = project_folder + "reconstruction/";
-    std::string evaluation_folder = reconstruction_folder + "evaluation_nbv/";
+    std::string evaluation_folder = reconstruction_folder + "evaluation_" + label + "/";
     std::string calibration_file = project_folder + "prior_calibration.txt";
 
     // Initialize the viewer
@@ -36,6 +39,9 @@ int main(int argc, char *argv[]) {
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
     viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
+
+    // For vizualization
+    viewer.core.background_color = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Setup viewer callbacks for ImGui
     viewer.callback_init = [] (igl::opengl::glfw::Viewer& v) -> bool {

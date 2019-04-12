@@ -551,8 +551,8 @@ double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_height
     double face_component = visibility_weight * face_cost;
     double visibility_component = (visible_faces_tresh_ / 5.0) /
             (visible_faces.size() + (visible_faces_tresh_ / 5.0)) * 2000;
-    // double cost = target_angle_component + distance_component + face_component;
-    double cost = face_component;
+    double cost = target_angle_component + distance_component + face_component;
+    // double cost = face_component;
 
     // Debug
     std::cout << "Cost: " << cost
