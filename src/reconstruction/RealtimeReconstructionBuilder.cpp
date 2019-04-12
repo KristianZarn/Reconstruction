@@ -214,7 +214,7 @@ bool RealtimeReconstructionBuilder::ExtendReconstruction(const std::string& imag
     }
 
     // Build reconstruction
-    reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
+    auto summary = reconstruction_estimator_->Estimate(view_graph_.get(), reconstruction_.get());
 
     // Check if view was added successfully
     if (reconstruction_->NumViews() != NumEstimatedViews(*reconstruction_)) {
@@ -472,6 +472,14 @@ void RealtimeReconstructionBuilder::PrintStatistics(std::ostream& stream,
 
 bool RealtimeReconstructionBuilder::AllEstimated() {
     return (reconstruction_->NumViews() == NumEstimatedViews(*reconstruction_));
+}
+
+int RealtimeReconstructionBuilder::NumEstimated() {
+    return NumEstimatedViews(*reconstruction_);
+}
+
+bool RealtimeReconstructionBuilder::IsEstimated(theia::ViewId view_id) {
+    return reconstruction_->View(view_id)->IsEstimated();
 }
 
 theia::ViewId RealtimeReconstructionBuilder::GetLastAddedViewId() {

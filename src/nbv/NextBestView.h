@@ -69,7 +69,7 @@ public:
     float cluster_angle_ = 100.0f; // max angle deviation from mean to be considered part of cluster
 
     // Best view parameters
-    int init_num_views_ = 10; // max number of returned views
+    int init_num_views_ = 20; // max number of returned views
     float init_alpha_ = 1.0f; // mean multiplier for initialization
     float init_beta_ = -5.0f; // standard deviation multiplier for initialization
     float dist_alpha_ = 4.0f;

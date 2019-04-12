@@ -96,6 +96,8 @@ public:
 
     // Utility functions
     bool AllEstimated();
+    int NumEstimated();
+    bool IsEstimated(theia::ViewId view_id);
 
     // Getters
     theia::ViewId GetLastAddedViewId();

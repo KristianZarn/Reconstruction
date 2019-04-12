@@ -45,7 +45,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
 
     // Incremental SfM Options.
     reconstruction_estimator_options.absolute_pose_reprojection_error_threshold = 4.0;
-    reconstruction_estimator_options.min_num_absolute_pose_inliers = 100;
+    reconstruction_estimator_options.min_num_absolute_pose_inliers = 200;
     reconstruction_estimator_options.full_bundle_adjustment_growth_percent = 5.0;
     reconstruction_estimator_options.partial_bundle_adjustment_num_views = 20;
 
@@ -62,7 +62,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
     reconstruction_estimator_options.subsample_tracks_for_bundle_adjustment = false;
     reconstruction_estimator_options.track_subset_selection_long_track_length_threshold = 10;
     reconstruction_estimator_options.track_selection_image_grid_cell_size_pixels = 100;
-    reconstruction_estimator_options.min_num_optimized_tracks_per_view = 100;
+    reconstruction_estimator_options.min_num_optimized_tracks_per_view = 200;
 
     return options;
 }

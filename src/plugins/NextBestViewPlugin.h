@@ -63,7 +63,7 @@ private:
     bool nbv_mesh_visible_ = false;
 
     bool auto_apply_selection_ = true;
-    bool auto_show_clusters_ = true;
+    bool auto_show_clusters_ = false;
 
     // Gizmo
     ImGuizmo::OPERATION gizmo_operation_ = ImGuizmo::TRANSLATE;

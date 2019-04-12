@@ -14,7 +14,7 @@ public:
     glm::mat4 GetEstimatedPose(int index);
 
     // Add new pose pair
-    void AddPose(const glm::mat4& render_pose, const glm::mat4& estimated_pose, int best_view_pick);
+    void AddPose(int pose_id, const glm::mat4& render_pose, const glm::mat4& estimated_pose, int best_view_pick);
 
     // Compute transformation from render to estimated poses in world coordinates
     glm::mat4 ComputeTransformation();
@@ -27,6 +27,7 @@ public:
 
 private:
     // Poses are in view coordinates
+    std::vector<int> pose_ids;
     std::vector<glm::mat4> render_poses;
     std::vector<glm::mat4> estimated_poses;
     std::vector<int> best_view_picks;

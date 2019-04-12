@@ -178,17 +178,25 @@ bool RenderPlugin::post_draw() {
             if (ImGui::Button("Initialize (generated)", ImVec2(-1, 0))) {
                 initialize_generated_callback();
             }
+
             if (ImGui::Button("Extend (generated)", ImVec2(-1, 0))) {
                 extend_generated_callback();
             }
-            if (ImGui::Button("Extend all (generated)", ImVec2(-1, 0))) {
-                extend_all_generated_callback();
+
+            ImGui::PushItemWidth(100.0f);
+            ImGui::InputInt("##genextend", &gen_extend_count_);
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
+            if (ImGui::Button("Extend many (generated)", ImVec2(-1, 0))) {
+                extend_many_generated_callback();
             }
+
             if (nbv_plugin_) {
                 if (ImGui::Button("Extend (NBV)", ImVec2(-1, 0))) {
                     extend_nbv_callback();
                 }
             }
+
             if (nbv_plugin_) {
                 ImGui::PushItemWidth(100.0f);
                 ImGui::InputInt("##nbvextend", &nbv_extend_count_);
@@ -198,6 +206,7 @@ bool RenderPlugin::post_draw() {
                     extend_many_nbv_callback();
                 }
             }
+
             if (ImGui::Button("Extend (manual)", ImVec2(-1, 0))) {
                 extend_manual_callback();
             }
@@ -238,6 +247,7 @@ bool RenderPlugin::post_draw() {
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
+            log_stream_ << "generated poses size: " << generated_poses_.size() << std::endl;
         }
         ImGui::TreePop();
     }
@@ -262,15 +272,19 @@ std::shared_ptr<std::vector<std::string>> RenderPlugin::get_rendered_image_names
 void RenderPlugin::load_scene_callback() {
     log_stream_ << std::endl;
 
+    // Load mesh to MVS format
     std::string tmp(mesh_name_);
     std::string fullpath = reconstruction_folder_ + tmp;
     mvs_mesh_.Release();
     mvs_mesh_.Load(fullpath);
 
+    // Initialize render mesh
     render_->Initialize(mvs_mesh_);
     set_render_mesh(mvs_mesh_);
     show_render_mesh(true);
 
+    // Initialize render cameras
+    load_render_cameras_gizmo();
     update_render_cameras();
     set_render_cameras();
     show_render_cameras(true);
@@ -341,9 +355,9 @@ void RenderPlugin::initialize_generated_callback() {
         tmp = reconstruction_plugin_->get_view_matrix(2).cast<float>();
         glm::mat4 estimated_pose_2 = glm::make_mat4(tmp.data());
 
-        render_stats_.AddPose(render_pose_0, estimated_pose_0, -1);
-        render_stats_.AddPose(render_pose_1, estimated_pose_1, -1);
-        render_stats_.AddPose(render_pose_2, estimated_pose_2, -1);
+        render_stats_.AddPose(0, render_pose_0, estimated_pose_0, -1);
+        render_stats_.AddPose(1, render_pose_1, estimated_pose_1, -1);
+        render_stats_.AddPose(2, render_pose_2, estimated_pose_2, -1);
 
         if (auto_align_) {
             align_callback();
@@ -366,8 +380,12 @@ void RenderPlugin::extend_generated_callback() {
     extend_manual_callback();
 }
 
-void RenderPlugin::extend_all_generated_callback() {
-    while (next_image_idx_ < generated_poses_.size()) {
+void RenderPlugin::extend_many_generated_callback() {
+    int tmp1 = next_image_idx_ + gen_extend_count_;
+    int tmp2 = static_cast<int>(generated_poses_.size());
+    int max_image_idx = std::min(tmp1, tmp2);
+
+    while (next_image_idx_ < max_image_idx) {
         extend_generated_callback();
     }
 }
@@ -468,13 +486,14 @@ void RenderPlugin::extend_manual_callback(int best_view_pick) {
     std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder =
             reconstruction_plugin_->get_reconstruction_builder();
 
-    if (reconstruction_builder->AllEstimated()) {
-        theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
+    // if (reconstruction_builder->AllEstimated()) {
+    theia::ViewId view_id = reconstruction_builder->GetLastAddedViewId();
+    if (reconstruction_builder->IsEstimated(view_id)) {
         Eigen::Matrix4f est_pose_eig = reconstruction_plugin_->get_view_matrix(view_id).cast<float>();
         glm::mat4 estimated_pose = glm::make_mat4(est_pose_eig.data());
 
         glm::mat4 render_pose = glm::inverse(glm::inverse(align_transform_) * render_pose_world_aligned_);
-        render_stats_.AddPose(render_pose, estimated_pose, best_view_pick);
+        render_stats_.AddPose(view_id, render_pose, estimated_pose, best_view_pick);
 
         if (auto_align_) {
             align_callback();
@@ -533,9 +552,8 @@ void RenderPlugin::save_aligned_callback() {
     }
 
     // Prepare filename
-    int num_cameras = reconstruction_scene->images.size();
     std::stringstream ss;
-    ss << std::setw(3) << std::setfill('0') << std::to_string(num_cameras);
+    ss << std::setw(3) << std::setfill('0') << std::to_string(next_image_idx_ - 1);
     std::string filename = ss.str() + ".ply";
     std::string fullname = evaluation_folder_ + filename;
 
@@ -556,9 +574,8 @@ void RenderPlugin::save_quality_callback() {
 
     // Prepare filename number
     std::shared_ptr<MVS::Scene> reconstruction_scene = reconstruction_plugin_->get_mvs_scene_();
-    int num_cameras = reconstruction_scene->images.size();
     std::stringstream ss;
-    ss << std::setw(3) << std::setfill('0') << std::to_string(num_cameras);
+    ss << std::setw(3) << std::setfill('0') << std::to_string(next_image_idx_ - 1);
     std::string filename;
     std::string fullname;
 
@@ -581,13 +598,13 @@ void RenderPlugin::save_quality_callback() {
     }
 
     // Save MPA measure
-    log_stream_ << "Render: Computing MPA ..." << std::endl;
-    std::vector<double> mpa = quality_measure->meanPixelsPerArea();
-    filename = ss.str() + ".mpa";
-    fullname = evaluation_folder_ + filename;
-    if (writeVectorToFile(fullname, mpa)) {
-        log_stream_ << "Render: MPA written to: \n\t" << fullname << std::endl;
-    }
+    // log_stream_ << "Render: Computing MPA ..." << std::endl;
+    // std::vector<double> mpa = quality_measure->meanPixelsPerArea();
+    // filename = ss.str() + ".mpa";
+    // fullname = evaluation_folder_ + filename;
+    // if (writeVectorToFile(fullname, mpa)) {
+    //     log_stream_ << "Render: MPA written to: \n\t" << fullname << std::endl;
+    // }
 }
 
 void RenderPlugin::save_render_stats_callback() {
@@ -673,7 +690,7 @@ void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
     viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
 
     // Add texture if available
-    if (!mvs_mesh_.faceTexcoords.IsEmpty()) {
+    /*if (!mvs_mesh_.faceTexcoords.IsEmpty()) {
 
         // Set UVs
         int num_texcoords = mvs_mesh_.faceTexcoords.size();
@@ -711,7 +728,7 @@ void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
 
         viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
         viewer->data().show_texture = mesh_texture_visible_;
-    }
+    }*/
 
     center_object();
 }

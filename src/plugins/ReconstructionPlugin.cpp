@@ -373,17 +373,20 @@ void ReconstructionPlugin::extend_callback() {
     // Reconstruction summary
     if (success) {
         log_stream_ << "Extend successful: \n";
-        reconstruction_builder_->ColorizeReconstruction(images_path_);
-
-        // Convert reconstruction to MVS
-        mvs_scene_->Release();
-        TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
     } else {
         log_stream_ << "Extend failed: \n";
         log_stream_ << "\tMessage = " << reconstruction_builder_->GetMessage() << "\n\n";
     }
     reconstruction_builder_->PrintStatistics(log_stream_, false, true, false);
 
+    // Colorize point cloud
+    reconstruction_builder_->ColorizeReconstruction(images_path_);
+
+    // Convert reconstruction to MVS
+    mvs_scene_->Release();
+    TheiaToMVS(reconstruction_builder_->GetReconstruction(), images_path_, *mvs_scene_);
+
+    // Setup viewer
     set_cameras();
     set_point_cloud();
 

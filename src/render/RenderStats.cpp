@@ -26,7 +26,9 @@ glm::mat4 RenderStats::GetEstimatedPose(int index) {
     return estimated_poses[index];
 }
 
-void RenderStats::AddPose(const glm::mat4& render_pose, const glm::mat4& estimated_pose, int best_view_pick) {
+void RenderStats::AddPose(int pose_id, const glm::mat4& render_pose,
+        const glm::mat4& estimated_pose, int best_view_pick) {
+    pose_ids.push_back(pose_id);
     render_poses.push_back(render_pose);
     estimated_poses.push_back(estimated_pose);
     best_view_picks.push_back(best_view_pick);
@@ -135,7 +137,7 @@ void RenderStats::WriteStatsToFile(std::string filename) {
 
     auto num_poses = render_poses.size();
     for (int i = 0; i < num_poses; i++) {
-        outfile << "View: " << i << "\n";
+        outfile << "View id: " << pose_ids[i] << "\n";
         outfile << "Render view mat: \n" << glm::to_string(render_poses[i]) << "\n";
         outfile << "Estimated view mat: \n" << glm::to_string(estimated_poses[i]) << "\n";
         outfile << "Best view pick: " << best_view_picks[i] << "\n\n";

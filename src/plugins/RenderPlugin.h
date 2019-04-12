@@ -3,6 +3,7 @@
 
 #include <string>
 #include <ostream>
+#include <algorithm>
 
 #include <imgui/imgui.h>
 #include <igl/opengl/glfw/Viewer.h>
@@ -41,7 +42,7 @@ public:
     // Plugin link callbacks
     void initialize_generated_callback();
     void extend_generated_callback();
-    void extend_all_generated_callback();
+    void extend_many_generated_callback();
     void extend_nbv_callback();
     void extend_many_nbv_callback();
     void extend_manual_callback(int best_view_pick = -1);
@@ -97,6 +98,7 @@ private:
     bool auto_save_quality_ = false;
     bool auto_save_render_stats_ = true;
     int nbv_extend_count_ = 69;
+    int gen_extend_count_ = 69;
 
     // Render
     MVS::Mesh mvs_mesh_;
