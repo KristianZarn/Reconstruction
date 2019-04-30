@@ -24,8 +24,8 @@ int main(int argc, char *argv[]) {
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
     // dataset setting
-    std::string project_folder = root_folder + "krava/";
-    std::string label = "gen_20";
+    std::string project_folder = root_folder + "statue/";
+    std::string label = "nbv";
 
     std::string images_folder = project_folder + "images_" + label + "/";
     std::string image_ext = ".png";

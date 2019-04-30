@@ -374,7 +374,6 @@ void NextBestViewPlugin::set_nbv_camera_callback(int selected_view) {
                 glm::value_ptr(scale));
 
         camera_visible_ = true;
-        log_stream_ << "NBV: Initial best view camera: " << selected_view << std::endl;
     }
 }
 

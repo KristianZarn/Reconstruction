@@ -45,7 +45,7 @@ RealtimeReconstructionBuilder::Options SetRealtimeReconstructionBuilderOptions()
 
     // Incremental SfM Options.
     reconstruction_estimator_options.absolute_pose_reprojection_error_threshold = 4.0;
-    reconstruction_estimator_options.min_num_absolute_pose_inliers = 200;
+    reconstruction_estimator_options.min_num_absolute_pose_inliers = 100;
     reconstruction_estimator_options.full_bundle_adjustment_growth_percent = 5.0;
     reconstruction_estimator_options.partial_bundle_adjustment_num_views = 20;
 

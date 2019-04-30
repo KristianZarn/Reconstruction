@@ -571,8 +571,6 @@ double NextBestView::CostFunction(const glm::mat4& view_matrix, int image_height
 
 double NextBestView::CostFunctionInit(const glm::mat4& view_matrix, int image_height, double focal_y, int image_width) {
 
-    // TODO: upostevaj meje rekonstrukcije
-
     // Visible faces
     auto visible_faces = VisibleFaces(
             view_matrix,

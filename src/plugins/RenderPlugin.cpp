@@ -120,7 +120,7 @@ bool RenderPlugin::post_draw() {
             // Update render poses
             update_render_cameras();
         }
-        if (ImGui::SliderInt("Camera density", &camera_density_, 10, 40)) {
+        if (ImGui::SliderInt("Camera density", &camera_density_, 10, 60)) {
             update_render_cameras();
         }
         if (ImGui::SliderInt("Pose index", &selected_pose_, 0, generated_poses_.size()-1)) {
@@ -690,7 +690,7 @@ void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
     viewer->data().set_colors(Eigen::RowVector3d(1, 1, 1));
 
     // Add texture if available
-    /*if (!mvs_mesh_.faceTexcoords.IsEmpty()) {
+    if (!mvs_mesh_.faceTexcoords.IsEmpty()) {
 
         // Set UVs
         int num_texcoords = mvs_mesh_.faceTexcoords.size();
@@ -728,7 +728,7 @@ void RenderPlugin::set_render_mesh(const MVS::Mesh& mvs_mesh) {
 
         viewer->data().set_texture(R.rowwise().reverse(), G.rowwise().reverse(), B.rowwise().reverse());
         viewer->data().show_texture = mesh_texture_visible_;
-    }*/
+    }
 
     center_object();
 }

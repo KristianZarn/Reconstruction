@@ -148,13 +148,13 @@ bool EditMeshPlugin::post_draw() {
         if (ImGui::Button("Decimate", ImVec2(-1, 0))) {
             decimate_callback();
         }
-        ImGui::PushItemWidth(150.0f);
+        /*ImGui::PushItemWidth(150.0f);
         ImGui::InputInt("##resize", &parameters_.texture_size);
         ImGui::PopItemWidth();
         ImGui::SameLine();
         if (ImGui::Button("Resize texture", ImVec2(-1, 0))) {
-            // TODO: resize texture
-        }
+
+        }*/
         ImGui::PushItemWidth(150.0f);
         ImGui::InputInt("##fill", &parameters_.fill_hole_size);
         ImGui::PopItemWidth();

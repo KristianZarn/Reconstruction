@@ -112,7 +112,7 @@ public:
         char filename_buffer[64] = "filename";
         bool auto_ply = false;
         bool auto_reconstruct = true;
-        bool auto_compute_ppa = true;
+        bool auto_compute_ppa = false;
     };
 
     ReconstructionPlugin(Parameters parameters,
