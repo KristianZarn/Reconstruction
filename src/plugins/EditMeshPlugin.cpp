@@ -40,35 +40,35 @@ bool EditMeshPlugin::post_draw() {
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(700.0f, 0.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Edit mesh", nullptr, ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Urejanje modela", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Vhod / Izhod", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Osvezi model", ImVec2(-1, 0))) {
             reload_mesh_callback();
         }
 
         std::ostringstream os;
-        os << "Mesh info:"
-           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
-           << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
+        os << "Informacije:"
+           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " V"
+           << "\t" << mvs_scene_->mesh.faces.GetSize() << " T";
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
 
     // Display options
-    if (ImGui::TreeNodeEx("Display options", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Moznosti prikaza", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Ponastavi kamero", ImVec2(-1, 0))) {
             center_object_callback();
         }
-        if (ImGui::Checkbox("Show mesh", &parameters_.show_mesh)) {
+        if (ImGui::Checkbox("Viden model", &parameters_.show_mesh)) {
             show_mesh(parameters_.show_mesh);
         }
-        if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+        if (ImGui::Checkbox("Vidna tekstura", &parameters_.show_texture)) {
             viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
             viewer->data().show_texture = parameters_.show_texture;
         }
-        if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+        if (ImGui::Checkbox("Vidni robovi", &parameters_.show_wireframe)) {
             viewer->selected_data_index = VIEWER_DATA_MESH_EDIT;
             viewer->data().show_lines = parameters_.show_wireframe;
         }
@@ -76,14 +76,14 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Selection
-    if (ImGui::TreeNodeEx("Selection", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::RadioButton("Pick faces [s]", parameters_.selection_mode == SelectionMode::PICK)) {
+    if (ImGui::TreeNodeEx("Izbira trikotnikov", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::RadioButton("Trikotnik [s]", parameters_.selection_mode == SelectionMode::PICK)) {
             parameters_.selection_mode = SelectionMode::PICK;
         }
-        if (ImGui::RadioButton("Bounding box", parameters_.selection_mode == SelectionMode::BOX)) {
+        if (ImGui::RadioButton("Kvader", parameters_.selection_mode == SelectionMode::BOX)) {
             parameters_.selection_mode = SelectionMode::BOX;
         }
-        if (ImGui::RadioButton("Plane", parameters_.selection_mode == SelectionMode::PLANE)) {
+        if (ImGui::RadioButton("Ravnina", parameters_.selection_mode == SelectionMode::PLANE)) {
             parameters_.selection_mode = SelectionMode::PLANE;
         }
         show_bounding_box(parameters_.selection_mode == SelectionMode::BOX);
@@ -98,9 +98,9 @@ bool EditMeshPlugin::post_draw() {
 
         // Selection: Bounding box
         if (parameters_.selection_mode == SelectionMode::BOX) {
-            ImGui::Text("Bounding box options:");
+            ImGui::Text("Moznosti kvadra");
             gizmo_options();
-            if (ImGui::Button("Select inside", ImVec2(-1, 0))) {
+            if (ImGui::Button("Izberi notranjost", ImVec2(-1, 0))) {
                 select_inside_callback();
             }
             // Show gizmo
@@ -114,9 +114,9 @@ bool EditMeshPlugin::post_draw() {
 
         // Selection: Plane
         if (parameters_.selection_mode == SelectionMode::PLANE) {
-            ImGui::Text("Plane options:");
+            ImGui::Text("Moznosti ravnine");
             gizmo_options();
-            if (ImGui::Button("Select below", ImVec2(-1, 0))) {
+            if (ImGui::Button("Izberi spodaj", ImVec2(-1, 0))) {
                 select_faces_below_callback();
             }
             // Show gizmo
@@ -131,21 +131,21 @@ bool EditMeshPlugin::post_draw() {
     }
 
     // Modify
-    if (ImGui::TreeNodeEx("Modify", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Invert selection", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Prilagodi", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Obrni izbiro", ImVec2(-1, 0))) {
             invert_selection_callback();
         }
-        if (ImGui::Button("Remove selection", ImVec2(-1, 0))) {
+        if (ImGui::Button("Odstrani izbiro", ImVec2(-1, 0))) {
             remove_selection_callback();
         }
-        if (ImGui::Button("Fit plane to selection", ImVec2(-1, 0))) {
+        if (ImGui::Button("Poravnaj ravnino z izbiro", ImVec2(-1, 0))) {
             fit_plane_callback();
         }
         ImGui::PushItemWidth(150.0f);
         ImGui::InputInt("##decimate", &parameters_.decimate_target);
         ImGui::PopItemWidth();
         ImGui::SameLine();
-        if (ImGui::Button("Decimate", ImVec2(-1, 0))) {
+        if (ImGui::Button("Decimiraj", ImVec2(-1, 0))) {
             decimate_callback();
         }
         /*ImGui::PushItemWidth(150.0f);
@@ -159,7 +159,7 @@ bool EditMeshPlugin::post_draw() {
         ImGui::InputInt("##fill", &parameters_.fill_hole_size);
         ImGui::PopItemWidth();
         ImGui::SameLine();
-        if (ImGui::Button("Fill holes", ImVec2(-1, 0))) {
+        if (ImGui::Button("Zapolni luknje", ImVec2(-1, 0))) {
             fill_holes_callback();
         }
         ImGui::TreePop();
@@ -187,20 +187,20 @@ bool EditMeshPlugin::post_draw() {
 }
 
 void EditMeshPlugin::gizmo_options() {
-    if (ImGui::RadioButton("Translate", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
+    if (ImGui::RadioButton("Translacija", parameters_.gizmo_operation == ImGuizmo::TRANSLATE))
         parameters_.gizmo_operation = ImGuizmo::TRANSLATE;
     ImGui::SameLine();
-    if (ImGui::RadioButton("Rotate", parameters_.gizmo_operation == ImGuizmo::ROTATE))
+    if (ImGui::RadioButton("Rotacija", parameters_.gizmo_operation == ImGuizmo::ROTATE))
         parameters_.gizmo_operation = ImGuizmo::ROTATE;
     ImGui::SameLine();
-    if (ImGui::RadioButton("Scale", parameters_.gizmo_operation == ImGuizmo::SCALE))
+    if (ImGui::RadioButton("Skaliranje", parameters_.gizmo_operation == ImGuizmo::SCALE))
         parameters_.gizmo_operation = ImGuizmo::SCALE;
 
     if (parameters_.gizmo_operation != ImGuizmo::SCALE) {
-        if (ImGui::RadioButton("Local", parameters_.gizmo_mode == ImGuizmo::LOCAL))
+        if (ImGui::RadioButton("Lokalno", parameters_.gizmo_mode == ImGuizmo::LOCAL))
             parameters_.gizmo_mode = ImGuizmo::LOCAL;
         ImGui::SameLine();
-        if (ImGui::RadioButton("World", parameters_.gizmo_mode == ImGuizmo::WORLD))
+        if (ImGui::RadioButton("Globalno", parameters_.gizmo_mode == ImGuizmo::WORLD))
             parameters_.gizmo_mode = ImGuizmo::WORLD;
     }
 }

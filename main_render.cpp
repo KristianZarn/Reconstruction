@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
-    // dataset setting
+    // Dataset setting
     std::string project_folder = root_folder + "statue/";
     std::string label = "nbv";
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
 
-    // For vizualization
+    // For better screenshots
     viewer.core.background_color = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Setup viewer callbacks for ImGui

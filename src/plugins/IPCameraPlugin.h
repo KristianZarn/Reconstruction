@@ -8,6 +8,9 @@
 #include <igl/opengl/glfw/ViewerPlugin.h>
 
 #include "reconstruction/RealtimeReconstructionBuilder.h"
+#include "plugins/ReconstructionPlugin.h"
+#include "plugins/NextBestViewPlugin.h"
+#include "util/IPCameraStats.h"
 
 class IPCameraPlugin : public igl::opengl::glfw::ViewerPlugin {
 public:
@@ -19,6 +22,12 @@ public:
     bool post_draw() override;
 
     std::shared_ptr<std::vector<std::string>> get_captured_image_names();
+
+    // Plugin link callbacks
+    void initialize_callback();
+    void extend_callback();
+    void nbv_callback();
+    void save_camera_stats_callback();
 
     // Mouse IO
     bool mouse_down(int button, int modifier) override;
@@ -32,6 +41,10 @@ public:
     bool key_up(int key, int modifiers) override;
 
 private:
+    // Plugins
+    ReconstructionPlugin* reconstruction_plugin_ = nullptr;
+    NextBestViewPlugin* nbv_plugin_ = nullptr;
+
     // Viewer data index
     unsigned int VIEWER_DATA_LOCALIZATION;
 
@@ -46,10 +59,15 @@ private:
 
     // Interface
     GLuint textureID_;
-    char url_buffer_[128] = "http://192.168.64.107:8080/photo.jpg";
-    bool show_camera_ = false;
+    char url_buffer_[128] = "http://192.168.64.113:8080/photoaf.jpg";
+    bool show_camera_ = true;
     bool auto_localize_ = true;
     bool auto_save_ = false;
+
+    bool auto_initialize_ = true;
+    bool auto_extend_ = true;
+    bool auto_nbv_ = true;
+    bool auto_save_camera_stats_ = true;
 
     // Reconstruction
     std::shared_ptr<RealtimeReconstructionBuilder> reconstruction_builder_;
@@ -62,6 +80,7 @@ private:
 
     // Log
     std::ostream& log_stream_ = std::cout;
+    IPCameraStats camera_stats_;
 
     // Callback functions
     void capture_image_callback();

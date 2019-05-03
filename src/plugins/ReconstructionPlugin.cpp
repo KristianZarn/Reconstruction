@@ -67,128 +67,128 @@ bool ReconstructionPlugin::post_draw() {
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Reconstruction", nullptr, ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Rekonstrukcija", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Input output
-    if (ImGui::TreeNodeEx("Input / Output", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::InputText("Filename", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
+    if (ImGui::TreeNodeEx("Vhod / Izhod", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::InputText("Ime datoteke", parameters_.filename_buffer, 64, ImGuiInputTextFlags_AutoSelectAll);
         ImGui::Spacing();
-        if (ImGui::Button("Save scene (MVS)", ImVec2(-70, 0))) {
+        if (ImGui::Button("Shrani (MVS)", ImVec2(-70, 0))) {
             save_scene_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Ply##reconstruct", &parameters_.auto_ply);
-        if (ImGui::Button("Load scene (MVS)", ImVec2(-1, 0))) {
+        if (ImGui::Button("Odpri (MVS)", ImVec2(-1, 0))) {
             load_scene_callback();
         }
-        if (ImGui::Button("Save calibration", ImVec2(-1, 0))) {
+        if (ImGui::Button("Shrani kalibracijo", ImVec2(-1, 0))) {
             save_calibration_callback();
         }
-        if (ImGui::Button("Reload mesh", ImVec2(-1, 0))) {
+        if (ImGui::Button("Osvezi model", ImVec2(-1, 0))) {
             reload_mesh_callback();
         }
         std::ostringstream os;
-        os << "MVS mesh:"
-           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " vertices"
-           << "\t" << mvs_scene_->mesh.faces.GetSize() << " faces";
+        os << "Informacije:"
+           << "\t" << mvs_scene_->mesh.vertices.GetSize() << " V"
+           << "\t" << mvs_scene_->mesh.faces.GetSize() << " F";
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
     }
 
     // Sparse reconstruction
-    if (ImGui::TreeNodeEx("Sparse reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Text("Build reconstruction");
+    if (ImGui::TreeNodeEx("Redka rekonstrukcija", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Text("Gradnja");
         ImGui::PushItemWidth(100.0f);
-        ImGui::InputInt("Next image index", &parameters_.next_image_idx);
+        ImGui::InputInt("Indeks naslednje slike", &parameters_.next_image_idx);
         ImGui::PopItemWidth();
 
-        if (ImGui::Button("Initialize [i]", ImVec2(-1,0))) {
+        if (ImGui::Button("Inicializiraj [i]", ImVec2(-1,0))) {
             initialize_callback();
         }
-        if (ImGui::Button("Extend [e]", ImVec2(-1, 0))) {
+        if (ImGui::Button("Razsiri [e]", ImVec2(-1, 0))) {
             extend_callback();
         }
-        if (ImGui::Button("Extend with all", ImVec2(-1, 0))) {
+        if (ImGui::Button("Razsiri z vsemi", ImVec2(-1, 0))) {
             extend_all_callback();
         }
         ImGui::Spacing();
 
-        ImGui::Text("Edit reconstruction");
+        ImGui::Text("Urejanje");
         ImGui::PushItemWidth(100.0f);
         ImGui::InputInt("##remove", &parameters_.view_to_delete);
         ImGui::PopItemWidth();
         ImGui::SameLine();
-        if (ImGui::Button("Remove view", ImVec2(-1, 0))) {
+        if (ImGui::Button("Odstani pogled", ImVec2(-1, 0))) {
             remove_view_callback(parameters_.view_to_delete);
         }
-        if (ImGui::Button("Remove last view", ImVec2(-1, 0))) {
+        if (ImGui::Button("Odstrani zadnji pogled", ImVec2(-1, 0))) {
             remove_last_view_callback();
         }
-        if (ImGui::Button("Reset reconstruction", ImVec2(-1, 0))) {
+        if (ImGui::Button("Ponastavi rekonstrukcijo", ImVec2(-1, 0))) {
             reset_reconstruction_callback();
         }
         ImGui::TreePop();
     }
 
     // Dense reconstruction
-    if (ImGui::TreeNodeEx("Dense reconstruction", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Reconstruct mesh", ImVec2(-70, 0))) {
+    if (ImGui::TreeNodeEx("Gosta rekonstrukcija", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Generiraj povrsino", ImVec2(-70, 0))) {
             reconstruct_mesh_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##reconstruct", &parameters_.auto_reconstruct);
 
-        if (ImGui::Button("Refine mesh", ImVec2(-1, 0))) {
+        if (ImGui::Button("Izboljsaj locljivost", ImVec2(-1, 0))) {
             refine_mesh_callback();
         }
-        if (ImGui::Button("Texture mesh", ImVec2(-1, 0))) {
+        if (ImGui::Button("Teksturiraj model", ImVec2(-1, 0))) {
             texture_mesh_callback();
         }
-        ImGui::ColorEdit3("Empty texture color", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
+        ImGui::ColorEdit3("Barva prazne teksture", (float*) &parameters_.empty_color, ImGuiColorEditFlags_NoInputs);
         ImGui::TreePop();
     }
 
     // Next best view
-    if (ImGui::TreeNodeEx("Quality measure", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Pixels per area", ImVec2(-70, 0))) {
+    if (ImGui::TreeNodeEx("Ocena kvalitete", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("PPA", ImVec2(-70, 0))) {
             pixels_per_area_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##compute_ppa", &parameters_.auto_compute_ppa);
 
-        if (ImGui::Button("Ground sampling distance", ImVec2(-1, 0))) {
+        if (ImGui::Button("GSD", ImVec2(-1, 0))) {
             ground_sampling_distance_callback();
         }
 
-        if (ImGui::Button("Mean pixels per area", ImVec2(-1, 0))) {
+        /*if (ImGui::Button("Mean pixels per area", ImVec2(-1, 0))) {
             mean_pixels_per_area_callback();
-        }
+        }*/
         ImGui::TreePop();
     }
 
     // Display options
-    if (ImGui::TreeNodeEx("Display options", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Center object", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Moznosti prikaza", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Ponastavi kamero", ImVec2(-1, 0))) {
             center_object_callback();
         }
-        if (ImGui::Checkbox("Show cameras [1]", &parameters_.show_cameras)) {
+        if (ImGui::Checkbox("Vidne kamere [1]", &parameters_.show_cameras)) {
             show_cameras(parameters_.show_cameras);
         }
-        if (ImGui::Checkbox("Show point cloud [2]", &parameters_.show_point_cloud)) {
+        if (ImGui::Checkbox("Viden oblak tock [2]", &parameters_.show_point_cloud)) {
             show_point_cloud(parameters_.show_point_cloud);
         }
-        if (ImGui::Checkbox("Show mesh [3]", &parameters_.show_mesh)) {
+        if (ImGui::Checkbox("Viden model [3]", &parameters_.show_mesh)) {
             show_mesh(parameters_.show_mesh);
         }
-        if (ImGui::Checkbox("Show texture", &parameters_.show_texture)) {
+        if (ImGui::Checkbox("Vidna tekstura", &parameters_.show_texture)) {
             viewer->selected_data_index = VIEWER_DATA_MESH;
             viewer->data().show_texture = parameters_.show_texture;
         }
-        if (ImGui::Checkbox("Show wireframe", &parameters_.show_wireframe)) {
+        if (ImGui::Checkbox("Vidni robovi", &parameters_.show_wireframe)) {
             viewer->selected_data_index = VIEWER_DATA_MESH;
             viewer->data().show_lines = parameters_.show_wireframe;
         }
-        ImGui::SliderInt("Point size", &parameters_.point_size, 1, 10);
+        ImGui::SliderInt("Velikost tock", &parameters_.point_size, 1, 10);
         for (auto& viewer_data : viewer->data_list) {
             if (viewer_data.point_size != parameters_.point_size) {
                 viewer_data.point_size = parameters_.point_size;

@@ -10,6 +10,10 @@
 #include <Eigen/Core>
 #include <curl/curl.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
+
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 
@@ -33,11 +37,23 @@ IPCameraPlugin::~IPCameraPlugin() {
 void IPCameraPlugin::init(igl::opengl::glfw::Viewer* _viewer) {
     ViewerPlugin::init(_viewer);
 
+    // Check for plugins
+    for (int i = 0; i < viewer->plugins.size(); i++) {
+        // Reconstruction plugin
+        if (!reconstruction_plugin_) {
+            reconstruction_plugin_ = dynamic_cast<ReconstructionPlugin*>(viewer->plugins[i]);
+        }
+        // NBV plugin
+        if (!nbv_plugin_) {
+            nbv_plugin_ = dynamic_cast<NextBestViewPlugin*>(viewer->plugins[i]);
+        }
+    }
+
+    // Create texture for camera view
     auto intrinsic_prior = reconstruction_builder_->GetOptions().intrinsics_prior;
     int image_width = intrinsic_prior.image_width;
     int image_height = intrinsic_prior.image_height;
 
-    // Create texture for camera view
     glGenTextures(1, &textureID_);
     glBindTexture(GL_TEXTURE_2D, textureID_);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -63,7 +79,7 @@ bool IPCameraPlugin::post_draw() {
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - window_width, 0.0f), ImGuiCond_FirstUseEver);
 
-    ImGui::Begin("Camera", nullptr, ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Kamera", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Add an url text
     ImGui::InputText("URL", url_buffer_, 128);
@@ -77,30 +93,56 @@ bool IPCameraPlugin::post_draw() {
     ImGui::Image(reinterpret_cast<GLuint*>(textureID_), ImVec2(width, height));
 
     // Capture
-    if (ImGui::Button("Capture image [space]", ImVec2(-1, 0))) {
+    if (ImGui::Button("Zajemi sliko [space]", ImVec2(-1, 0))) {
         capture_image_callback();
     }
 
     // Localization
-    if (ImGui::Button("Localize image", ImVec2(-70, 0))) {
+    if (ImGui::Button("Lokaliziraj sliko", ImVec2(-70, 0))) {
         localize_image_callback();
     }
     ImGui::SameLine();
     ImGui::Checkbox("Auto##localize", &auto_localize_);
-    if (ImGui::Checkbox("Show localization camera", &show_camera_)) {
+    if (ImGui::Checkbox("Vidna lokalizirana kamera", &show_camera_)) {
         show_camera(show_camera_);
     }
 
     // Save
-    if (ImGui::Button("Save image [s]", ImVec2(-70, 0))) {
+    if (ImGui::Button("Shrani sliko [s]", ImVec2(-70, 0))) {
         save_image_callback();
     }
     ImGui::SameLine();
     ImGui::Checkbox("Auto##save", &auto_save_);
-    ImGui::InputInt("Next image index", &next_image_idx_);
+    ImGui::InputInt("Naslednji indeks slike", &next_image_idx_);
 
     // Camera model
     transform_camera();
+
+    // Plugin link
+    if (ImGui::TreeNodeEx("Povezava z vticniki", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (reconstruction_plugin_) {
+            if (ImGui::Button("Inicializiraj", ImVec2(-70, 0))) {
+                initialize_callback();
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##ip_initialize", &auto_initialize_);
+
+            if (ImGui::Button("Razsiri", ImVec2(-70, 0))) {
+                extend_callback();
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("Auto##ip_extend", &auto_extend_);
+
+            if (nbv_plugin_) {
+                if (ImGui::Button("Naslednji najboljsi pogled", ImVec2(-70, 0))) {
+                    nbv_callback();
+                }
+                ImGui::SameLine();
+                ImGui::Checkbox("Auto##ip_nbv", &auto_nbv_);
+            }
+        }
+        ImGui::TreePop();
+    }
 
     ImGui::End();
     return false;
@@ -203,7 +245,7 @@ void IPCameraPlugin::localize_image_callback() {
         viewer->data().uniform_colors(red_color, red_color, red_color);
     }
     prev_localization_success_ = success;
-    show_camera(true);
+    show_camera(show_camera_);
 }
 
 void IPCameraPlugin::save_image_callback() {
@@ -229,6 +271,20 @@ void IPCameraPlugin::save_image_callback() {
         image_names_->push_back(filename);
         next_image_idx_++;
         log_stream_ << "IP Camera: Image saved to: \n\t" + fullname << std::endl;
+
+        // Auto actions
+        if (auto_initialize_) {
+            initialize_callback();
+        }
+        if (auto_extend_) {
+            extend_callback();
+        }
+        if (auto_nbv_) {
+            nbv_callback();
+        }
+        if (auto_save_camera_stats_) {
+            save_camera_stats_callback();
+        }
     }
 }
 
@@ -237,6 +293,74 @@ size_t IPCameraPlugin::curl_callback(char *data, size_t size, size_t nmemb, void
     size_t length = size * nmemb;
     stream->insert(stream->end(), data, data + length);
     return length;
+}
+
+void IPCameraPlugin::initialize_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "IP Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    // Check if already initialized
+    if (image_names_->size() == 2 && !reconstruction_builder_->IsInitialized()) {
+        reconstruction_plugin_->initialize_callback();
+    }
+}
+
+void IPCameraPlugin::extend_callback() {
+    if (!reconstruction_plugin_) {
+        log_stream_ << "IP Error: Reconstruction plugin not present." << std::endl;
+        return;
+    }
+
+    // Check if already initialized
+    if (image_names_->size() > 2 && reconstruction_builder_->IsInitialized()) {
+        reconstruction_plugin_->extend_callback();
+
+        // Update render stats
+        if (nbv_plugin_) {
+            // NBV camera
+            int nbv_pick = nbv_plugin_->get_selected_view();
+            glm::vec3 nbv_pos = nbv_plugin_->get_camera_pos();
+            glm::vec3 nbv_rot = nbv_plugin_->get_camera_rot();
+
+            // IP camera
+            Eigen::Matrix4f tmp = camera_transformation_.cast<float>();
+            glm::vec3 ip_pos;
+            glm::vec3 ip_rot;
+            glm::vec3 scale;
+            ImGuizmo::DecomposeMatrixToComponents(
+                    tmp.data(),
+                    glm::value_ptr(ip_pos),
+                    glm::value_ptr(ip_rot),
+                    glm::value_ptr(scale));
+
+            // Save stats
+            theia::ViewId view_id = reconstruction_builder_->GetLastAddedViewId();
+            camera_stats_.AddPose(view_id, ip_pos, ip_rot, nbv_pos, nbv_rot, nbv_pick);
+        }
+    }
+}
+
+void IPCameraPlugin::nbv_callback() {
+    if (!reconstruction_plugin_ || !nbv_plugin_) {
+        log_stream_ << "IP Error: Reconstruction or NBV plugin not present." << std::endl;
+        return;
+    }
+
+    // Check if mesh exists
+    if (!reconstruction_plugin_->get_mvs_scene_()->mesh.faces.empty()) {
+        Eigen::Matrix4f tmp = nbv_plugin_->get_bounding_box_gizmo();
+        glm::mat4 bounding_box_gizmo = glm::make_mat4(tmp.data());
+        glm::vec4 up = glm::normalize(bounding_box_gizmo[1]);
+        nbv_plugin_->initialize_callback(up);
+    }
+}
+
+void IPCameraPlugin::save_camera_stats_callback() {
+    std::string filename = images_path_ + "camera_stats.txt";
+    camera_stats_.WriteStatsToFile(filename);
+    log_stream_ << "IP camera: camera stats saved to: \n\t" << filename << std::endl;
 }
 
 void IPCameraPlugin::set_camera() {

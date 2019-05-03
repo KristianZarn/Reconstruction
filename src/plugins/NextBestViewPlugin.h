@@ -27,6 +27,8 @@ public:
     glm::vec3 get_camera_pos() const;
     glm::vec3 get_camera_rot() const;
     std::vector<glm::mat4> get_initial_best_views() const;
+    int get_selected_view() const;
+    Eigen::Matrix4f get_bounding_box_gizmo() const;
 
     // Callback functions
     void initialize_callback(const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));

@@ -14,21 +14,23 @@
 
 int main(int argc, char *argv[]) {
 
-    // Initialization
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/medvedek/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/zoga/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
-    std::string images_path = project_path + "images/";
-    std::string reconstruction_path = project_path + "reconstruction/";
-    std::string calibration_file = project_path + "prior_calibration.txt";
+    std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/";
+
+    // Dataset setting
+    std::string project_folder = root_folder + "ip_camera/";
+
+    std::string images_folder = project_folder + "images/";
+    std::string reconstruction_folder = project_folder + "reconstruction/";
+    std::string calibration_file = project_folder + "prior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
     viewer.core.is_animating = true;
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
     viewer.data().point_size = 3;
+
+    // For better screenshots
+    viewer.core.background_color = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Setup viewer callbacks for ImGui
     viewer.callback_init = [] (igl::opengl::glfw::Viewer& v) -> bool {
@@ -69,7 +71,7 @@ int main(int argc, char *argv[]) {
     auto quality_measure = std::make_shared<QualityMeasure>(mvs_scene);
 
     // Attach camera plugin
-    IPCameraPlugin camera_plugin(images_path, reconstruction_builder);
+    IPCameraPlugin camera_plugin(images_folder, reconstruction_builder);
     viewer.plugins.push_back(&camera_plugin);
 
     // Attach reconstruction plugin
@@ -77,23 +79,23 @@ int main(int argc, char *argv[]) {
     std::shared_ptr<std::vector<std::string>> image_names = camera_plugin.get_captured_image_names();
 
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
-                                               images_path,
-                                               reconstruction_path,
+                                               images_folder,
+                                               reconstruction_folder,
                                                image_names,
                                                reconstruction_builder,
                                                mvs_scene,
                                                quality_measure);
     viewer.plugins.push_back(&reconstruction_plugin);
 
-    // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
-
     // Attach next best view plugin
-    // auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
-    // NextBestViewPlugin nbv_plugin(next_best_view);
-    // viewer.plugins.push_back(&nbv_plugin);
+    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    NextBestViewPlugin nbv_plugin(next_best_view);
+    viewer.plugins.push_back(&nbv_plugin);
+
+    // Attach edit mesh plugin
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

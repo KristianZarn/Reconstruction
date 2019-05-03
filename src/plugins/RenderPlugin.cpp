@@ -66,7 +66,7 @@ bool RenderPlugin::post_draw() {
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(700.0f, 0.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Render", nullptr, ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Simulirano okolje", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Gizmo setup
     ImGuiIO& io = ImGui::GetIO();
@@ -76,18 +76,18 @@ bool RenderPlugin::post_draw() {
     Eigen::Matrix4f gizmo_view = scale_base_zoom * scale_zoom * viewer->core.view;
 
     // Initialization
-    if (ImGui::TreeNodeEx("Render scene", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::InputText("Filename", mesh_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
-        if (ImGui::Button("Load mesh (PLY, OBJ)", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Moznosti prikaza", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::InputText("Ime datoteke", mesh_name_, 128, ImGuiInputTextFlags_AutoSelectAll);
+        if (ImGui::Button("Odpri (PLY, OBJ)", ImVec2(-1, 0))) {
             load_scene_callback();
         }
-        if (ImGui::Checkbox("Show render cameras", &render_cameras_visible_)) {
+        if (ImGui::Checkbox("Vidne kamere", &render_cameras_visible_)) {
             show_render_cameras(render_cameras_visible_);
         }
-        if (ImGui::Checkbox("Show render mesh", &render_mesh_visible_)) {
+        if (ImGui::Checkbox("Viden model", &render_mesh_visible_)) {
             show_render_mesh(render_mesh_visible_);
         }
-        if (ImGui::Checkbox("Show texture", &mesh_texture_visible_)) {
+        if (ImGui::Checkbox("Vidna tekstura", &mesh_texture_visible_)) {
             viewer->selected_data_index = VIEWER_DATA_RENDER_MESH;
             viewer->data().show_texture = mesh_texture_visible_;
         }
@@ -95,8 +95,8 @@ bool RenderPlugin::post_draw() {
     }
 
     // Generated render poses
-    if (ImGui::TreeNodeEx("Generated render poses", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Pose render cameras", &pose_render_cameras_);
+    if (ImGui::TreeNodeEx("Referencna postavitev kamer", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Postavi kamere", &pose_render_cameras_);
         if (pose_render_cameras_) {
             ImGuizmo::Manipulate(gizmo_view.data(),
                                  viewer->core.proj.data(),
@@ -104,43 +104,43 @@ bool RenderPlugin::post_draw() {
                                  gizmo_mode_,
                                  render_cameras_gizmo_.data());
 
-            ImGui::Text("Transformation options");
-            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+            ImGui::Text("Moznosti transformacije");
+            if (ImGui::RadioButton("Translacija", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
                 gizmo_operation_ = ImGuizmo::TRANSLATE;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+            if (ImGui::RadioButton("Rotacija", gizmo_operation_ == ImGuizmo::ROTATE)) {
                 gizmo_operation_ = ImGuizmo::ROTATE;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Scale", gizmo_operation_ == ImGuizmo::SCALE)) {
+            if (ImGui::RadioButton("Skaliranje", gizmo_operation_ == ImGuizmo::SCALE)) {
                 gizmo_operation_ = ImGuizmo::SCALE;
             }
 
             // Update render poses
             update_render_cameras();
         }
-        if (ImGui::SliderInt("Camera density", &camera_density_, 10, 60)) {
+        if (ImGui::SliderInt("Gostota kamer", &camera_density_, 10, 60)) {
             update_render_cameras();
         }
-        if (ImGui::SliderInt("Pose index", &selected_pose_, 0, generated_poses_.size()-1)) {
+        if (ImGui::SliderInt("Indeks poze", &selected_pose_, 0, generated_poses_.size()-1)) {
             if (selected_pose_ >= 0 && selected_pose_ < generated_poses_.size()) {
                 render_pose_world_aligned_ = align_transform_ * glm::inverse(generated_poses_[selected_pose_]);
             }
         }
-        if (ImGui::Button("Save render cameras pose", ImVec2(-1, 0))) {
+        if (ImGui::Button("Shrani transformacijo", ImVec2(-1, 0))) {
             save_render_cameras_gizmo();
         }
-        if (ImGui::Button("Load render cameras pose", ImVec2(-1, 0))) {
+        if (ImGui::Button("Nalozi transformacijo", ImVec2(-1, 0))) {
             load_render_cameras_gizmo();
         }
         ImGui::TreePop();
     }
 
     // Manual camera pose
-    if (ImGui::TreeNodeEx("Manual camera pose", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Show render camera", &camera_visible_);
-        ImGui::Checkbox("Pose camera", &pose_camera_);
+    if (ImGui::TreeNodeEx("Rocna postavitev kamere", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Vidna kamera", &camera_visible_);
+        ImGui::Checkbox("Postavi kamero", &pose_camera_);
         if (pose_camera_) {
             ImGuizmo::Manipulate(gizmo_view.data(),
                                  viewer->core.proj.data(),
@@ -148,20 +148,20 @@ bool RenderPlugin::post_draw() {
                                  gizmo_mode_,
                                  camera_gizmo_.data());
 
-            ImGui::Text("Transformation options");
-            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+            ImGui::Text("Moznosti transformacije");
+            if (ImGui::RadioButton("Translacija", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
                 gizmo_operation_ = ImGuizmo::TRANSLATE;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+            if (ImGui::RadioButton("Rotacija", gizmo_operation_ == ImGuizmo::ROTATE)) {
                 gizmo_operation_ = ImGuizmo::ROTATE;
             }
         }
 
-        if (ImGui::Button("Render current pose", ImVec2(-1, 0))) {
+        if (ImGui::Button("Upodobi sliko", ImVec2(-1, 0))) {
             render_callback();
         }
-        if (ImGui::Button("Save current render", ImVec2(-1, 0))) {
+        if (ImGui::Button("Shrani upodobljeno sliko", ImVec2(-1, 0))) {
             save_render_callback();
         }
         ImGui::PushItemWidth(100.0f);
@@ -173,13 +173,13 @@ bool RenderPlugin::post_draw() {
     show_camera();
 
     // Plugin link
-    if (ImGui::TreeNodeEx("Plugin link", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Povezava z vticniki", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (reconstruction_plugin_) {
-            if (ImGui::Button("Initialize (generated)", ImVec2(-1, 0))) {
+            if (ImGui::Button("Inicializiraj (ref)", ImVec2(-1, 0))) {
                 initialize_generated_callback();
             }
 
-            if (ImGui::Button("Extend (generated)", ImVec2(-1, 0))) {
+            if (ImGui::Button("Razsiri (ref)", ImVec2(-1, 0))) {
                 extend_generated_callback();
             }
 
@@ -187,12 +187,12 @@ bool RenderPlugin::post_draw() {
             ImGui::InputInt("##genextend", &gen_extend_count_);
             ImGui::PopItemWidth();
             ImGui::SameLine();
-            if (ImGui::Button("Extend many (generated)", ImVec2(-1, 0))) {
+            if (ImGui::Button("Razsiri veckrat (ref)", ImVec2(-1, 0))) {
                 extend_many_generated_callback();
             }
 
             if (nbv_plugin_) {
-                if (ImGui::Button("Extend (NBV)", ImVec2(-1, 0))) {
+                if (ImGui::Button("Razsiri (NBV)", ImVec2(-1, 0))) {
                     extend_nbv_callback();
                 }
             }
@@ -202,36 +202,36 @@ bool RenderPlugin::post_draw() {
                 ImGui::InputInt("##nbvextend", &nbv_extend_count_);
                 ImGui::PopItemWidth();
                 ImGui::SameLine();
-                if (ImGui::Button("Extend many (NBV)", ImVec2(-1, 0))) {
+                if (ImGui::Button("Razsiri veckrat (NBV)", ImVec2(-1, 0))) {
                     extend_many_nbv_callback();
                 }
             }
 
-            if (ImGui::Button("Extend (manual)", ImVec2(-1, 0))) {
+            if (ImGui::Button("Razsiri (rocna postavitev)", ImVec2(-1, 0))) {
                 extend_manual_callback();
             }
 
             ImGui::Spacing();
 
-            if (ImGui::Button("Align render mesh", ImVec2(-70, 0))) {
+            if (ImGui::Button("Poravnaj referencni model", ImVec2(-70, 0))) {
                 align_callback();
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##align", &auto_align_);
 
-            if (ImGui::Button("Save aligned mesh", ImVec2(-70, 0))) {
+            if (ImGui::Button("Shrani poravnan model", ImVec2(-70, 0))) {
                 save_aligned_callback();
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##savemesh", &auto_save_mesh_);
 
-            if (ImGui::Button("Save mesh quality", ImVec2(-70, 0))) {
+            if (ImGui::Button("Shrani kvaliteto modela", ImVec2(-70, 0))) {
                 save_quality_callback();
             }
             ImGui::SameLine();
             ImGui::Checkbox("Auto##savequality", &auto_save_quality_);
 
-            if (ImGui::Button("Save render stats", ImVec2(-70, 0))) {
+            if (ImGui::Button("Shrani podatke uporabljanja", ImVec2(-70, 0))) {
                 save_render_stats_callback();
             }
             ImGui::SameLine();

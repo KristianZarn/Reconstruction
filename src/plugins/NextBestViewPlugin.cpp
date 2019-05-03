@@ -47,7 +47,7 @@ bool NextBestViewPlugin::post_draw() {
     float window_width = 350.0f;
     ImGui::SetNextWindowSize(ImVec2(window_width, 0), ImGuiCond_Always);
     ImGui::SetNextWindowPos(ImVec2(350.0f, 0.0f), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Next best view", nullptr, ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("Nacrtovanje naslednjega pogleda", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
     // Gizmo setup
     ImGuiIO& io = ImGui::GetIO();
@@ -57,22 +57,22 @@ bool NextBestViewPlugin::post_draw() {
     Eigen::Matrix4f gizmo_view = scale_base_zoom * scale_zoom * viewer->core.view;
 
     // NBV object and pose optimization
-    if (ImGui::TreeNodeEx("Initialization", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Button("Initialize NBV [n]", ImVec2(-1, 0))) {
+    if (ImGui::TreeNodeEx("Inicializacija", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::Button("Inicializiraj NBV [n]", ImVec2(-1, 0))) {
             initialize_callback();
         }
-        if (ImGui::Checkbox("Show NBV mesh", &nbv_mesh_visible_)) {
+        if (ImGui::Checkbox("Prikazi NBV model", &nbv_mesh_visible_)) {
             show_nbv_mesh(nbv_mesh_visible_);
         }
-        ImGui::Checkbox("Show NBV camera", &camera_visible_);
+        ImGui::Checkbox("Vidna NBV kamera", &camera_visible_);
         ImGui::TreePop();
     }
     show_nbv_camera();
 
     // Region of interest
-    if (ImGui::TreeNodeEx("Region of interest", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Show bounding box", &bounding_box_visible_);
-        ImGui::Checkbox("Pose bounding box", &pose_bounding_box_);
+    if (ImGui::TreeNodeEx("Obmocje interesa", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Viden kvader", &bounding_box_visible_);
+        ImGui::Checkbox("Postavi kvader", &pose_bounding_box_);
 
         if (pose_bounding_box_) {
             // Show gizmo
@@ -82,28 +82,28 @@ bool NextBestViewPlugin::post_draw() {
                                  gizmo_mode_,
                                  bounding_box_gizmo_.data());
 
-            ImGui::Text("Bounding box options");
-            if (ImGui::RadioButton("Translate", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
+            ImGui::Text("Moznosti kvadra");
+            if (ImGui::RadioButton("Translacija", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
                 gizmo_operation_ = ImGuizmo::TRANSLATE;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Rotate", gizmo_operation_ == ImGuizmo::ROTATE)) {
+            if (ImGui::RadioButton("Rotacija", gizmo_operation_ == ImGuizmo::ROTATE)) {
                 gizmo_operation_ = ImGuizmo::ROTATE;
             }
             ImGui::SameLine();
-            if (ImGui::RadioButton("Scale", gizmo_operation_ == ImGuizmo::SCALE)) {
+            if (ImGui::RadioButton("Skaliranje", gizmo_operation_ == ImGuizmo::SCALE)) {
                 gizmo_operation_ = ImGuizmo::SCALE;
             }
         }
 
-        if (ImGui::Button("Apply selection", ImVec2(-70, 0))) {
+        if (ImGui::Button("Uporabi izbiro", ImVec2(-70, 0))) {
             apply_selection_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##applyselection", &auto_apply_selection_);
 
         std::ostringstream os;
-        os << "Faces at target quality: "
+        os << "Odstotek ciljne kvalitete: "
            << "\t" << target_quality_percentage_ * 100.0 << " %";
         ImGui::TextUnformatted(os.str().c_str());
         ImGui::TreePop();
@@ -111,45 +111,45 @@ bool NextBestViewPlugin::post_draw() {
     show_bounding_box();
 
     // Best view init
-    if (ImGui::TreeNodeEx("Camera pose init", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Izbira naslednjega pogleda", ImGuiTreeNodeFlags_DefaultOpen)) {
 
         // PPA
-        if (ImGui::Button("Show PPA", ImVec2(-1, 0))) {
+        if (ImGui::Button("Prikazi PPA", ImVec2(-1, 0))) {
             set_nbv_mesh_color(pixels_per_area_);
         }
         ImGui::Spacing();
 
         // Clustering
-        if (ImGui::Button("Show clusters", ImVec2(-70, 0))) {
+        if (ImGui::Button("Prikazi gruce", ImVec2(-70, 0))) {
             show_clusters_callback();
         }
         ImGui::SameLine();
         ImGui::Checkbox("Auto##showclusters", &auto_show_clusters_);
 
-        ImGui::InputFloat("Target quality", &next_best_view_->target_quality_);
-        ImGui::InputFloat("Percentage increment", &next_best_view_->percentage_increment_);
-        ImGui::InputFloat("Target quality increment", &next_best_view_->target_quality_increment_);
+        ImGui::InputFloat("q_t", &next_best_view_->target_quality_);
+        ImGui::InputFloat("q_p", &next_best_view_->percentage_increment_);
+        ImGui::InputFloat("q_i", &next_best_view_->target_quality_increment_);
         ImGui::Spacing();
 
-        ImGui::InputInt("Min size", &next_best_view_->cluster_min_size_);
-        ImGui::InputInt("Max size", &next_best_view_->cluster_max_size_);
-        ImGui::InputFloat("Angle", &next_best_view_->cluster_angle_);
+        ImGui::InputInt("c_min", &next_best_view_->cluster_min_size_);
+        ImGui::InputInt("c_max", &next_best_view_->cluster_max_size_);
+        ImGui::InputFloat("phi", &next_best_view_->cluster_angle_);
         ImGui::Spacing();
 
         // Best view
-        ImGui::InputFloat("Init Alpha", &next_best_view_->init_alpha_);
-        ImGui::InputFloat("Init Beta", &next_best_view_->init_beta_);
-        ImGui::InputFloat("Dist mult", &next_best_view_->dist_alpha_);
+        ImGui::InputFloat("alpha", &next_best_view_->init_alpha_);
+        ImGui::InputFloat("beta", &next_best_view_->init_beta_);
+        ImGui::InputFloat("gamma", &next_best_view_->dist_alpha_);
 
 
-        if (ImGui::SliderInt("Pose index", &selected_view_, 0, best_views_init_.size()-1)) {
+        if (ImGui::SliderInt("Izbrani pogled", &selected_view_, 0, best_views_init_.size()-1)) {
             set_nbv_camera_callback(selected_view_);
         }
         ImGui::TreePop();
     }
 
     // Optimize camera pose
-    if (ImGui::TreeNodeEx("Camera pose optimization")) {
+    /*if (ImGui::TreeNodeEx("Camera pose optimization")) {
         if (ImGui::Button("Optimize [t]", ImVec2(-1, 0))) {
             optimize_callback();
         }
@@ -179,7 +179,7 @@ bool NextBestViewPlugin::post_draw() {
             }
         }
         ImGui::TreePop();
-    }
+    }*/
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug")) {
@@ -224,6 +224,14 @@ glm::vec3 NextBestViewPlugin::get_camera_rot() const {
 
 std::vector<glm::mat4> NextBestViewPlugin::get_initial_best_views() const {
     return best_views_init_;
+}
+
+int NextBestViewPlugin::get_selected_view() const {
+    return selected_view_;
+}
+
+Eigen::Matrix4f NextBestViewPlugin::get_bounding_box_gizmo() const {
+    return bounding_box_gizmo_;
 }
 
 void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
@@ -608,8 +616,7 @@ void NextBestViewPlugin::set_nbv_mesh() {
     }
 
     viewer->data().set_mesh(V, F);
-    // viewer->data().show_lines = true;
-    // show_nbv_mesh(true);
+    show_nbv_mesh(nbv_mesh_visible_);
 }
 
 void NextBestViewPlugin::set_nbv_mesh_color(const std::vector<double>& face_values) {
