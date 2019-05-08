@@ -59,7 +59,7 @@ private:
 
     // Interface
     GLuint textureID_;
-    char url_buffer_[128] = "http://192.168.64.113:8080/photoaf.jpg";
+    char url_buffer_[128] = "http://192.168.43.1:8080/photo.jpg";
     bool show_camera_ = true;
     bool auto_localize_ = true;
     bool auto_save_ = false;

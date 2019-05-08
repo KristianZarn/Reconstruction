@@ -71,8 +71,8 @@ bool NextBestViewPlugin::post_draw() {
 
     // Region of interest
     if (ImGui::TreeNodeEx("Obmocje interesa", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Viden kvader", &bounding_box_visible_);
-        ImGui::Checkbox("Postavi kvader", &pose_bounding_box_);
+        ImGui::Checkbox("Viden mejni kvader", &bounding_box_visible_);
+        ImGui::Checkbox("Postavi mejni kvader", &pose_bounding_box_);
 
         if (pose_bounding_box_) {
             // Show gizmo
@@ -82,7 +82,7 @@ bool NextBestViewPlugin::post_draw() {
                                  gizmo_mode_,
                                  bounding_box_gizmo_.data());
 
-            ImGui::Text("Moznosti kvadra");
+            ImGui::Text("Moznosti mejnega kvadra");
             if (ImGui::RadioButton("Translacija", gizmo_operation_ == ImGuizmo::TRANSLATE)) {
                 gizmo_operation_ = ImGuizmo::TRANSLATE;
             }

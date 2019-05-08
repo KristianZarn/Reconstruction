@@ -80,7 +80,7 @@ bool EditMeshPlugin::post_draw() {
         if (ImGui::RadioButton("Trikotnik [s]", parameters_.selection_mode == SelectionMode::PICK)) {
             parameters_.selection_mode = SelectionMode::PICK;
         }
-        if (ImGui::RadioButton("Kvader", parameters_.selection_mode == SelectionMode::BOX)) {
+        if (ImGui::RadioButton("Mejni kvader", parameters_.selection_mode == SelectionMode::BOX)) {
             parameters_.selection_mode = SelectionMode::BOX;
         }
         if (ImGui::RadioButton("Ravnina", parameters_.selection_mode == SelectionMode::PLANE)) {
@@ -98,7 +98,7 @@ bool EditMeshPlugin::post_draw() {
 
         // Selection: Bounding box
         if (parameters_.selection_mode == SelectionMode::BOX) {
-            ImGui::Text("Moznosti kvadra");
+            ImGui::Text("Moznosti mejnega kvadra");
             gizmo_options();
             if (ImGui::Button("Izberi notranjost", ImVec2(-1, 0))) {
                 select_inside_callback();

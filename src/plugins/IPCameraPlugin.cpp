@@ -119,7 +119,7 @@ bool IPCameraPlugin::post_draw() {
     transform_camera();
 
     // Plugin link
-    if (ImGui::TreeNodeEx("Povezava z vticniki", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Povezava z moduli", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (reconstruction_plugin_) {
             if (ImGui::Button("Inicializiraj", ImVec2(-70, 0))) {
                 initialize_callback();

@@ -173,7 +173,7 @@ bool RenderPlugin::post_draw() {
     show_camera();
 
     // Plugin link
-    if (ImGui::TreeNodeEx("Povezava z vticniki", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::TreeNodeEx("Povezava z moduli", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (reconstruction_plugin_) {
             if (ImGui::Button("Inicializiraj (ref)", ImVec2(-1, 0))) {
                 initialize_generated_callback();

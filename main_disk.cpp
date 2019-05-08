@@ -14,25 +14,16 @@
 
 int main(int argc, char *argv[]) {
 
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/temple/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vrc/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/vzorci/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/box_2/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/medvedek/";
+    std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/";
 
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/put4/";
-    std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/sod/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_vipava/amfora/";
-
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/ip_camera/";
-    // std::string project_path = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/render/";
+    // Dataset setting
+    std::string project_folder = root_folder + "rastlina/";
 
     int num_images = 100;
-    std::string image_ext = ".png";
-    std::string images_path = project_path + "images/";
-    std::string reconstruction_path = project_path + "reconstruction/";
-    std::string calibration_file = project_path + "prior_calibration.txt";
+    std::string image_ext = ".jpg";
+    std::string images_folder = project_folder + "images/";
+    std::string reconstruction_folder = project_folder + "reconstruction/";
+    std::string calibration_file = project_folder + "prior_calibration.txt";
 
     // Initialize the viewer
     igl::opengl::glfw::Viewer viewer;
@@ -40,6 +31,9 @@ int main(int argc, char *argv[]) {
     viewer.core.set_rotation_type(igl::opengl::ViewerCore::RotationType::ROTATION_TYPE_TRACKBALL);
     viewer.core.trackball_angle = Eigen::Quaternionf(0, -1, 0, 0);
     viewer.data().point_size = 3;
+
+    // For better screenshots
+    viewer.core.background_color = Eigen::Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Setup viewer callbacks for ImGui
     viewer.callback_init = [] (igl::opengl::glfw::Viewer& v) -> bool {
@@ -50,6 +44,11 @@ int main(int argc, char *argv[]) {
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
         style.FrameRounding = 5.0f;
+
+        ImFontConfig font_cfg;
+        font_cfg.GlyphExtraSpacing.x = 1.1f;
+        // ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/OpenSans-ExtraBold.ttf", 14.0f, &font_cfg);
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/Roboto-Bold.ttf", 16.0f, &font_cfg);
         return false;
     };
 
@@ -89,8 +88,8 @@ int main(int argc, char *argv[]) {
     }
 
     ReconstructionPlugin reconstruction_plugin(reconstruction_parameters,
-                                               images_path,
-                                               reconstruction_path,
+                                               images_folder,
+                                               reconstruction_folder,
                                                image_names,
                                                reconstruction_builder,
                                                mvs_scene,
@@ -98,14 +97,14 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&reconstruction_plugin);
 
     // Attach edit mesh plugin
-    // EditMeshPlugin::Parameters edit_mesh_parameters;
-    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    // viewer.plugins.push_back(&edit_mesh_plugin);
+    EditMeshPlugin::Parameters edit_mesh_parameters;
+    EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Attach next best view plugin
-    auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
-    NextBestViewPlugin nbv_plugin(next_best_view);
-    viewer.plugins.push_back(&nbv_plugin);
+    // auto next_best_view = std::make_shared<NextBestView>(mvs_scene);
+    // NextBestViewPlugin nbv_plugin(next_best_view);
+    // viewer.plugins.push_back(&nbv_plugin);
 
     // Start viewer
     viewer.launch();
