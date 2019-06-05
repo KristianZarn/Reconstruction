@@ -244,6 +244,8 @@ void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
     }
 
     // Compute NBV and other variables
+    auto time_begin = std::chrono::steady_clock::now();
+
     log_stream_ << std::endl;
     log_stream_ << "NBV: Computing PPA ... " << std::flush;
     pixels_per_area_ = next_best_view_->ppa_;
@@ -257,6 +259,10 @@ void NextBestViewPlugin::initialize_callback(const glm::vec3& up) {
     log_stream_ << "NBV: Computing initial views ... " << std::flush;
     best_views_init_ = next_best_view_->BestViewInit(clusters_, up);
     log_stream_ << "DONE" << std::endl;
+
+    auto time_end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> time_elapsed = time_end - time_begin;
+    log_stream_ << "NBV time: " << time_elapsed.count() << " s" << std::endl;
 
     // Set cluster_id for debugging
     cluster_id_.resize(next_best_view_->mvs_scene_->mesh.faces.size());
@@ -449,16 +455,25 @@ void NextBestViewPlugin::debug_callback() {
             glm::value_ptr(view_matrix));
     view_matrix = glm::inverse(view_matrix);
 
-    // auto cluster = next_best_view_->ClusterCenterNormal(clusters_[selected_view_]);
-    // double cost = next_best_view_->CostFunction(
-    //         view_matrix, image_height, focal_y, image_width, cluster.first, cluster.second);
-    // log_stream_ << "Cost: " << cost << std::endl;
+    // Test cost function
     double cost = next_best_view_->CostFunctionInit(view_matrix, image_height, focal_y, image_width);
     log_stream_ << "Cost: " << cost << std::endl;
 
-    // auto render_data = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
-    // writeBufferToFile("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat",
-    //         image_width, image_height, render_data);
+    // Write buffer to file
+    auto face_id_render = next_best_view_->RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
+
+    // Transform to ppa data
+    std::vector<double> ppa_render;
+    for (const auto& tmp : face_id_render) {
+        if (tmp == 0) {
+            ppa_render.push_back(0.0);
+        } else {
+            unsigned int face_id = tmp - 1; // subtract 1 to start at 0
+            ppa_render.push_back(next_best_view_->ppa_[face_id]);
+        }
+    }
+    std::string buffer_filename = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/render.dat";
+    writeBufferToFile(buffer_filename, image_width, image_height, ppa_render);
 }
 
 void NextBestViewPlugin::pick_face_callback() {
@@ -665,7 +680,7 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(nullptr, key);
     if (!ImGui::GetIO().WantTextInput) {
         switch (key) {
-            case 'n':
+            /*case 'n':
             {
                 initialize_callback();
                 return true;
@@ -684,6 +699,22 @@ bool NextBestViewPlugin::key_pressed(unsigned int key, int modifiers) {
             {
                 if (!ImGui::GetIO().WantCaptureMouse) {
                     pick_face_callback();
+                }
+                return true;
+            }*/
+            case 'j':
+            {
+                if (selected_view_ > 0) {
+                    selected_view_ = selected_view_ - 1;
+                    set_nbv_camera_callback(selected_view_);
+                }
+                return true;
+            }
+            case 'l':
+            {
+                if (selected_view_ < best_views_init_.size()-1) {
+                    selected_view_ = selected_view_ + 1;
+                    set_nbv_camera_callback(selected_view_);
                 }
                 return true;
             }

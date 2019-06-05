@@ -221,10 +221,6 @@ bool ReconstructionPlugin::post_draw() {
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Debug button pressed" << std::endl;
-
-            log_stream_ << "View: \n" << viewer->core.view << std::endl;
-            log_stream_ << "Proj: \n" << viewer->core.proj << std::endl;
-            log_stream_ << "Norm: \n" << viewer->core.norm << std::endl;
         }
         ImGui::TreePop();
     }
@@ -947,7 +943,7 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
     ImGui_ImplGlfwGL3_CharCallback(viewer->window, key);
     if (!ImGui::GetIO().WantTextInput) {
         switch (key) {
-            case 'i':
+            /*case 'i':
             {
                 initialize_callback();
                 return true;
@@ -956,7 +952,7 @@ bool ReconstructionPlugin::key_pressed(unsigned int key, int modifiers) {
             {
                 extend_callback();
                 return true;
-            }
+            }*/
             case '1':
             {
                 show_cameras(!parameters_.show_cameras);

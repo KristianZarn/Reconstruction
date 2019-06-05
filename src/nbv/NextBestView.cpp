@@ -423,7 +423,6 @@ double NextBestView::TargetPercentage(const std::vector<double>& quality_measure
 std::unordered_set<unsigned int>
 NextBestView::VisibleFaces(const glm::mat4& view_matrix, int image_width, int image_height, double focal_y) {
 
-    // Returned face_id start at 0
     std::vector<unsigned int> render_data = RenderFaceIdFromCamera(view_matrix, image_width, image_height, focal_y);
     std::unordered_set<unsigned int> visible_faces;
     for (const auto& tmp : render_data) {

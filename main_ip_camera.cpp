@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/";
 
     // Dataset setting
-    std::string project_folder = root_folder + "rastlina/";
+    std::string project_folder = root_folder + "test_3/";
 
     std::string images_folder = project_folder + "images/";
     std::string reconstruction_folder = project_folder + "reconstruction/";
@@ -98,9 +98,9 @@ int main(int argc, char *argv[]) {
     viewer.plugins.push_back(&nbv_plugin);
 
     // Attach edit mesh plugin
-    EditMeshPlugin::Parameters edit_mesh_parameters;
-    EditMeshPlugin edit_mesh_plugin(mvs_scene);
-    viewer.plugins.push_back(&edit_mesh_plugin);
+    // EditMeshPlugin::Parameters edit_mesh_parameters;
+    // EditMeshPlugin edit_mesh_plugin(mvs_scene);
+    // viewer.plugins.push_back(&edit_mesh_plugin);
 
     // Start viewer
     viewer.launch();

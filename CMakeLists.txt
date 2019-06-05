@@ -111,3 +111,8 @@ add_executable(reconstruction_render main_render.cpp ${SOURCE_FILES})
 target_compile_definitions(reconstruction_render PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
 target_include_directories(reconstruction_render PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(reconstruction_render ${LIBRARIES})
+
+add_executable(reconstruction_viewer main_viewer.cpp ${SOURCE_FILES})
+target_compile_definitions(reconstruction_viewer PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+target_include_directories(reconstruction_viewer PUBLIC ${INCLUDE_DIRS})
+target_link_libraries(reconstruction_viewer ${LIBRARIES})

@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
 
     // Dataset setting
-    std::string project_folder = root_folder + "statue/";
+    std::string project_folder = root_folder + "_testing/";
     std::string label = "nbv";
 
     std::string images_folder = project_folder + "images_" + label + "/";
@@ -52,6 +52,11 @@ int main(int argc, char *argv[]) {
         ImGui::StyleColorsDark();
         ImGuiStyle& style = ImGui::GetStyle();
         style.FrameRounding = 5.0f;
+
+        ImFontConfig font_cfg;
+        font_cfg.GlyphExtraSpacing.x = 1.1f;
+        // ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/OpenSans-ExtraBold.ttf", 14.0f, &font_cfg);
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/Roboto-Bold.ttf", 16.0f, &font_cfg);
         return false;
     };
 

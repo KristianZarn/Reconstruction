@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui_impl_glfw_gl3.h>
+#include <igl/jet.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
@@ -247,7 +248,6 @@ bool RenderPlugin::post_draw() {
         }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
-            log_stream_ << "generated poses size: " << generated_poses_.size() << std::endl;
         }
         ImGui::TreePop();
     }
