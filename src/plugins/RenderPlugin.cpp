@@ -243,11 +243,51 @@ bool RenderPlugin::post_draw() {
 
     // Debugging
     if (ImGui::TreeNodeEx("Debug")) {
-        if (ImGui::Button("Outout cameras gizmo", ImVec2(-1, 0))) {
-            log_stream_ << "render_cameras_gizmo_:\n" << render_cameras_gizmo_ << std::endl;
-        }
+        // if (ImGui::Button("Outout cameras gizmo", ImVec2(-1, 0))) {
+        //     log_stream_ << "render_cameras_gizmo_:\n" << render_cameras_gizmo_ << std::endl;
+        // }
         if (ImGui::Button("Debug", ImVec2(-1, 0))) {
             log_stream_ << "Render: debug button pressed" << std::endl;
+
+            // Read view matrix from file
+            std::string filename = reconstruction_folder_ + "view_mat.txt";
+            std::ifstream infile(filename);
+            std::string line;
+            std::getline(infile, line);
+            std::istringstream stream(line);
+            glm::mat4 view_mat = glm::mat4(1.0f);
+
+            for (int i = 0; i < 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    double number;
+                    if (stream >> number) {
+                        view_mat[i][j] = number;
+                    }
+                }
+            }
+
+            // Read test
+            log_stream_ << "debug: " << glm::to_string(view_mat) << std::endl;
+
+            // Fix view matrix (wtf)
+            glm::mat4 fix_t = glm::inverse(view_mat);
+
+            glm::mat3 rot = glm::mat3(view_mat);
+            rot = glm::transpose(rot);
+            glm::mat4 fix_r = glm::mat4(rot);
+            fix_r = glm::inverse(fix_r);
+
+            fix_r[0][3] = fix_t[0][3];
+            fix_r[1][3] = fix_t[1][3];
+            fix_r[2][3] = fix_t[2][3];
+            fix_r[3][3] = fix_t[3][3];
+            fix_r[3][2] = fix_t[3][2];
+            fix_r[3][1] = fix_t[3][1];
+            fix_r[3][0] = fix_t[3][0];
+
+            // Set camera pose
+            render_pose_world_aligned_ = fix_r;
+            camera_visible_ = true;
         }
         ImGui::TreePop();
     }

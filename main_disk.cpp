@@ -14,10 +14,10 @@
 
 int main(int argc, char *argv[]) {
 
-    std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset_render/";
+    std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/";
 
-    // Dataset setting
-    std::string project_folder = root_folder + "_testing/";
+    // Dataset settingvaza
+    std::string project_folder = root_folder + "timing/";
 
     int num_images = 100;
     std::string image_ext = ".jpg";

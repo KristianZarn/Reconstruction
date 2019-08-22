@@ -91,7 +91,8 @@ private:
     std::shared_ptr<std::vector<std::string>> image_names_;
 
     std::string reconstruction_folder_;
-    char mesh_name_[128] = "filename.ext";
+    // char mesh_name_[128] = "filename.ext";
+    char mesh_name_[128] = "stump_video_nbv_tex.ply";
 
     std::string evaluation_folder_;
     bool auto_save_mesh_ = true;

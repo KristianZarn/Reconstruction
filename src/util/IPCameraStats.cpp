@@ -152,18 +152,12 @@ void IPCameraStats::WriteStatsToFile(std::string filename) {
         outfile << "Rot error: " << rot_errors[i] << "\n\n";
     }
 
-    double mean_error = ComputeMeanError();
-    outfile << "Mean error (for double check):" << mean_error << "\n";
-
     double mean_pos_error = ComputeMeanPosError();
     outfile << "Mean position error: " << mean_pos_error << "\n";
 
     double mean_rot_error = ComputeMeanRotError();
     outfile << "Mean rotation error: " << mean_rot_error << "\n";
 
-    double mean_camera_distance = ComputeMeanCameraDistance();
-    outfile << "Mean camera distance: " << mean_camera_distance << "\n";
-
-    double max_camera_distance = ComputeMaxCameraDistance();
-    outfile << "Max camera distance: " << max_camera_distance << "\n";
+    // double max_camera_distance = ComputeMaxCameraDistance();
+    // outfile << "Max camera distance: " << max_camera_distance << "\n";
 }
