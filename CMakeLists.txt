@@ -3,6 +3,8 @@ project(realtime_reconstruction)
 
 set(CMAKE_CXX_STANDARD 17)
 
+# set(OpenGL_GL_PREFERENCE "GLVND")
+
 # EXTERNAL LIBRARIES
 # Basic libraries needed by others
 find_package(X11 REQUIRED)
@@ -33,17 +35,30 @@ add_library(imgui STATIC IMPORTED)
 set_property(TARGET imgui PROPERTY IMPORTED_LOCATION ${LIBIGL_LIBS_DIR}/libimgui.a)
 
 # Theia
+#set(Theia_DIR "/usr/local/cmakeinstall/share/Theia")
 find_package(Theia REQUIRED)
 
 # COLMAP
+#set(COLMAP_DIR "/usr/local/cmakeinstall/share/colmap")
 find_package(COLMAP REQUIRED)
 list(REMOVE_ITEM COLMAP_LIBRARIES flann)
 link_directories(${COLMAP_LINK_DIRS})
 
 # OpenMVS and dependencies
+find_package(OpenCV REQUIRED)
+find_package(Boost COMPONENTS filesystem iostreams program_options serialization system REQUIRED)
+
+set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 find_package(CUDA REQUIRED)
 find_package(CGAL REQUIRED)
+
+#set(OpenMVS_DIR "/usr/local/cmakeinstall/lib/cmake/OpenMVS")
 find_package(OpenMVS REQUIRED)
+include_directories(${OpenMVS_INCLUDE_DIRS})
+add_definitions(${OpenMVS_DEFINITIONS})
+# message("HERE1: ${Boost_INCLUDE_DIR}")
+# message("HERE2: ${Boost_LIBRARY_DIRS}")
+# message("HERE3: ${Boost_LIBRARIES}")
 
 # SUBDIRECTORIES
 add_subdirectory(libraries)
@@ -59,6 +74,8 @@ set(INCLUDE_DIRS
         ${LIBIGL_INCLUDE_DIR}
         ${THEIA_INCLUDE_DIRS}
         ${COLMAP_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIR}
+        ${OpenCV_INCLUDE_DIRS}
         ${OpenMVS_INCLUDE_DIRS}
         ${CUDA_INCLUDE_DIRS}
         ${CURL_INCLUDE_DIRS})
@@ -77,7 +94,9 @@ set(EXTERNAL_LIBRARIES
         Threads::Threads
         ${THEIA_LIBRARIES}
         ${COLMAP_LIBRARIES}
-        ${OpenMVS_LIBRARIES}
+        ${OpenCV_LIBS}
+        OpenMVS::MVS
+        ${Boost_LIBRARIES}
         ${CUDA_LIBRARIES}
         ${CURL_LIBRARIES}
         OpenMP::OpenMP_CXX)
@@ -92,27 +111,31 @@ set(LIBRARIES
         ${INTERNAL_LIBRARIES}
         ${EXTERNAL_LIBRARIES})
 
+link_directories(/usr/local/lib/OpenMVS)
+
+# Applications
 add_executable(reconstruction_disk main_disk.cpp ${SOURCE_FILES})
 target_compile_definitions(reconstruction_disk PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
 target_include_directories(reconstruction_disk PUBLIC ${INCLUDE_DIRS})
 target_link_libraries(reconstruction_disk ${LIBRARIES})
 
-add_executable(reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
-target_compile_definitions(reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(reconstruction_ip_camera ${LIBRARIES})
+# add_executable(reconstruction_ip_camera main_ip_camera.cpp ${SOURCE_FILES})
+# target_compile_definitions(reconstruction_ip_camera PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+# target_include_directories(reconstruction_ip_camera PUBLIC ${INCLUDE_DIRS})
+# target_link_libraries(reconstruction_ip_camera ${LIBRARIES})
 
-#add_executable(reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
-#target_compile_definitions(reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-#target_include_directories(reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
-#target_link_libraries(reconstruction_webcam ${LIBRARIES})
+# add_executable(reconstruction_render main_render.cpp ${SOURCE_FILES})
+# target_compile_definitions(reconstruction_render PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+# target_include_directories(reconstruction_render PUBLIC ${INCLUDE_DIRS})
+# target_link_libraries(reconstruction_render ${LIBRARIES})
 
-add_executable(reconstruction_render main_render.cpp ${SOURCE_FILES})
-target_compile_definitions(reconstruction_render PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(reconstruction_render PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(reconstruction_render ${LIBRARIES})
+# add_executable(reconstruction_viewer main_viewer.cpp ${SOURCE_FILES})
+# target_compile_definitions(reconstruction_viewer PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+# target_include_directories(reconstruction_viewer PUBLIC ${INCLUDE_DIRS})
+# target_link_libraries(reconstruction_viewer ${LIBRARIES})
 
-add_executable(reconstruction_viewer main_viewer.cpp ${SOURCE_FILES})
-target_compile_definitions(reconstruction_viewer PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
-target_include_directories(reconstruction_viewer PUBLIC ${INCLUDE_DIRS})
-target_link_libraries(reconstruction_viewer ${LIBRARIES})
+# Legacy
+# add_executable(reconstruction_webcam main_webcam.cpp ${SOURCE_FILES})
+# target_compile_definitions(reconstruction_webcam PRIVATE -DIGL_STATIC_LIBRARY -DCOLMAP_DONT_SPECIALIZE_HASH)
+# target_include_directories(reconstruction_webcam PUBLIC ${INCLUDE_DIRS})
+# target_link_libraries(reconstruction_webcam ${LIBRARIES})

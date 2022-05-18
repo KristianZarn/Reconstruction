@@ -23,6 +23,8 @@ public:
         // Reconstruct mesh
         // Minimum distance in pixels between the projection of two 3D points to consider them different (0 - disabled)
         float dist_insert = 0.5f;
+        // Use only the points inside the ROI
+        bool use_inside_roi_only = false;
         // Exploits the free-space support in order to reconstruct weakly-represented surfaces
         bool use_free_space_support = false;
         unsigned int fix_non_manifold = 4;

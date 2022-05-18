@@ -14,12 +14,12 @@
 
 int main(int argc, char *argv[]) {
 
-    std::string root_folder = "/home/kristian/Documents/reconstruction_code/realtime_reconstruction/dataset/";
+    std::string root_folder = "../dataset/";
 
-    // Dataset settingvaza
-    std::string project_folder = root_folder + "timing/";
+    // Dataset setting
+    std::string project_folder = root_folder + "opeka/";
 
-    int num_images = 100;
+    int num_images = 30;
     std::string image_ext = ".jpg";
     std::string images_folder = project_folder + "images/";
     std::string reconstruction_folder = project_folder + "reconstruction/";
@@ -47,8 +47,7 @@ int main(int argc, char *argv[]) {
 
         ImFontConfig font_cfg;
         font_cfg.GlyphExtraSpacing.x = 1.1f;
-        // ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/OpenSans-ExtraBold.ttf", 14.0f, &font_cfg);
-        ImGui::GetIO().Fonts->AddFontFromFileTTF("/home/kristian/Documents/reconstruction_code/realtime_reconstruction/resources/Roboto-Bold.ttf", 16.0f, &font_cfg);
+        ImGui::GetIO().Fonts->AddFontFromFileTTF("../resources/Roboto-Bold.ttf", 16.0f, &font_cfg);
         return false;
     };
 

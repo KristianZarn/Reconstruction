@@ -445,6 +445,11 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
         // Select neighbor views
         int i = 0;
         for (auto& image : mvs_scene_->images) {
+            if (!image.IsValid())
+            {
+                continue;
+            }
+
             image.ReloadImage(0, false);
             image.UpdateCamera(mvs_scene_->platforms);
             if (image.neighbors.IsEmpty()) {
@@ -460,6 +465,7 @@ void ReconstructionPlugin::reconstruct_mesh_callback() {
 
         mvs_scene_->ReconstructMesh(parameters_.dist_insert,
                                     parameters_.use_free_space_support,
+                                    parameters_.use_inside_roi_only,
                                     parameters_.fix_non_manifold,
                                     parameters_.thickness_factor,
                                     parameters_.quality_factor);
